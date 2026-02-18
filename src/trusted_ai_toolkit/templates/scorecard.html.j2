@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trusted AI Scorecard</title>
+  <style>
+    body { font-family: "Helvetica Neue", Arial, sans-serif; margin: 2rem; color: #1f2937; background: #f8fafc; }
+    .card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    h1, h2 { margin-bottom: 0.5rem; }
+    p { line-height: 1.45; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: left; }
+    th { background: #f1f5f9; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Trusted AI Scorecard</h1>
+    <p><strong>Project:</strong> {{ project_name }}</p>
+    <p><strong>Run ID:</strong> {{ run_id }}</p>
+    <p><strong>Risk Tier:</strong> {{ risk_tier | title }}</p>
+    <p><strong>Overall Status:</strong> {{ overall_status | replace("_", " ") | title }}</p>
+    <p><strong>Go/No-Go:</strong> {{ go_no_go | upper }}</p>
+  </div>
+
+  <div class="card">
+    <h2>Executive Summary</h2>
+    <p>{{ executive_summary }}</p>
+    <h2>Evidence Pack Completeness</h2>
+    <p>{{ evidence_completeness }}%</p>
+  </div>
+
+  <div class="card">
+    <h2>Stage Gate Status</h2>
+    <table>
+      <thead><tr><th>Gate</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for gate, status in stage_gate_status.items() %}
+        <tr><td>{{ gate }}</td><td>{{ status }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Metrics</h2>
+    <table>
+      <thead><tr><th>Metric</th><th>Value</th><th>Threshold</th><th>Pass</th></tr></thead>
+      <tbody>
+      {% for m in metric_results %}
+        <tr><td>{{ m.metric_id }}</td><td>{{ m.value }}</td><td>{{ m.threshold }}</td><td>{{ m.passed }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Red Team Summary</h2>
+    <ul>
+      <li>Severity Threshold: {{ severity_threshold }}</li>
+      <li>Low: {{ redteam_summary.low }}</li>
+      <li>Medium: {{ redteam_summary.medium }}</li>
+      <li>High: {{ redteam_summary.high }}</li>
+      <li>Critical: {{ redteam_summary.critical }}</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Required Actions</h2>
+    <ul>
+      {% for action in required_actions %}
+      <li>{{ action }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</body>
+</html>

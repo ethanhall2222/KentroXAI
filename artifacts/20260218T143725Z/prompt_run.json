@@ -1,0 +1,15 @@
+{
+  "project_name": "sample-trusted-ai-project",
+  "run_id": "20260218T143725Z",
+  "prompt": "Summarize the policy update.",
+  "model_output": "Stub model response: real provider integration is pending. TODO: connect Azure OpenAI or another model endpoint.",
+  "retrieved_contexts": [],
+  "adapter": {
+    "provider": "stub",
+    "endpoint": null,
+    "deployment": null,
+    "api_version": null,
+    "model": null,
+    "timeout_seconds": 30
+  }
+}

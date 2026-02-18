@@ -1,0 +1,24 @@
+# Model Card
+
+## Model Metadata
+
+- Project: {{ project_name }}
+- Model Name: {{ model.model_name if model else "N/A" }}
+- Version: {{ model.version if model else "N/A" }}
+- Owner: {{ model.owner if model else "N/A" }}
+- Task: {{ model.task if model else "N/A" }}
+
+## Intended Use
+
+{{ model.intended_use if model else "N/A" }}
+
+## Limitations and Known Failures
+
+- Limitations: {{ model.limitations if model else "N/A" }}
+- Known Failures: {{ model.known_failures if model else [] }}
+
+## Adapter Profile
+
+- Provider: {{ adapter.provider }}
+- Deployment: {{ adapter.deployment }}
+- API Version: {{ adapter.api_version }}

@@ -1,0 +1,21 @@
+{
+  "project_name": "sample-trusted-ai-project",
+  "run_id": "20260218T135032Z",
+  "risk_tier": "medium",
+  "overall_status": "pass",
+  "metric_results": [],
+  "redteam_summary": {
+    "low": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "required_actions": [
+    "No blocking issues in stub checks; proceed to human governance review."
+  ],
+  "artifact_links": {
+    "eval_results": "artifacts/20260218T135032Z/eval_results.json",
+    "redteam_findings": "artifacts/20260218T135032Z/redteam_findings.json",
+    "reasoning_report": "artifacts/20260218T135032Z/reasoning_report.md"
+  }
+}

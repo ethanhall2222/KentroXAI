@@ -1,0 +1,120 @@
+{
+  "run_id": "20260218T143725Z",
+  "generated_at": "2026-02-18T14:37:25.442415Z",
+  "items": [
+    {
+      "path": "artifacts/20260218T143725Z/authoritative_data_index.json",
+      "sha256": "f281b1aad1253af79d5009016da4de7308d3b72153f80e154c56dc46687e924b",
+      "size_bytes": 224,
+      "modified_at": "2026-02-18T14:37:25.432126Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/data_card.md",
+      "sha256": "e1da4152e3192722210e9bda184dc9a0373ddc24652d554d811874c404a47d57",
+      "size_bytes": 239,
+      "modified_at": "2026-02-18T14:37:25.440495Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/eval_results.json",
+      "sha256": "e50b15d9521cbd59f224e01f8f6d981528122bfff668e2013bde146fae64843d",
+      "size_bytes": 1626,
+      "modified_at": "2026-02-18T14:37:25.423833Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/lineage_report.md",
+      "sha256": "ca50653d00c83081a7fb3b39fd83554176bbe660f9a6decbfff9441cfed13ec0",
+      "size_bytes": 357,
+      "modified_at": "2026-02-18T14:37:25.432009Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/model_card.md",
+      "sha256": "d28a4615a5af255993e153e851f3d6cac40cf3e2ab3586769416f3218704a0f5",
+      "size_bytes": 421,
+      "modified_at": "2026-02-18T14:37:25.441830Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/monitoring_summary.json",
+      "sha256": "4bea8b5506bfea5dccba3a209918a57b04d6a4a725dc0b10af9bbf2c51142ad4",
+      "size_bytes": 361,
+      "modified_at": "2026-02-18T14:37:25.438320Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/prompt_run.json",
+      "sha256": "505a0198f2dc6c65caa63a408b072e918a0681bbc1609cc4ce53760fe7139eae",
+      "size_bytes": 447,
+      "modified_at": "2026-02-18T14:37:25.420426Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/reasoning_report.json",
+      "sha256": "12f899d4e0e2ad0357743b0f66017abc6f6f85435d0a872326d38e321afa7f4d",
+      "size_bytes": 4750,
+      "modified_at": "2026-02-18T14:37:25.430574Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/reasoning_report.md",
+      "sha256": "05c367d3723c2a2b8be1fae64787a056e3a5aa57f5bbd03e14c747af933b6374",
+      "size_bytes": 2753,
+      "modified_at": "2026-02-18T14:37:25.430336Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/redteam_findings.json",
+      "sha256": "b9f74035d62ec89afa18a79f47ca284c341b9f4680c3a79200badc0492c49bfa",
+      "size_bytes": 5594,
+      "modified_at": "2026-02-18T14:37:25.424851Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/redteam_summary.json",
+      "sha256": "4bce943efe42c4a569286a060f0efa27065d9ed8c0949d7556ac59f391cc9cd8",
+      "size_bytes": 211,
+      "modified_at": "2026-02-18T14:37:25.424953Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/scorecard.html",
+      "sha256": "6926d9b68dffca5f2411bbcde8e139096c9dcd27637d63ca660bf4a664cab1f8",
+      "size_bytes": 2866,
+      "modified_at": "2026-02-18T14:37:25.437769Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/scorecard.json",
+      "sha256": "438bed80a92475806bbd40a4f290c7febc56a67496e9e896b0b3a27dca162f82",
+      "size_bytes": 2033,
+      "modified_at": "2026-02-18T14:37:25.437947Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/scorecard.md",
+      "sha256": "d203a953fe3eb23ee86fbab54a04e3d250c2fb2055fb185f3d6815f9341769b3",
+      "size_bytes": 1958,
+      "modified_at": "2026-02-18T14:37:25.435604Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/system_card.md",
+      "sha256": "5344477e029b312f7e9438dc44b9ef740a6f78343f9c111bc32bd38705f541ff",
+      "size_bytes": 390,
+      "modified_at": "2026-02-18T14:37:25.439584Z"
+    },
+    {
+      "path": "artifacts/20260218T143725Z/telemetry.jsonl",
+      "sha256": "3adb08a7c4e558630f1a744993f4ae8937e6178cc1bef5f86d10eadde2660622",
+      "size_bytes": 8504,
+      "modified_at": "2026-02-18T14:37:25.438374Z"
+    }
+  ],
+  "required_outputs": [
+    "prompt_run.json",
+    "eval_results.json",
+    "redteam_findings.json",
+    "monitoring_summary.json",
+    "reasoning_report.md",
+    "lineage_report.md",
+    "authoritative_data_index.json",
+    "system_card.md",
+    "data_card.md",
+    "model_card.md",
+    "scorecard.md",
+    "scorecard.html",
+    "scorecard.json",
+    "artifact_manifest.json",
+    "telemetry.jsonl"
+  ],
+  "completeness": 93.33
+}

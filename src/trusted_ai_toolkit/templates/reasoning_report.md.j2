@@ -1,0 +1,88 @@
+# Reasoning Report
+
+**Project:** {{ project_name }}  
+**Run ID:** {{ run_id }}  
+**Risk Tier:** {{ risk_tier | title }}
+
+## Executive Overview
+
+This artifact explains decision behavior, source grounding, and governance implications without exposing chain-of-thought reasoning.
+
+## Prompt and Response Snapshot
+
+- Prompt: {{ prompt }}
+- Model Output: {{ model_output }}
+- Citation Coverage: {{ citation_coverage }}
+- Transparency Risk: {{ transparency_risk | title }}
+
+## Intended Use and Scope
+
+- Intended Use: {{ model.intended_use if model else "Not provided" }}
+- Primary Task: {{ model.task if model else "Not provided" }}
+- Out-of-Scope: High-risk deployment without human review and controls.
+
+## Data Summary
+
+- Dataset: {{ data.dataset_name if data else "Not provided" }}
+- Source: {{ data.source if data else "Not provided" }}
+- Sensitive Features: {{ data.sensitive_features if data else [] }}
+- Limitations: {{ data.limitations if data else "Not provided" }}
+
+## Model Summary
+
+- Model Name: {{ model.model_name if model else "Not provided" }}
+- Version: {{ model.version if model else "Not provided" }}
+- Owner: {{ model.owner if model else "Not provided" }}
+- Known Failures: {{ model.known_failures if model else [] }}
+
+## Evidence-Linked Evaluation Summary
+
+{%- if eval_summary %}
+{%- for suite in eval_summary %}
+### Suite: {{ suite.suite_name }}
+{%- for metric in suite.metric_results %}
+- {{ metric.metric_id }}: value={{ metric.value }}, threshold={{ metric.threshold }}, pass={{ metric.passed }}
+{%- endfor %}
+{%- endfor %}
+{%- else %}
+No evaluation outputs were found for this run.
+{%- endif %}
+
+## Source Trace
+
+{%- for node in lineage_nodes %}
+- {{ node.node_id }}: {{ node.title }}{% if node.uri %} ({{ node.uri }}){% endif %}
+{%- endfor %}
+
+## Explainability Approach
+
+{%- for method in explainability_methods %}
+- {{ method }}
+{%- endfor %}
+
+## Escalation Cues
+
+{%- for cue in escalation_cues %}
+- {{ cue }}
+{%- endfor %}
+
+## Governance Controls
+
+{%- for control in governance_controls %}
+- {{ control }}
+{%- endfor %}
+
+{%- for todo in todo_markers %}
+- {{ todo }}
+{%- endfor %}
+
+## Limitations and Open Questions
+
+- Evidence links should be replaced with real experiment artifacts in production.
+- Human review and legal/compliance sign-off are required before deployment.
+
+## References
+
+{%- for ref in references %}
+- {{ loop.index }}. {{ ref }}
+{%- endfor %}

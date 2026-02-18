@@ -1,0 +1,7 @@
+{"timestamp": "2026-02-18T14:06:16.380019Z", "run_id": "20260218T140616Z", "event_type": "RUN_STARTED", "component": "xai", "metadata": {"config": "config.yaml"}}
+{"timestamp": "2026-02-18T14:06:16.386010Z", "run_id": "20260218T140616Z", "event_type": "ARTIFACT_WRITTEN", "component": "xai", "metadata": {"artifact": "artifacts/20260218T140616Z/reasoning_report.md"}}
+{"timestamp": "2026-02-18T14:06:16.386083Z", "run_id": "20260218T140616Z", "event_type": "RUN_FINISHED", "component": "xai", "metadata": {}}
+{"timestamp": "2026-02-18T14:06:16.602928Z", "run_id": "20260218T140616Z", "event_type": "RUN_STARTED", "component": "reporting", "metadata": {"config": "config.yaml"}}
+{"timestamp": "2026-02-18T14:06:16.609421Z", "run_id": "20260218T140616Z", "event_type": "ARTIFACT_WRITTEN", "component": "reporting", "metadata": {"artifact": "scorecard.md"}}
+{"timestamp": "2026-02-18T14:06:16.609484Z", "run_id": "20260218T140616Z", "event_type": "ARTIFACT_WRITTEN", "component": "reporting", "metadata": {"artifact": "scorecard.html"}}
+{"timestamp": "2026-02-18T14:06:16.609534Z", "run_id": "20260218T140616Z", "event_type": "RUN_FINISHED", "component": "reporting", "metadata": {"overall_status": "needs_review"}}

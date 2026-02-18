@@ -1,0 +1,3 @@
+{"timestamp": "2026-02-18T14:07:03.091279Z", "run_id": "20260218T140703Z", "event_type": "RUN_STARTED", "component": "xai", "metadata": {"config": "config.yaml"}}
+{"timestamp": "2026-02-18T14:07:03.097861Z", "run_id": "20260218T140703Z", "event_type": "ARTIFACT_WRITTEN", "component": "xai", "metadata": {"artifact": "artifacts/20260218T140703Z/reasoning_report.md"}}
+{"timestamp": "2026-02-18T14:07:03.097946Z", "run_id": "20260218T140703Z", "event_type": "RUN_FINISHED", "component": "xai", "metadata": {}}

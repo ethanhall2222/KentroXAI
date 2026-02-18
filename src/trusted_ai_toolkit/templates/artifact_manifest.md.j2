@@ -1,0 +1,17 @@
+# Artifact Manifest
+
+**Run ID:** {{ run_id }}  
+**Completeness:** {{ completeness }}%
+
+## Required Outputs
+
+{% for output in required_outputs %}
+- {{ output }}
+{% endfor %}
+
+## Generated Items
+
+| Path | Size (bytes) | SHA256 |
+|---|---:|---|
+{% for item in items %}| {{ item.path }} | {{ item.size_bytes }} | {{ item.sha256 }} |
+{% endfor %}

@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "source_id": "ctx-none",
+      "name": "No retrieved sources provided",
+      "owner": "data-governance",
+      "classification": "internal",
+      "uri": null,
+      "approved": true
+    }
+  ]
+}

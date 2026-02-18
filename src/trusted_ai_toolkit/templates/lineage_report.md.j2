@@ -1,0 +1,22 @@
+# Lineage Report
+
+**Run ID:** {{ run_id }}
+
+## Prompt
+
+{{ prompt }}
+
+## Model Output
+
+{{ model_output }}
+
+## Citation Coverage
+
+- Coverage: {{ citation_coverage }}
+- Transparency Risk: {{ transparency_risk | title }}
+
+## Source Nodes
+
+{% for node in nodes %}
+- {{ node.node_id }} | {{ node.title }} | {{ node.source_type }}{% if node.uri %} | {{ node.uri }}{% endif %}
+{% endfor %}

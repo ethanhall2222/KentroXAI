@@ -1,0 +1,23 @@
+# System Card
+
+## System Overview
+
+- Project: {{ project_name }}
+- Risk Tier: {{ risk_tier | title }}
+- Name: {{ model.model_name if model else "N/A" }}
+- Version: {{ model.version if model else "N/A" }}
+- Owner: {{ model.owner if model else "N/A" }}
+- Task: {{ model.task if model else "N/A" }}
+
+## Intended Use
+
+{{ model.intended_use if model else "N/A" }}
+
+## Constraints
+
+- Human oversight required for high-risk changes.
+- Unsafe requests must be refused.
+
+## Prompt Example
+
+{{ prompt }}

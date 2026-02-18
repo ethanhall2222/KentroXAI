@@ -1,0 +1,144 @@
+{
+  "run_id": "20260218T143524Z",
+  "generated_at": "2026-02-18T14:35:24.536222Z",
+  "items": [
+    {
+      "path": "artifacts/20260218T143524Z/artifact_manifest.json",
+      "sha256": "8d1c404b3b70b1343e49b2b02537c6e25ae7c095a8b3253ecf6dd364652f99f2",
+      "size_bytes": 4302,
+      "modified_at": "2026-02-18T14:35:24.305655Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/artifact_manifest.md",
+      "sha256": "e93b6c9a9495d4cc980a31988433dc53f1efaaf3bfc68e9c3bffaeb007735ddf",
+      "size_bytes": 2450,
+      "modified_at": "2026-02-18T14:35:24.306588Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/authoritative_data_index.json",
+      "sha256": "f281b1aad1253af79d5009016da4de7308d3b72153f80e154c56dc46687e924b",
+      "size_bytes": 224,
+      "modified_at": "2026-02-18T14:35:24.295400Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/data_card.md",
+      "sha256": "e1da4152e3192722210e9bda184dc9a0373ddc24652d554d811874c404a47d57",
+      "size_bytes": 239,
+      "modified_at": "2026-02-18T14:35:24.534172Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/eval_results.json",
+      "sha256": "e3062dafd6a5b533a5f4726e8c2bd00e3bf9112c42c02867987b837de3d9cb4f",
+      "size_bytes": 1626,
+      "modified_at": "2026-02-18T14:35:24.287488Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/incident_report.json",
+      "sha256": "14d0953eb7b92e2a943f3f14951a70d5de6fb508c9e085766f332d7e7bbf78d8",
+      "size_bytes": 597,
+      "modified_at": "2026-02-18T14:35:24.306845Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/incident_report.md",
+      "sha256": "ce47350109cc2ecfd3d7e33732295a7761635397c9974150dcd74efb68cf2779",
+      "size_bytes": 551,
+      "modified_at": "2026-02-18T14:35:24.307656Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/lineage_report.md",
+      "sha256": "4830a918e4ecdad24eb597d8c997d83551a1b83baaaa0ba976310020558646fa",
+      "size_bytes": 315,
+      "modified_at": "2026-02-18T14:35:24.295269Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/model_card.md",
+      "sha256": "d28a4615a5af255993e153e851f3d6cac40cf3e2ab3586769416f3218704a0f5",
+      "size_bytes": 421,
+      "modified_at": "2026-02-18T14:35:24.535459Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/monitoring_summary.json",
+      "sha256": "711e0e643e273143dc66baf564decbef569d47fc38d3cda69efed85e783e83d8",
+      "size_bytes": 361,
+      "modified_at": "2026-02-18T14:35:24.301569Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/prompt_run.json",
+      "sha256": "ec6de59c6bf7bd5a03b3eddbff7fe0aaed4bab26656e18f53da3148ef98a3b16",
+      "size_bytes": 405,
+      "modified_at": "2026-02-18T14:35:24.284064Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/reasoning_report.json",
+      "sha256": "f12c7a1ad301d97a3045c0a2731c2c28e0268a54fd8401cc7e7f05a13308ed07",
+      "size_bytes": 4708,
+      "modified_at": "2026-02-18T14:35:24.293902Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/reasoning_report.md",
+      "sha256": "3fd780b0166d6cb28a3d2e030c263a9596c8123858c9497b96f3daf1de593f23",
+      "size_bytes": 2711,
+      "modified_at": "2026-02-18T14:35:24.293701Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/redteam_findings.json",
+      "sha256": "9f43e4436224c5847233f612ecd2e3e4c9d69973eab040a76125272a57fa21c0",
+      "size_bytes": 5682,
+      "modified_at": "2026-02-18T14:35:24.288602Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/redteam_summary.json",
+      "sha256": "aa29972f8b854c1a9c3cc2abec23af33a10a55e2e2112e9cdf5dc78c7f865ee3",
+      "size_bytes": 211,
+      "modified_at": "2026-02-18T14:35:24.288707Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/scorecard.html",
+      "sha256": "721a2e8f0f7b16002d0486c08b3c211ac30b4a94a660ee9a6edb78251ca4cdc5",
+      "size_bytes": 2839,
+      "modified_at": "2026-02-18T14:35:24.308254Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/scorecard.json",
+      "sha256": "596ff0ae1d434f7b7863770a576b2c92b2700c7a0e44d55fbb11fb28c6d6b22d",
+      "size_bytes": 2006,
+      "modified_at": "2026-02-18T14:35:24.308388Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/scorecard.md",
+      "sha256": "a83903d95de4e9ab30a34cd2df34d9f0f6176ac08c9973fb64717a062bc101d0",
+      "size_bytes": 1926,
+      "modified_at": "2026-02-18T14:35:24.308145Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/system_card.md",
+      "sha256": "51bc7af0719e1c328938191476c89c114a23b33742288f449e0ee593c7a6a4fc",
+      "size_bytes": 409,
+      "modified_at": "2026-02-18T14:35:24.533282Z"
+    },
+    {
+      "path": "artifacts/20260218T143524Z/telemetry.jsonl",
+      "sha256": "9df721f115d9d65ba85a04f695363c027ca1cbfaaea534cf51bd7f0f5687842a",
+      "size_bytes": 9266,
+      "modified_at": "2026-02-18T14:35:24.531249Z"
+    }
+  ],
+  "required_outputs": [
+    "prompt_run.json",
+    "eval_results.json",
+    "redteam_findings.json",
+    "monitoring_summary.json",
+    "reasoning_report.md",
+    "lineage_report.md",
+    "authoritative_data_index.json",
+    "system_card.md",
+    "data_card.md",
+    "model_card.md",
+    "scorecard.md",
+    "scorecard.html",
+    "scorecard.json",
+    "artifact_manifest.json",
+    "telemetry.jsonl"
+  ],
+  "completeness": 100.0
+}

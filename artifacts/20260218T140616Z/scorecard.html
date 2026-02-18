@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trusted AI Scorecard</title>
+  <style>
+    body { font-family: "Helvetica Neue", Arial, sans-serif; margin: 2rem; color: #1f2937; background: #f8fafc; }
+    .card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    h1, h2 { margin-bottom: 0.5rem; }
+    p { line-height: 1.45; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: left; }
+    th { background: #f1f5f9; }
+    .meta span { display: inline-block; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Trusted AI Scorecard</h1>
+    <div class="meta">
+      <span><strong>Project:</strong> sample-trusted-ai-project</span>
+      <span><strong>Run ID:</strong> 20260218T140616Z</span>
+      <span><strong>Risk Tier:</strong> medium</span>
+      <span><strong>Overall Status:</strong> needs_review</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Executive Summary</h2>
+    <p>This governance scorecard summarizes model quality, fairness indicators, security posture, and documentation readiness for release review.</p>
+    <h2>Risk Statement</h2>
+    <p>Final deployment approval requires human review of high-risk findings, business impact, and legal/compliance obligations.</p>
+  </div>
+
+  <div class="card">
+    <h2>Responsible AI Dimension Status</h2>
+    <table>
+      <thead>
+        <tr><th>Dimension</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Fairness</td><td>insufficient_evidence</td></tr>
+        <tr><td>Reliability and Safety</td><td>provisionally_met</td></tr>
+        <tr><td>Privacy and Security</td><td>needs_action</td></tr>
+        <tr><td>Transparency</td><td>provisionally_met</td></tr>
+        <tr><td>Accountability</td><td>provisionally_met</td></tr>
+        <tr><td>Inclusiveness</td><td>insufficient_evidence</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Metrics</h2>
+    <table>
+      <thead>
+        <tr><th>Metric</th><th>Value</th><th>Threshold</th><th>Pass</th></tr>
+      </thead>
+      <tbody>
+      
+        <tr>
+          <td>accuracy_stub</td>
+          <td>0.81</td>
+          <td>0.7</td>
+          <td>True</td>
+        </tr>
+      
+        <tr>
+          <td>reliability</td>
+          <td>0.83</td>
+          <td>0.75</td>
+          <td>True</td>
+        </tr>
+      
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Red Team Summary</h2>
+    <ul>
+      <li>Severity Threshold: high</li>
+      <li>Low: 0</li>
+      <li>Medium: 1</li>
+      <li>High: 2</li>
+      <li>Critical: 1</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Governance Control Checklist</h2>
+    <table>
+      <thead>
+        <tr><th>Control</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+      
+        <tr>
+          <td>Defined Intended Use</td>
+          <td>yes</td>
+        </tr>
+      
+        <tr>
+          <td>Documented Limitations</td>
+          <td>yes</td>
+        </tr>
+      
+        <tr>
+          <td>Evaluation Thresholds Defined</td>
+          <td>yes</td>
+        </tr>
+      
+        <tr>
+          <td>Red-Team Security Testing Completed</td>
+          <td>yes</td>
+        </tr>
+      
+        <tr>
+          <td>Explainability Report Available</td>
+          <td>yes</td>
+        </tr>
+      
+        <tr>
+          <td>Human Sign-Off Recorded</td>
+          <td>pending</td>
+        </tr>
+      
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Required Actions and Next Steps</h2>
+    <ul>
+      
+      <li>Mitigate high/critical red-team findings before deployment.</li>
+      
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Artifact Links</h2>
+    <ul>
+      
+      <li><strong>eval_results</strong>: <code>artifacts/20260218T140011Z/eval_results.json</code></li>
+      
+      <li><strong>redteam_findings</strong>: <code>artifacts/20260218T140011Z/redteam_findings.json</code></li>
+      
+      <li><strong>reasoning_report</strong>: <code>artifacts/20260218T140616Z/reasoning_report.md</code></li>
+      
+    </ul>
+  </div>
+</body>
+</html>

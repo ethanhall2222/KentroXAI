@@ -1,0 +1,2 @@
+[console_scripts]
+tat = trusted_ai_toolkit.cli:main

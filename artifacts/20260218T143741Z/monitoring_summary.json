@@ -1,0 +1,19 @@
+{
+  "run_id": "20260218T143741Z",
+  "total_events": 36,
+  "events_by_type": {
+    "RUN_STARTED": 1,
+    "ARTIFACT_WRITTEN": 9,
+    "METRIC_COMPUTED": 6,
+    "REDTEAM_CASE_RUN": 20
+  },
+  "events_by_component": {
+    "orchestration": 2,
+    "eval": 7,
+    "redteam": 21,
+    "xai": 4,
+    "reporting": 2
+  },
+  "metric_failure_rate": 0.0,
+  "anomaly_flags": []
+}

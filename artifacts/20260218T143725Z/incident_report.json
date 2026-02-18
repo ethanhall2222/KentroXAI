@@ -1,0 +1,16 @@
+{
+  "incident_id": "INC-20260218T143725Z",
+  "run_id": "20260218T143725Z",
+  "severity": "high",
+  "trigger": "stage_gate_failure",
+  "summary": "Automated incident generated from Trusted AI Toolkit controls.",
+  "containment_action": "Block promotion, route to human reviewer, and require remediation evidence.",
+  "owner": "responsible-ai-reviewer",
+  "due_date": "2026-02-18",
+  "status": "open",
+  "related_artifacts": [
+    "artifacts/20260218T143725Z/scorecard.json",
+    "artifacts/20260218T143725Z/redteam_findings.json",
+    "artifacts/20260218T143725Z/monitoring_summary.json"
+  ]
+}

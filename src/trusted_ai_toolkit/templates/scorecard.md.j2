@@ -1,0 +1,68 @@
+# Trusted AI Scorecard
+
+**Project:** {{ project_name }}  
+**Run ID:** {{ run_id }}  
+**Risk Tier:** {{ risk_tier | title }}  
+**Overall Status:** {{ overall_status | replace("_", " ") | title }}  
+**Go/No-Go:** {{ go_no_go | upper }}
+
+## Executive Summary
+
+{{ executive_summary }}
+
+## Stage Gate Status
+
+| Stage Gate | Status |
+|---|---|
+{% for gate, status in stage_gate_status.items() %}| {{ gate }} | {{ status }} |
+{% endfor %}
+
+## Evidence Pack Completeness
+
+- Completeness: {{ evidence_completeness }}%
+- Required Outputs: {{ required_outputs | length }}
+
+## Responsible AI Dimension Status
+
+| Dimension | Status |
+|---|---|
+| Fairness | {{ rai_dimensions.fairness }} |
+| Reliability and Safety | {{ rai_dimensions.reliability_and_safety }} |
+| Privacy and Security | {{ rai_dimensions.privacy_and_security }} |
+| Transparency | {{ rai_dimensions.transparency }} |
+| Accountability | {{ rai_dimensions.accountability }} |
+| Inclusiveness | {{ rai_dimensions.inclusiveness }} |
+
+## Metrics Table
+
+| Metric | Value | Threshold | Pass |
+|---|---:|---:|:---:|
+{% for m in metric_results %}| {{ m.metric_id }} | {{ m.value }} | {{ m.threshold }} | {{ m.passed }} |
+{% endfor %}
+
+## Red Team Summary
+
+- Severity Threshold: {{ severity_threshold }}
+- Low: {{ redteam_summary.low }}
+- Medium: {{ redteam_summary.medium }}
+- High: {{ redteam_summary.high }}
+- Critical: {{ redteam_summary.critical }}
+
+## Governance Control Checklist
+
+| Control | Status |
+|---|---|
+{% for item in control_checks %}| {{ item.control }} | {{ item.status }} |
+{% endfor %}
+
+## Required Actions and Next Steps
+
+{% for action in required_actions %}
+- {{ action }}
+{% endfor %}
+
+## Artifact Links
+
+{% for name, path in artifact_links.items() %}
+- {{ name }}: `{{ path }}`
+{% endfor %}

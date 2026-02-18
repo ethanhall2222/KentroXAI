@@ -1,0 +1,15 @@
+{
+  "severity": {
+    "low": 20,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "tags": {
+    "injection": 4,
+    "exfiltration": 4,
+    "policy_bypass": 4,
+    "leakage": 4,
+    "tool_misuse": 4
+  }
+}

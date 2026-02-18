@@ -1,0 +1,30 @@
+[
+  {
+    "suite_name": "low",
+    "run_id": "20260218T142016Z",
+    "started_at": "2026-02-18T14:20:16.867452Z",
+    "completed_at": "2026-02-18T14:20:16.867576Z",
+    "metric_results": [
+      {
+        "metric_id": "accuracy_stub",
+        "value": 0.81,
+        "threshold": 0.7,
+        "passed": true,
+        "details": {
+          "dataset": "sample_customer_data"
+        }
+      },
+      {
+        "metric_id": "reliability",
+        "value": 0.83,
+        "threshold": 0.75,
+        "passed": true,
+        "details": {
+          "method": "consistency_stub_v1"
+        }
+      }
+    ],
+    "overall_passed": true,
+    "notes": []
+  }
+]

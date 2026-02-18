@@ -1,0 +1,4 @@
+{"timestamp": "2026-02-18T14:09:34.912335Z", "run_id": "20260218T140934Z", "event_type": "RUN_STARTED", "component": "reporting", "metadata": {"config": "config.yaml"}}
+{"timestamp": "2026-02-18T14:09:34.920888Z", "run_id": "20260218T140934Z", "event_type": "ARTIFACT_WRITTEN", "component": "reporting", "metadata": {"artifact": "scorecard.md"}}
+{"timestamp": "2026-02-18T14:09:34.920945Z", "run_id": "20260218T140934Z", "event_type": "ARTIFACT_WRITTEN", "component": "reporting", "metadata": {"artifact": "scorecard.html"}}
+{"timestamp": "2026-02-18T14:09:34.920988Z", "run_id": "20260218T140934Z", "event_type": "RUN_FINISHED", "component": "reporting", "metadata": {"overall_status": "needs_review"}}

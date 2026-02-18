@@ -1,0 +1,15 @@
+# Data Card
+
+## Dataset Summary
+
+- Name: {{ data.dataset_name if data else "N/A" }}
+- Source: {{ data.source if data else "N/A" }}
+- Sensitive Features: {{ data.sensitive_features if data else [] }}
+
+## Intended Use
+
+{{ data.intended_use if data else "N/A" }}
+
+## Limitations
+
+{{ data.limitations if data else "N/A" }}

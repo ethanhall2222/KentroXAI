@@ -1,0 +1,17 @@
+# Incident Record
+
+- Incident ID: {{ incident_id }}
+- Run ID: {{ run_id }}
+- Severity: {{ severity }}
+- Trigger: {{ trigger }}
+- Summary: {{ summary }}
+- Containment Action: {{ containment_action }}
+- Owner: {{ owner }}
+- Due Date: {{ due_date }}
+- Status: {{ status }}
+
+## Related Artifacts
+
+{% for artifact in related_artifacts %}
+- {{ artifact }}
+{% endfor %}
