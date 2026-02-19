@@ -33,6 +33,14 @@
 | Accountability | {{ rai_dimensions.accountability }} |
 | Inclusiveness | {{ rai_dimensions.inclusiveness }} |
 
+## Fairness Snapshot (AIF360-Inspired)
+
+- Statistical Parity Difference target: `abs(SPD) <= threshold`
+- Disparate Impact Ratio target: `DIR >= 0.8` (80% rule heuristic)
+- Equal Opportunity Difference target: `abs(EOD) <= threshold`
+- Average Odds Difference target: `abs(AOD) <= threshold`
+- Reference: https://github.com/Trusted-AI/AIF360
+
 ## Metrics Table
 
 | Metric | Value | Threshold | Pass |

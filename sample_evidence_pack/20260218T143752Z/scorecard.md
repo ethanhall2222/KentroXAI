@@ -3,8 +3,8 @@
 **Project:** sample-trusted-ai-project  
 **Run ID:** 20260218T143752Z  
 **Risk Tier:** Medium  
-**Overall Status:** Needs Review  
-**Go/No-Go:** NO-GO
+**Overall Status:** Pass  
+**Go/No-Go:** GO
 
 ## Executive Summary
 
@@ -16,13 +16,13 @@ This governance scorecard summarizes model quality, fairness indicators, securit
 |---|---|
 | evaluation | pass |
 | redteam | pass |
-| documentation | needs_review |
+| documentation | pass |
 | monitoring | pass |
 
 
 ## Evidence Pack Completeness
 
-- Completeness: 40.0%
+- Completeness: 93.33%
 - Required Outputs: 15
 
 ## Responsible AI Dimension Status
@@ -35,6 +35,14 @@ This governance scorecard summarizes model quality, fairness indicators, securit
 | Transparency | Provisionally Met |
 | Accountability | Provisionally Met |
 | Inclusiveness | Insufficient Evidence |
+
+## Fairness Snapshot (AIF360-Inspired)
+
+- Statistical Parity Difference target: `abs(SPD) <= threshold`
+- Disparate Impact Ratio target: `DIR >= 0.8` (80% rule heuristic)
+- Equal Opportunity Difference target: `abs(EOD) <= threshold`
+- Average Odds Difference target: `abs(AOD) <= threshold`
+- Reference: https://github.com/Trusted-AI/AIF360
 
 ## Metrics Table
 
@@ -77,8 +85,8 @@ This governance scorecard summarizes model quality, fairness indicators, securit
 ## Artifact Links
 
 
-- eval_results: `artifacts/20260218T143752Z/eval_results.json`
+- eval_results: `sample_evidence_pack/20260218T143752Z/eval_results.json`
 
-- redteam_findings: `artifacts/20260218T143752Z/redteam_findings.json`
+- redteam_findings: `sample_evidence_pack/20260218T143752Z/redteam_findings.json`
 
-- reasoning_report: `artifacts/20260218T143752Z/reasoning_report.md`
+- reasoning_report: `sample_evidence_pack/20260218T143752Z/reasoning_report.md`

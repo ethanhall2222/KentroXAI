@@ -2,15 +2,15 @@
   "project_name": "sample-trusted-ai-project",
   "run_id": "20260218T143752Z",
   "risk_tier": "medium",
-  "overall_status": "needs_review",
-  "go_no_go": "no-go",
+  "overall_status": "pass",
+  "go_no_go": "go",
   "stage_gate_status": {
     "evaluation": "pass",
     "redteam": "pass",
-    "documentation": "needs_review",
+    "documentation": "pass",
     "monitoring": "pass"
   },
-  "evidence_completeness": 40.0,
+  "evidence_completeness": 93.33,
   "metric_results": [
     {
       "metric_id": "accuracy_stub",
@@ -81,8 +81,8 @@
     "No blocking issues in stub checks; proceed to human governance review."
   ],
   "artifact_links": {
-    "eval_results": "artifacts/20260218T143752Z/eval_results.json",
-    "redteam_findings": "artifacts/20260218T143752Z/redteam_findings.json",
-    "reasoning_report": "artifacts/20260218T143752Z/reasoning_report.md"
+    "eval_results": "sample_evidence_pack/20260218T143752Z/eval_results.json",
+    "redteam_findings": "sample_evidence_pack/20260218T143752Z/redteam_findings.json",
+    "reasoning_report": "sample_evidence_pack/20260218T143752Z/reasoning_report.md"
   }
 }

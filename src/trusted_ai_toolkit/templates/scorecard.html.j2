@@ -3,76 +3,228 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trusted AI Scorecard</title>
+  <title>Trusted AI Governance Scorecard</title>
   <style>
-    body { font-family: "Helvetica Neue", Arial, sans-serif; margin: 2rem; color: #1f2937; background: #f8fafc; }
-    .card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
-    h1, h2 { margin-bottom: 0.5rem; }
-    p { line-height: 1.45; }
+    :root {
+      --page-bg: #e7eeeb;
+      --panel-bg: #edf3f0;
+      --card-bg: #f8fbf9;
+      --border: #cfd9d3;
+      --text: #1f2a25;
+      --muted: #6a766f;
+      --header-accent: #cbe2da;
+      --pass-bg: #dfeee8;
+      --pass-text: #2a7b5b;
+      --fail-bg: #f6dfdf;
+      --fail-text: #9f2d2d;
+      --review-bg: #f5ebd4;
+      --review-text: #926b1a;
+      --radius: 18px;
+      --shadow: 0 1px 0 rgba(31, 42, 37, 0.04), 0 10px 20px rgba(31, 42, 37, 0.04);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: var(--page-bg);
+      padding: 24px;
+    }
+
+    .container { max-width: 1320px; margin: 0 auto; }
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      padding: 18px;
+    }
+    .subcard {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 24px; line-height: 1.1; letter-spacing: -0.2px; margin-bottom: 12px; font-weight: 900; }
+    h2 { font-size: 21px; line-height: 1.1; letter-spacing: -0.1px; margin-bottom: 12px; font-weight: 800; }
+    h3 { font-size: 18px; margin-bottom: 8px; font-weight: 800; }
+
+    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; margin-bottom: 14px; }
+    .meta-row { font-size: 14px; line-height: 1.35; }
+    .label { font-weight: 800; color: #445049; }
+    .value { color: #36423c; }
+
+    .top-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .tile-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .tile-value { font-size: 30px; font-weight: 800; line-height: 1; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      line-height: 1;
+    }
+    .pill-pass { background: var(--pass-bg); color: var(--pass-text); border-color: #b9d7ca; }
+    .pill-fail { background: var(--fail-bg); color: var(--fail-text); border-color: #e4baba; }
+    .pill-review { background: var(--review-bg); color: var(--review-text); border-color: #e4d0a3; }
+
+    .body-copy { font-size: 14px; line-height: 1.5; color: #2b3530; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    ul { margin: 0; padding-left: 22px; }
+    li { font-size: 14px; line-height: 1.45; margin: 3px 0; }
+
+    .row-label { font-weight: 800; }
+
+    .table-wrap {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card-bg);
+    }
     table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: left; }
-    th { background: #f1f5f9; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #d5dfd9; text-align: left; font-size: 14px; }
+    th { background: var(--header-accent); font-weight: 800; color: #144735; }
+    tr:last-child td { border-bottom: none; }
+
+    @media (max-width: 1100px) {
+      h1 { font-size: 22px; }
+      h2 { font-size: 20px; }
+      h3 { font-size: 17px; }
+      .meta-row { font-size: 13px; }
+      .tile-label { font-size: 11px; }
+      .tile-value { font-size: 24px; }
+      .pill { font-size: 12px; padding: 4px 10px; }
+      .body-copy, li, th, td { font-size: 13px; }
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 12px; }
+      .meta, .top-stats, .two-col { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Trusted AI Scorecard</h1>
-    <p><strong>Project:</strong> {{ project_name }}</p>
-    <p><strong>Run ID:</strong> {{ run_id }}</p>
-    <p><strong>Risk Tier:</strong> {{ risk_tier | title }}</p>
-    <p><strong>Overall Status:</strong> {{ overall_status | replace("_", " ") | title }}</p>
-    <p><strong>Go/No-Go:</strong> {{ go_no_go | upper }}</p>
-  </div>
+  <div class="container">
+    <section class="panel">
+      <h1>Trusted AI Governance Scorecard</h1>
+      <div class="meta">
+        <p class="meta-row"><span class="label">Project:</span> <span class="value">{{ project_name }}</span></p>
+        <p class="meta-row"><span class="label">Run ID:</span> <span class="value">{{ run_id }}</span></p>
+        <p class="meta-row"><span class="label">Risk Tier:</span> <span class="value">{{ risk_tier | title }}</span></p>
+        <p class="meta-row"><span class="label">Severity Threshold:</span> <span class="value">{{ severity_threshold | title }}</span></p>
+      </div>
+      <div class="top-stats">
+        <div class="subcard">
+          <p class="tile-label">Overall Status</p>
+          {% if overall_status == "pass" %}
+          <span class="pill pill-pass">PASS</span>
+          {% elif overall_status == "fail" %}
+          <span class="pill pill-fail">FAIL</span>
+          {% else %}
+          <span class="pill pill-review">NEEDS REVIEW</span>
+          {% endif %}
+        </div>
+        <div class="subcard">
+          <p class="tile-label">Release Decision</p>
+          {% if go_no_go == "go" %}
+          <span class="pill pill-pass">GO</span>
+          {% else %}
+          <span class="pill pill-fail">NO-GO</span>
+          {% endif %}
+        </div>
+        <div class="subcard">
+          <p class="tile-label">Evidence Completeness</p>
+          <p class="tile-value">{{ "%.1f"|format(evidence_completeness) }}%</p>
+        </div>
+      </div>
+    </section>
 
-  <div class="card">
-    <h2>Executive Summary</h2>
-    <p>{{ executive_summary }}</p>
-    <h2>Evidence Pack Completeness</h2>
-    <p>{{ evidence_completeness }}%</p>
-  </div>
+    <section class="panel">
+      <h3>Executive Summary</h3>
+      <p class="body-copy">{{ executive_summary }}</p>
+    </section>
 
-  <div class="card">
-    <h2>Stage Gate Status</h2>
-    <table>
-      <thead><tr><th>Gate</th><th>Status</th></tr></thead>
-      <tbody>
-      {% for gate, status in stage_gate_status.items() %}
-        <tr><td>{{ gate }}</td><td>{{ status }}</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
+    <section class="two-col">
+      <div class="panel">
+        <h3>Stage Gate Status</h3>
+        <ul>
+          {% for gate, status in stage_gate_status.items() %}
+          <li>
+            <span class="row-label">{{ gate | replace("_", " ") | title }}:</span>
+            {% if status == "pass" %}
+            <span class="pill pill-pass">PASS</span>
+            {% elif status == "fail" %}
+            <span class="pill pill-fail">FAIL</span>
+            {% else %}
+            <span class="pill pill-review">NEEDS REVIEW</span>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Red Team Summary</h3>
+        <ul>
+          <li>Low: {{ redteam_summary.low }}</li>
+          <li>Medium: {{ redteam_summary.medium }}</li>
+          <li>High: {{ redteam_summary.high }}</li>
+          <li>Critical: {{ redteam_summary.critical }}</li>
+        </ul>
+      </div>
+    </section>
 
-  <div class="card">
-    <h2>Metrics</h2>
-    <table>
-      <thead><tr><th>Metric</th><th>Value</th><th>Threshold</th><th>Pass</th></tr></thead>
-      <tbody>
-      {% for m in metric_results %}
-        <tr><td>{{ m.metric_id }}</td><td>{{ m.value }}</td><td>{{ m.threshold }}</td><td>{{ m.passed }}</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
+    <section class="panel">
+      <h3>Metrics</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Metric</th><th>Value</th><th>Threshold</th><th>Pass</th></tr>
+          </thead>
+          <tbody>
+          {% for m in metric_results %}
+            <tr>
+              <td>{{ m.metric_id }}</td>
+              <td>{{ m.value }}</td>
+              <td>{{ m.threshold }}</td>
+              <td>
+                {% if m.passed %}
+                <span class="pill pill-pass">PASS</span>
+                {% else %}
+                <span class="pill pill-fail">FAIL</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-  <div class="card">
-    <h2>Red Team Summary</h2>
-    <ul>
-      <li>Severity Threshold: {{ severity_threshold }}</li>
-      <li>Low: {{ redteam_summary.low }}</li>
-      <li>Medium: {{ redteam_summary.medium }}</li>
-      <li>High: {{ redteam_summary.high }}</li>
-      <li>Critical: {{ redteam_summary.critical }}</li>
-    </ul>
-  </div>
-
-  <div class="card">
-    <h2>Required Actions</h2>
-    <ul>
-      {% for action in required_actions %}
-      <li>{{ action }}</li>
-      {% endfor %}
-    </ul>
+    <section class="panel">
+      <h3>Required Actions</h3>
+      <ul>
+        {% for action in required_actions %}
+        <li>{{ action }}</li>
+        {% endfor %}
+      </ul>
+    </section>
   </div>
 </body>
 </html>

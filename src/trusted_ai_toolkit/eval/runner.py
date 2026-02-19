@@ -1,5 +1,8 @@
 """Evaluation harness for Measure workflows and score inputs."""
 
+# Design inspiration for fairness-oriented evaluation patterns:
+# https://github.com/Trusted-AI/AIF360
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -36,8 +39,12 @@ def _metric_passed(metric_id: str, value: float, threshold: float | None) -> boo
 
     if threshold is None:
         return None
-    if metric_id == "fairness_demographic_parity_diff":
-        return value <= threshold
+    if metric_id in {
+        "fairness_demographic_parity_diff",
+        "fairness_equal_opportunity_difference",
+        "fairness_average_odds_difference",
+    }:
+        return abs(value) <= threshold
     return value >= threshold
 
 

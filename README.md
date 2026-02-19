@@ -36,16 +36,16 @@ tat run prompt --config config.yaml --prompt "Summarize the policy update."
 ## Core Commands
 
 ```bash
-# Primary end-to-end run
+# (Don't paste this comment in terminal)Primary end-to-end run
 tat run prompt --config config.yaml --prompt "Summarize policy controls" --model-output "Stub answer"
 
-# Individual workflows
+# (Don't paste this comment in terminal)Individual workflows
 tat eval run --config config.yaml
 tat redteam run --config config.yaml
 tat xai reasoning-report --config config.yaml
 tat report --config config.yaml
 
-# Workstream D and Ops workflows
+# (Don't paste this comment in terminal)Workstream D and Ops workflows
 tat docs build --config config.yaml
 tat monitor summarize --config config.yaml
 tat incident generate --config config.yaml

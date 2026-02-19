@@ -59,7 +59,7 @@ def _rai_dimension_status(
 ) -> dict[str, str]:
     """Build a lightweight Responsible AI-style dimension status summary."""
 
-    has_fairness_metric = any(m.metric_id == "fairness_demographic_parity_diff" for m in metric_results)
+    has_fairness_metric = any(m.metric_id.startswith("fairness_") for m in metric_results)
     all_metrics_passed = all(m.passed is not False for m in metric_results) if metric_results else False
     security_blockers = (severity_counts["high"] + severity_counts["critical"]) > 0
 
