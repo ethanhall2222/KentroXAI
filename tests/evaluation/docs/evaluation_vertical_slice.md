@@ -32,17 +32,17 @@ Contains:
 ## Scenario Design
 
 ### EV-01 (Baseline)
-- Config: `config_ev01.yaml`
+- Config: `tests/evaluation/configs/config_ev01.yaml`
 - Suite: `low`
 - Expected: all metrics pass and `overall_passed = true`
 
 ### EV-02 (Moderate Risk)
-- Config: `config_ev02.yaml`
+- Config: `tests/evaluation/configs/config_ev02.yaml`
 - Suite: `medium`
 - Expected: targeted fairness failure (`fairness_disparate_impact_ratio`) with remaining metrics passing
 
 ### EV-03 (Strict High-Risk)
-- Config: `config_ev03.yaml`
+- Config: `tests/evaluation/configs/config_ev03.yaml`
 - Suite: `high`
 - Expected: multiple metric failures due to tightened thresholds and `overall_passed = false`
 
@@ -51,9 +51,9 @@ Contains:
 ## Reproduction Commands
 
 ```bash
-TAT_OUTPUT_DIR=tests/evaluation/outputs TAT_RUN_ID=EV-01 tat eval run --config config_ev01.yaml
-TAT_OUTPUT_DIR=tests/evaluation/outputs TAT_RUN_ID=EV-02 tat eval run --config config_ev02.yaml
-TAT_OUTPUT_DIR=tests/evaluation/outputs TAT_RUN_ID=EV-03 tat eval run --config config_ev03.yaml
+TAT_OUTPUT_DIR=tests/evaluation/outputs TAT_RUN_ID=EV-01 tat eval run --config tests/evaluation/configs/config_ev01.yaml
+TAT_OUTPUT_DIR=tests/evaluation/outputs TAT_RUN_ID=EV-02 tat eval run --config tests/evaluation/configs/config_ev02.yaml
+TAT_OUTPUT_DIR=tests/evaluation/outputs TAT_RUN_ID=EV-03 tat eval run --config tests/evaluation/configs/config_ev03.yaml
 ```
 
 ---

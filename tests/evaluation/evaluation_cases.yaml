@@ -2,20 +2,20 @@ cases:
   - id: EV-01
     category: baseline_quality
     risk_tier: low
-    config: config_ev01.yaml
+    config: tests/evaluation/configs/config_ev01.yaml
     suite: low
     objective: Validate baseline evaluation thresholds and deterministic pass behavior.
 
   - id: EV-02
     category: moderate_risk_balanced_gating
     risk_tier: medium
-    config: config_ev02.yaml
+    config: tests/evaluation/configs/config_ev02.yaml
     suite: medium
     objective: Validate moderate-risk behavior with fairness gating sensitivity.
 
   - id: EV-03
     category: strict_high_risk_gating
     risk_tier: high
-    config: config_ev03.yaml
+    config: tests/evaluation/configs/config_ev03.yaml
     suite: high
     objective: Validate strict threshold enforcement and deterministic fail signaling.

@@ -76,8 +76,8 @@ This demonstrates deterministic adversarial validation, artifact persistence, an
 Example execution:
 
 ```bash
-tat redteam run --config config_rt01.yaml
-tat redteam run --config config_rt03.yaml
+tat redteam run --config tests/redteam/configs/config_rt01.yaml
+tat redteam run --config tests/redteam/configs/config_rt03.yaml
 
 ## Notes
 

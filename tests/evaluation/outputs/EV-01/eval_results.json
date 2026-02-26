@@ -2,8 +2,8 @@
   {
     "suite_name": "low",
     "run_id": "EV-01",
-    "started_at": "2026-02-26T15:03:12.696583Z",
-    "completed_at": "2026-02-26T15:03:12.696826Z",
+    "started_at": "2026-02-26T16:46:23.498521Z",
+    "completed_at": "2026-02-26T16:46:23.498757Z",
     "metric_results": [
       {
         "metric_id": "accuracy_stub",

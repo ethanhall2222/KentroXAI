@@ -5,3 +5,10 @@
 {"timestamp": "2026-02-26T15:03:12.696786Z", "run_id": "EV-01", "event_type": "METRIC_COMPUTED", "component": "eval", "metadata": {"suite": "low", "metric_id": "unanswerable_handling", "value": 0.882, "threshold": 0.78, "passed": true}}
 {"timestamp": "2026-02-26T15:03:12.696992Z", "run_id": "EV-01", "event_type": "ARTIFACT_WRITTEN", "component": "eval", "metadata": {"artifact": "eval_results.json"}}
 {"timestamp": "2026-02-26T15:03:12.697033Z", "run_id": "EV-01", "event_type": "RUN_FINISHED", "component": "eval", "metadata": {}}
+{"timestamp": "2026-02-26T16:46:23.494286Z", "run_id": "EV-01", "event_type": "RUN_STARTED", "component": "eval", "metadata": {"config": "tests/evaluation/configs/config_ev01.yaml"}}
+{"timestamp": "2026-02-26T16:46:23.498540Z", "run_id": "EV-01", "event_type": "METRIC_COMPUTED", "component": "eval", "metadata": {"suite": "low", "metric_id": "accuracy_stub", "value": 0.81, "threshold": 0.7, "passed": true}}
+{"timestamp": "2026-02-26T16:46:23.498608Z", "run_id": "EV-01", "event_type": "METRIC_COMPUTED", "component": "eval", "metadata": {"suite": "low", "metric_id": "reliability", "value": 0.83, "threshold": 0.75, "passed": true}}
+{"timestamp": "2026-02-26T16:46:23.498670Z", "run_id": "EV-01", "event_type": "METRIC_COMPUTED", "component": "eval", "metadata": {"suite": "low", "metric_id": "refusal_correctness", "value": 0.913, "threshold": 0.8, "passed": true}}
+{"timestamp": "2026-02-26T16:46:23.498718Z", "run_id": "EV-01", "event_type": "METRIC_COMPUTED", "component": "eval", "metadata": {"suite": "low", "metric_id": "unanswerable_handling", "value": 0.882, "threshold": 0.78, "passed": true}}
+{"timestamp": "2026-02-26T16:46:23.499060Z", "run_id": "EV-01", "event_type": "ARTIFACT_WRITTEN", "component": "eval", "metadata": {"artifact": "eval_results.json"}}
+{"timestamp": "2026-02-26T16:46:23.499101Z", "run_id": "EV-01", "event_type": "RUN_FINISHED", "component": "eval", "metadata": {}}
