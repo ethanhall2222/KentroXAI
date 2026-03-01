@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+from uuid import uuid4
 
 import typer
 import yaml
 from rich.console import Console
 
+from tat.runtime import RunContext
 from trusted_ai_toolkit.artifacts import ArtifactStore
 from trusted_ai_toolkit.config import load_config
 from trusted_ai_toolkit.documentation import build_documentation_artifacts
@@ -43,13 +44,22 @@ console = Console()
 
 
 def _resolve_run_id(config: ToolkitConfig) -> str:
-    return config.monitoring.run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return config.monitoring.run_id or str(uuid4())
 
 
-def _build_store_and_telemetry(config: ToolkitConfig, run_id: str) -> tuple[ArtifactStore, TelemetryLogger]:
-    store = ArtifactStore(config.output_dir, run_id)
-    telemetry_path = Path(config.output_dir) / run_id / config.monitoring.telemetry_path
-    telemetry = TelemetryLogger(telemetry_path=telemetry_path, run_id=run_id, enabled=config.monitoring.enabled)
+def _build_run_context(config: ToolkitConfig, run_id: str) -> RunContext:
+    return RunContext.from_system(config.system, run_id=run_id)
+
+
+def _build_store_and_telemetry(config: ToolkitConfig, run_context: RunContext) -> tuple[ArtifactStore, TelemetryLogger]:
+    store = ArtifactStore(config.output_dir, run_context.run_id)
+    telemetry_path = Path(config.output_dir) / run_context.run_id / config.monitoring.telemetry_path
+    telemetry = TelemetryLogger(
+        telemetry_path=telemetry_path,
+        run_id=run_context.run_id,
+        enabled=config.monitoring.enabled,
+        run_context=run_context,
+    )
     return store, telemetry
 
 
@@ -66,6 +76,10 @@ def _load_summary(path: Path) -> dict:
         return {}
     payload = json.loads(path.read_text(encoding="utf-8"))
     return payload if isinstance(payload, dict) else {}
+
+
+def _artifact_system_context(run_context: RunContext) -> dict[str, str] | None:
+    return run_context.system_context()
 
 
 def _write_redteam_summary(store: ArtifactStore, findings: list[dict]) -> Path:
@@ -187,12 +201,19 @@ def eval_run(config: str = typer.Option(..., "--config", help="Path to toolkit c
     """Run evaluation suites and persist eval outputs."""
 
     cfg = load_config(config)
-    run_id = _resolve_run_id(cfg)
-    store, telemetry = _build_store_and_telemetry(cfg, run_id)
+    run_context = _build_run_context(cfg, _resolve_run_id(cfg))
+    store, telemetry = _build_store_and_telemetry(cfg, run_context)
 
     telemetry.log_event("RUN_STARTED", "eval", {"config": config})
-    eval_results = run_eval(cfg, run_id, telemetry=telemetry, config_path=Path(config))
-    store.write_json("eval_results.json", [item.model_dump(mode="json") for item in eval_results])
+    eval_results = run_eval(cfg, run_context.run_id, telemetry=telemetry, config_path=Path(config))
+    store.write_json(
+        "eval_results.json",
+        {
+            "run_id": run_context.run_id,
+            "system_context": _artifact_system_context(run_context),
+            "results": [item.model_dump(mode="json") for item in eval_results],
+        },
+    )
     telemetry.log_event("ARTIFACT_WRITTEN", "eval", {"artifact": "eval_results.json"})
     telemetry.log_event("RUN_FINISHED", "eval", {})
     console.print(f"Eval complete. Artifacts: {store.run_dir}")
@@ -203,8 +224,8 @@ def xai_reasoning_report(config: str = typer.Option(..., "--config", help="Path 
     """Generate explainability artifacts."""
 
     cfg = load_config(config)
-    run_id = _resolve_run_id(cfg)
-    store, telemetry = _build_store_and_telemetry(cfg, run_id)
+    run_context = _build_run_context(cfg, _resolve_run_id(cfg))
+    store, telemetry = _build_store_and_telemetry(cfg, run_context)
 
     telemetry.log_event("RUN_STARTED", "xai", {"config": config})
     md_path, json_path = generate_reasoning_report(cfg, store)
@@ -223,13 +244,20 @@ def redteam_run(config: str = typer.Option(..., "--config", help="Path to toolki
     """Run red-team cases and write findings artifacts."""
 
     cfg = load_config(config)
-    run_id = _resolve_run_id(cfg)
-    store, telemetry = _build_store_and_telemetry(cfg, run_id)
+    run_context = _build_run_context(cfg, _resolve_run_id(cfg))
+    store, telemetry = _build_store_and_telemetry(cfg, run_context)
 
     telemetry.log_event("RUN_STARTED", "redteam", {"config": config})
     findings = run_redteam(cfg, telemetry=telemetry)
     finding_payload = [item.model_dump(mode="json") for item in findings]
-    store.write_json("redteam_findings.json", finding_payload)
+    store.write_json(
+        "redteam_findings.json",
+        {
+            "run_id": run_context.run_id,
+            "system_context": _artifact_system_context(run_context),
+            "findings": finding_payload,
+        },
+    )
     _write_redteam_summary(store, finding_payload)
     telemetry.log_event("ARTIFACT_WRITTEN", "redteam", {"artifact": "redteam_findings.json"})
     telemetry.log_event("RUN_FINISHED", "redteam", {})
@@ -241,8 +269,8 @@ def report(config: str = typer.Option(..., "--config", help="Path to toolkit con
     """Generate governance scorecard from available run artifacts."""
 
     cfg = load_config(config)
-    run_id = _resolve_run_id(cfg)
-    store, telemetry = _build_store_and_telemetry(cfg, run_id)
+    run_context = _build_run_context(cfg, _resolve_run_id(cfg))
+    store, telemetry = _build_store_and_telemetry(cfg, run_context)
 
     telemetry.log_event("RUN_STARTED", "reporting", {"config": config})
     scorecard = generate_scorecard(cfg, store)
@@ -261,7 +289,8 @@ def docs_build(config: str = typer.Option(..., "--config", help="Path to toolkit
     latest = _latest_run_dir(cfg.output_dir)
     if latest is None:
         raise typer.BadParameter("No run directory found under output_dir")
-    store, telemetry = _build_store_and_telemetry(cfg, latest.name)
+    run_context = _build_run_context(cfg, latest.name)
+    store, telemetry = _build_store_and_telemetry(cfg, run_context)
 
     telemetry.log_event("RUN_STARTED", "docs", {"config": config, "run_id": latest.name})
     _docs_for_run(cfg, store)
@@ -279,7 +308,8 @@ def monitor_summarize(config: str = typer.Option(..., "--config", help="Path to 
     latest = _latest_run_dir(cfg.output_dir)
     if latest is None:
         raise typer.BadParameter("No run directory found under output_dir")
-    store, telemetry = _build_store_and_telemetry(cfg, latest.name)
+    run_context = _build_run_context(cfg, latest.name)
+    store, telemetry = _build_store_and_telemetry(cfg, run_context)
 
     telemetry.log_event("RUN_STARTED", "monitoring", {"config": config, "run_id": latest.name})
     summary = _monitoring_for_run(store)
@@ -296,7 +326,8 @@ def incident_generate(config: str = typer.Option(..., "--config", help="Path to 
     latest = _latest_run_dir(cfg.output_dir)
     if latest is None:
         raise typer.BadParameter("No run directory found under output_dir")
-    store, telemetry = _build_store_and_telemetry(cfg, latest.name)
+    run_context = _build_run_context(cfg, latest.name)
+    store, telemetry = _build_store_and_telemetry(cfg, run_context)
 
     telemetry.log_event("RUN_STARTED", "incident", {"config": config, "run_id": latest.name})
     summary_payload = _load_summary(store.path_for("monitoring_summary.json"))
@@ -330,8 +361,8 @@ def run_prompt(
     """Run full trusted-AI evidence workflow for one prompt."""
 
     cfg = load_config(config)
-    run_id = _resolve_run_id(cfg)
-    store, telemetry = _build_store_and_telemetry(cfg, run_id)
+    run_context = _build_run_context(cfg, _resolve_run_id(cfg))
+    store, telemetry = _build_store_and_telemetry(cfg, run_context)
 
     retrieved_contexts = _load_retrieved_contexts(context_file)
 
@@ -343,7 +374,7 @@ def run_prompt(
     telemetry.log_event("RUN_STARTED", "orchestration", {"config": config})
     prompt_bundle = {
         "project_name": cfg.project_name,
-        "run_id": run_id,
+        "run_id": run_context.run_id,
         "prompt": prompt,
         "model_output": resolved_output,
         "retrieved_contexts": retrieved_contexts,
@@ -352,8 +383,15 @@ def run_prompt(
     store.write_json("prompt_run.json", prompt_bundle)
     telemetry.log_event("ARTIFACT_WRITTEN", "orchestration", {"artifact": "prompt_run.json"})
 
-    eval_results = run_eval(cfg, run_id, telemetry=telemetry, config_path=Path(config))
-    store.write_json("eval_results.json", [item.model_dump(mode="json") for item in eval_results])
+    eval_results = run_eval(cfg, run_context.run_id, telemetry=telemetry, config_path=Path(config))
+    store.write_json(
+        "eval_results.json",
+        {
+            "run_id": run_context.run_id,
+            "system_context": _artifact_system_context(run_context),
+            "results": [item.model_dump(mode="json") for item in eval_results],
+        },
+    )
     telemetry.log_event("ARTIFACT_WRITTEN", "eval", {"artifact": "eval_results.json"})
 
     findings = run_redteam(
@@ -366,7 +404,14 @@ def run_prompt(
         },
     )
     finding_payload = [item.model_dump(mode="json") for item in findings]
-    store.write_json("redteam_findings.json", finding_payload)
+    store.write_json(
+        "redteam_findings.json",
+        {
+            "run_id": run_context.run_id,
+            "system_context": _artifact_system_context(run_context),
+            "findings": finding_payload,
+        },
+    )
     _write_redteam_summary(store, finding_payload)
     telemetry.log_event("ARTIFACT_WRITTEN", "redteam", {"artifact": "redteam_findings.json"})
 

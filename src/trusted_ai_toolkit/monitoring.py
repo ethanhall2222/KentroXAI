@@ -7,16 +7,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from tat.runtime import RunContext
 from trusted_ai_toolkit.schemas import MonitoringSummary, TelemetryEvent
 
 
 class TelemetryLogger:
     """Append-only JSONL telemetry event logger."""
 
-    def __init__(self, telemetry_path: str | Path, run_id: str, enabled: bool = True) -> None:
+    def __init__(
+        self,
+        telemetry_path: str | Path,
+        run_id: str,
+        enabled: bool = True,
+        run_context: RunContext | None = None,
+    ) -> None:
         self.path = Path(telemetry_path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.run_id = run_id
+        self.run_context = run_context or RunContext(run_id=run_id)
+        self.run_id = self.run_context.run_id
         self.enabled = enabled
 
     def log_event(self, event_type: str, component: str, metadata: dict[str, Any] | None = None) -> None:
@@ -30,6 +38,7 @@ class TelemetryLogger:
             run_id=self.run_id,
             event_type=event_type,
             component=component,
+            **self.run_context.telemetry_fields(),
             metadata=metadata or {},
         )
         with self.path.open("a", encoding="utf-8") as f:

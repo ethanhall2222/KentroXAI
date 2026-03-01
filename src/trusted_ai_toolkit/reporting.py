@@ -8,6 +8,7 @@ from typing import Any
 
 from trusted_ai_toolkit.artifacts import ArtifactStore
 from trusted_ai_toolkit.schemas import MetricResult, RedTeamFinding, Scorecard, ToolkitConfig
+from tat.runtime import build_system_context, compute_system_hash
 
 
 def _load_json_if_exists(path: Path) -> Any:
@@ -30,20 +31,30 @@ def _severity_counts(findings: list[RedTeamFinding]) -> dict[str, int]:
     return counts
 
 
-def _normalize_eval_metrics(eval_payload: list[dict[str, Any]] | None) -> list[MetricResult]:
+def _normalize_eval_metrics(eval_payload: Any) -> list[MetricResult]:
     if not eval_payload:
         return []
+    suites = eval_payload
+    if isinstance(eval_payload, dict):
+        suites = eval_payload.get("results", [])
+    if not isinstance(suites, list):
+        return []
     results: list[MetricResult] = []
-    for suite in eval_payload:
+    for suite in suites:
         for item in suite.get("metric_results", []):
             results.append(MetricResult.model_validate(item))
     return results
 
 
-def _normalize_findings(redteam_payload: list[dict[str, Any]] | None) -> list[RedTeamFinding]:
+def _normalize_findings(redteam_payload: Any) -> list[RedTeamFinding]:
     if not redteam_payload:
         return []
-    return [RedTeamFinding.model_validate(item) for item in redteam_payload]
+    findings = redteam_payload
+    if isinstance(redteam_payload, dict):
+        findings = redteam_payload.get("findings", [])
+    if not isinstance(findings, list):
+        return []
+    return [RedTeamFinding.model_validate(item) for item in findings]
 
 
 def _artifact_completeness(store: ArtifactStore, required_outputs: list[str]) -> float:
@@ -149,6 +160,10 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
         metric_results=metric_results,
         redteam_summary=severity_counts,
         required_actions=required_actions,
+        system_context=build_system_context(
+            config.system,
+            compute_system_hash(config.system) if config.system is not None else None,
+        ),
         artifact_links={
             "eval_results": str(eval_path),
             "redteam_findings": str(redteam_path),

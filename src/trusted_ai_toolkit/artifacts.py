@@ -33,7 +33,7 @@ class ArtifactStore:
 
         return self.run_dir / name
 
-    def write_json(self, name: str, payload: dict[str, Any]) -> Path:
+    def write_json(self, name: str, payload: Any) -> Path:
         """Write a JSON file artifact."""
 
         path = self.path_for(name)

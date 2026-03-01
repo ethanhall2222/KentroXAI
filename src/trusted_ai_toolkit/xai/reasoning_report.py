@@ -39,7 +39,12 @@ def _try_load_eval_summary(output_dir: Path, run_id: str) -> list[dict[str, Any]
     if not path.exists():
         return []
     data = json.loads(path.read_text(encoding="utf-8"))
-    return data if isinstance(data, list) else []
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        results = data.get("results", [])
+        return results if isinstance(results, list) else []
+    return []
 
 
 def _try_load_json_object(path: Path) -> dict[str, Any]:

@@ -12,6 +12,20 @@ def test_load_config_validates_new_sections(tmp_path: Path) -> None:
 project_name: demo
 risk_tier: medium
 output_dir: artifacts
+system:
+  created_at: "2026-03-01T12:00:00Z"
+  system_id: agent-risk-gateway
+  system_name: Agent Risk Gateway
+  version: 1.0.0
+  model_provider: OpenAI
+  model_name: gpt-4.1
+  model_version: "2026-02-15"
+  environment: production
+  risk_level: high
+  compliance_profile: regulated
+  telemetry_level: enhanced
+  deployment_region: us-east-1
+  owner: ai-governance
 eval:
   suites: [medium]
 xai:
@@ -37,5 +51,8 @@ artifact_policy:
 
     cfg = load_config(config_path)
     assert cfg.project_name == "demo"
+    assert cfg.system is not None
+    assert cfg.system.system_id == "agent-risk-gateway"
+    assert cfg.system.environment == "production"
     assert cfg.governance.required_stage_gates == ["evaluation", "redteam", "documentation", "monitoring"]
     assert cfg.adapters.provider == "stub"

@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from tat.schemas import SystemSpec
 
 
 class DataConfig(BaseModel):
@@ -201,6 +202,7 @@ class ToolkitConfig(BaseModel):
     project_name: str = "trusted-ai-project"
     risk_tier: Literal["low", "medium", "high"] = "medium"
     output_dir: str = "artifacts"
+    system: SystemSpec | None = None
     data: DataConfig | None = None
     model: ModelConfig | None = None
     eval: EvalConfig = Field(default_factory=EvalConfig)
@@ -258,6 +260,7 @@ class Scorecard(BaseModel):
     metric_results: list[MetricResult] = Field(default_factory=list)
     redteam_summary: dict[str, int] = Field(default_factory=dict)
     required_actions: list[str] = Field(default_factory=list)
+    system_context: dict[str, str] | None = None
     artifact_links: dict[str, str] = Field(default_factory=dict)
 
 
@@ -274,17 +277,14 @@ class TelemetryEvent(BaseModel):
         "RUN_FINISHED",
     ]
     component: str
+    system_id: str | None = None
+    system_hash: str | None = None
+    system_name: str | None = None
+    system_version: str | None = None
+    environment: str | None = None
+    risk_level: str | None = None
+    telemetry_level: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
-
-
-class SystemSpec(BaseModel):
-    """System metadata used for evaluation and governance."""
-
-    system_name: str
-    owner: str
-    risk_tier: Literal["low", "medium", "high"]
-    intended_use: str
-    constraints: list[str] = Field(default_factory=list)
 
 
 class TestCase(BaseModel):

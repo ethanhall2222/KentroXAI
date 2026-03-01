@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -155,3 +156,65 @@ def test_run_prompt_context_file_rejects_non_object_items(tmp_path: Path, monkey
     )
     assert result.exit_code != 0
     assert "'retrieved_contexts' items must be JSON objects" in result.output
+
+
+def test_run_prompt_propagates_system_context_into_artifacts_and_telemetry(tmp_path: Path, monkeypatch) -> None:
+    runner = CliRunner()
+    monkeypatch.chdir(tmp_path)
+    assert runner.invoke(app, ["init"]).exit_code == 0
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        config_path.read_text(encoding="utf-8")
+        + """
+system:
+  created_at: "2026-03-01T12:00:00Z"
+  system_id: agent-risk-gateway
+  system_name: Agent Risk Gateway
+  version: 1.0.0
+  model_provider: OpenAI
+  model_name: gpt-4.1
+  model_version: "2026-02-15"
+  environment: production
+  risk_level: high
+  compliance_profile: regulated
+  telemetry_level: enhanced
+  deployment_region: us-east-1
+  owner: ai-governance
+""",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "prompt",
+            "--config",
+            "config.yaml",
+            "--prompt",
+            "summarize governance controls",
+        ],
+    )
+    assert result.exit_code == 0
+
+    latest = sorted([p for p in (tmp_path / "artifacts").iterdir() if p.is_dir()])[-1]
+    eval_payload = json.loads((latest / "eval_results.json").read_text(encoding="utf-8"))
+    redteam_payload = json.loads((latest / "redteam_findings.json").read_text(encoding="utf-8"))
+    scorecard_payload = json.loads((latest / "scorecard.json").read_text(encoding="utf-8"))
+    telemetry_events = [
+        json.loads(line)
+        for line in (latest / "telemetry.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+    eval_context = eval_payload["system_context"]
+    expected_hash = eval_context["system_hash"]
+
+    assert eval_context["system_id"] == "agent-risk-gateway"
+    assert eval_context["environment"] == "production"
+    assert len(expected_hash) == 64
+    assert redteam_payload["system_context"]["system_hash"] == expected_hash
+    assert scorecard_payload["system_context"]["system_hash"] == expected_hash
+    assert any(event["system_id"] == "agent-risk-gateway" for event in telemetry_events)
+    assert any(event["system_hash"] == expected_hash for event in telemetry_events)
