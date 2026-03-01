@@ -10,8 +10,8 @@ This artifact explains decision behavior, source grounding, and governance impli
 
 ## Prompt and Response Snapshot
 
-- Prompt: N/A
-- Model Output: N/A
+- Prompt: Summarize the policy update.
+- Model Output: Stub model response: real provider integration is pending. TODO: connect Azure OpenAI or another model endpoint.
 - Citation Coverage: 0.0
 - Transparency Risk: High
 
@@ -39,7 +39,10 @@ This artifact explains decision behavior, source grounding, and governance impli
 ### Suite: medium
 - accuracy_stub: value=0.81, threshold=0.7, pass=True
 - reliability: value=0.83, threshold=0.75, pass=True
-- fairness_demographic_parity_diff: value=0.14, threshold=0.2, pass=True
+- fairness_demographic_parity_diff: value=-0.2, threshold=0.2, pass=True
+- fairness_disparate_impact_ratio: value=0.714, threshold=0.8, pass=False
+- fairness_equal_opportunity_difference: value=-0.057, threshold=0.2, pass=True
+- fairness_average_odds_difference: value=-0.029, threshold=0.2, pass=True
 - groundedness_stub: value=0.72, threshold=0.6, pass=True
 - refusal_correctness: value=0.902, threshold=0.8, pass=True
 - unanswerable_handling: value=0.882, threshold=0.78, pass=True

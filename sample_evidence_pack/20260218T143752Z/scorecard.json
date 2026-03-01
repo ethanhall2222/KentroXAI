@@ -2,15 +2,16 @@
   "project_name": "sample-trusted-ai-project",
   "run_id": "20260218T143752Z",
   "risk_tier": "medium",
-  "overall_status": "pass",
-  "go_no_go": "go",
+  "deployment_risk_tier": "medium",
+  "overall_status": "fail",
+  "go_no_go": "no-go",
   "stage_gate_status": {
-    "evaluation": "pass",
+    "evaluation": "fail",
     "redteam": "pass",
     "documentation": "pass",
     "monitoring": "pass"
   },
-  "evidence_completeness": 93.33,
+  "evidence_completeness": 100.0,
   "metric_results": [
     {
       "metric_id": "accuracy_stub",
@@ -32,7 +33,7 @@
     },
     {
       "metric_id": "fairness_demographic_parity_diff",
-      "value": 0.14,
+      "value": -0.2,
       "threshold": 0.2,
       "passed": true,
       "details": {
@@ -40,7 +41,41 @@
           "gender",
           "age_bucket"
         ],
-        "note": "Lower is better for parity difference"
+        "privileged_selection_rate": 0.7,
+        "unprivileged_selection_rate": 0.5,
+        "formula": "Pr(Y=1|unprivileged)-Pr(Y=1|privileged)",
+        "reference": "https://github.com/Trusted-AI/AIF360"
+      }
+    },
+    {
+      "metric_id": "fairness_disparate_impact_ratio",
+      "value": 0.714,
+      "threshold": 0.8,
+      "passed": false,
+      "details": {
+        "formula": "Pr(Y=1|unprivileged)/Pr(Y=1|privileged)",
+        "reference": "https://github.com/Trusted-AI/AIF360",
+        "policy_baseline": ">= 0.8 (80% rule heuristic)"
+      }
+    },
+    {
+      "metric_id": "fairness_equal_opportunity_difference",
+      "value": -0.057,
+      "threshold": 0.2,
+      "passed": true,
+      "details": {
+        "formula": "TPR(unprivileged)-TPR(privileged)",
+        "reference": "https://github.com/Trusted-AI/AIF360"
+      }
+    },
+    {
+      "metric_id": "fairness_average_odds_difference",
+      "value": -0.029,
+      "threshold": 0.2,
+      "passed": true,
+      "details": {
+        "formula": "0.5*((FPR_u-FPR_p)+(TPR_u-TPR_p))",
+        "reference": "https://github.com/Trusted-AI/AIF360"
       }
     },
     {
@@ -75,11 +110,17 @@
     "low": 20,
     "medium": 0,
     "high": 0,
-    "critical": 0
+    "critical": 0,
+    "pass_rate": 1.0,
+    "critical_fail_count": 0
   },
+  "pillar_scores": null,
+  "trust_score": null,
+  "control_results": [],
   "required_actions": [
-    "No blocking issues in stub checks; proceed to human governance review."
+    "Address failing metrics: fairness_disparate_impact_ratio"
   ],
+  "system_context": null,
   "artifact_links": {
     "eval_results": "sample_evidence_pack/20260218T143752Z/eval_results.json",
     "redteam_findings": "sample_evidence_pack/20260218T143752Z/redteam_findings.json",

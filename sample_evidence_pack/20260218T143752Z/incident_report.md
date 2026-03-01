@@ -7,14 +7,14 @@
 - Summary: Automated incident generated from Trusted AI Toolkit controls.
 - Containment Action: Block promotion, route to human reviewer, and require remediation evidence.
 - Owner: responsible-ai-reviewer
-- Due Date: 2026-02-18
+- Due Date: 2026-03-01
 - Status: open
 
 ## Related Artifacts
 
 
-- artifacts/20260218T143752Z/scorecard.json
+- sample_evidence_pack/20260218T143752Z/scorecard.json
 
-- artifacts/20260218T143752Z/redteam_findings.json
+- sample_evidence_pack/20260218T143752Z/redteam_findings.json
 
-- artifacts/20260218T143752Z/monitoring_summary.json
+- sample_evidence_pack/20260218T143752Z/monitoring_summary.json

@@ -23,8 +23,8 @@
       "Edge cases may be unstable"
     ]
   },
-  "prompt": "N/A",
-  "model_output": "N/A",
+  "prompt": "Summarize the policy update.",
+  "model_output": "Stub model response: real provider integration is pending. TODO: connect Azure OpenAI or another model endpoint.",
   "include_sections": [
     "Overview / Intended Use",
     "Data Summary",
@@ -39,8 +39,8 @@
     {
       "suite_name": "medium",
       "run_id": "20260218T143752Z",
-      "started_at": "2026-02-18T14:37:52.127858Z",
-      "completed_at": "2026-02-18T14:37:52.128180Z",
+      "started_at": "2026-03-01T20:48:49.072679Z",
+      "completed_at": "2026-03-01T20:48:49.073213Z",
       "metric_results": [
         {
           "metric_id": "accuracy_stub",
@@ -62,7 +62,7 @@
         },
         {
           "metric_id": "fairness_demographic_parity_diff",
-          "value": 0.14,
+          "value": -0.2,
           "threshold": 0.2,
           "passed": true,
           "details": {
@@ -70,7 +70,41 @@
               "gender",
               "age_bucket"
             ],
-            "note": "Lower is better for parity difference"
+            "privileged_selection_rate": 0.7,
+            "unprivileged_selection_rate": 0.5,
+            "formula": "Pr(Y=1|unprivileged)-Pr(Y=1|privileged)",
+            "reference": "https://github.com/Trusted-AI/AIF360"
+          }
+        },
+        {
+          "metric_id": "fairness_disparate_impact_ratio",
+          "value": 0.714,
+          "threshold": 0.8,
+          "passed": false,
+          "details": {
+            "formula": "Pr(Y=1|unprivileged)/Pr(Y=1|privileged)",
+            "reference": "https://github.com/Trusted-AI/AIF360",
+            "policy_baseline": ">= 0.8 (80% rule heuristic)"
+          }
+        },
+        {
+          "metric_id": "fairness_equal_opportunity_difference",
+          "value": -0.057,
+          "threshold": 0.2,
+          "passed": true,
+          "details": {
+            "formula": "TPR(unprivileged)-TPR(privileged)",
+            "reference": "https://github.com/Trusted-AI/AIF360"
+          }
+        },
+        {
+          "metric_id": "fairness_average_odds_difference",
+          "value": -0.029,
+          "threshold": 0.2,
+          "passed": true,
+          "details": {
+            "formula": "0.5*((FPR_u-FPR_p)+(TPR_u-TPR_p))",
+            "reference": "https://github.com/Trusted-AI/AIF360"
           }
         },
         {
@@ -101,7 +135,7 @@
           }
         }
       ],
-      "overall_passed": true,
+      "overall_passed": false,
       "notes": [
         "Golden cases executed: 18"
       ]

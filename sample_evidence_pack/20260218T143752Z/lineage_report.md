@@ -4,11 +4,11 @@
 
 ## Prompt
 
-
+Summarize the policy update.
 
 ## Model Output
 
-
+Stub model response: real provider integration is pending. TODO: connect Azure OpenAI or another model endpoint.
 
 ## Citation Coverage
 

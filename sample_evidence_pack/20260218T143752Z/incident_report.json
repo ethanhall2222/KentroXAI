@@ -6,11 +6,11 @@
   "summary": "Automated incident generated from Trusted AI Toolkit controls.",
   "containment_action": "Block promotion, route to human reviewer, and require remediation evidence.",
   "owner": "responsible-ai-reviewer",
-  "due_date": "2026-02-18",
+  "due_date": "2026-03-01",
   "status": "open",
   "related_artifacts": [
-    "artifacts/20260218T143752Z/scorecard.json",
-    "artifacts/20260218T143752Z/redteam_findings.json",
-    "artifacts/20260218T143752Z/monitoring_summary.json"
+    "sample_evidence_pack/20260218T143752Z/scorecard.json",
+    "sample_evidence_pack/20260218T143752Z/redteam_findings.json",
+    "sample_evidence_pack/20260218T143752Z/monitoring_summary.json"
   ]
 }

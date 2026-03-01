@@ -20,4 +20,4 @@ Internal policy and quality checks
 
 ## Prompt Example
 
-N/A
+Summarize the policy update.

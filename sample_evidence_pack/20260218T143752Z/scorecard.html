@@ -3,291 +3,573 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trusted AI Governance Scorecard</title>
+  <title>Trust Card</title>
   <style>
     :root {
-      --page-bg: #e7eeeb;
-      --panel-bg: #edf3f0;
-      --card-bg: #f8fbf9;
-      --border: #cfd9d3;
-      --text: #1f2a25;
-      --muted: #6a766f;
-      --header-accent: #cbe2da;
-      --pass-bg: #dfeee8;
-      --pass-text: #2a7b5b;
-      --fail-bg: #f6dfdf;
-      --fail-text: #9f2d2d;
-      --review-bg: #f5ebd4;
-      --review-text: #926b1a;
-      --radius: 18px;
-      --shadow: 0 1px 0 rgba(31, 42, 37, 0.04), 0 10px 20px rgba(31, 42, 37, 0.04);
+      --bg: #ececef;
+      --card: #f4f5f8;
+      --card-border: #d8dbe3;
+      --ink: #1b2230;
+      --muted: #5f6778;
+      --chip-pass-bg: #d6f0df;
+      --chip-pass-text: #0f6c3b;
+      --chip-blue-bg: #dbe8ff;
+      --chip-blue-text: #1d4ed8;
+      --chip-purple-bg: #ece5ff;
+      --chip-purple-text: #5b21b6;
+      --chip-amber-bg: #f9ebca;
+      --chip-amber-text: #9a5a00;
+      --chip-sky-bg: #dceef9;
+      --chip-sky-text: #075985;
+      --ring: #2b64df;
+      --button: #10182e;
+      --button-border: #1c2949;
+      --shadow: 0 1px 0 rgba(17, 24, 39, 0.08), 0 10px 24px rgba(17, 24, 39, 0.07);
     }
 
     * { box-sizing: border-box; }
     body {
       margin: 0;
+      background: radial-gradient(circle at top right, #f7f8fc 0%, var(--bg) 42%, #e8e9ee 100%);
+      color: var(--ink);
       font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
-      color: var(--text);
-      background: var(--page-bg);
-      padding: 24px;
+      padding: 18px;
     }
 
-    .container { max-width: 1400px; margin: 0 auto; }
-    .panel {
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+    .frame {
+      max-width: 1460px;
+      margin: 0 auto;
+    }
+
+    .title {
+      font-size: 40px;
+      letter-spacing: -0.9px;
+      line-height: 1;
+      font-weight: 900;
+      margin: 0 0 2px;
+    }
+
+    .subtitle {
+      margin: 0 0 14px;
+      font-size: 16px;
+      color: #3f4758;
+      font-weight: 600;
+    }
+
+    .trust-card {
+      border: 2px solid var(--card-border);
+      border-radius: 40px;
+      background: var(--card);
       box-shadow: var(--shadow);
-      margin-bottom: 18px;
-      padding: 20px;
-    }
-    .subcard {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
+      padding: 18px 22px 18px;
     }
 
-    h1, h2, h3, p { margin: 0; }
-    h1 { font-size: 28px; line-height: 1.1; letter-spacing: -0.3px; margin-bottom: 14px; font-weight: 900; }
-    h2 { font-size: 24px; line-height: 1.1; letter-spacing: -0.2px; margin-bottom: 14px; font-weight: 800; }
-    h3 { font-size: 20px; margin-bottom: 10px; font-weight: 800; }
-
-    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; margin-bottom: 16px; }
-    .meta-row { font-size: 16px; line-height: 1.3; }
-    .label { font-weight: 800; color: #445049; }
-    .value { color: #36423c; }
-
-    .top-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-    .tile-label {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      border-bottom: 1px solid #d9dde7;
+      padding-bottom: 10px;
       margin-bottom: 10px;
     }
-    .tile-value { font-size: 38px; font-weight: 800; line-height: 1; }
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 6px 16px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      font-size: 20px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
+    .card-head h2 {
+      font-size: 34px;
       line-height: 1;
+      margin: 0 0 6px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
     }
-    .pill-pass { background: var(--pass-bg); color: var(--pass-text); border-color: #b9d7ca; }
-    .pill-fail { background: var(--fail-bg); color: var(--fail-text); border-color: #e4baba; }
-    .pill-review { background: var(--review-bg); color: var(--review-text); border-color: #e4d0a3; }
 
-    .body-copy { font-size: 16px; line-height: 1.5; color: #2b3530; }
+    .request {
+      margin: 0;
+      font-size: 16px;
+      color: #353f50;
+      line-height: 1.35;
+      max-width: 920px;
+    }
 
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    ul { margin: 0; padding-left: 26px; }
-    li { font-size: 16px; line-height: 1.45; margin: 4px 0; }
+    .evidence {
+      font-size: 18px;
+      font-weight: 700;
+      color: #4c5568;
+      white-space: nowrap;
+      padding-top: 4px;
+    }
 
-    .row-label { font-weight: 800; }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 6px 0 14px;
+    }
 
-    .table-wrap {
+    .chip {
+      padding: 7px 14px;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0.1px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .chip.pass { background: var(--chip-pass-bg); color: var(--chip-pass-text); }
+    .chip.blue { background: var(--chip-blue-bg); color: var(--chip-blue-text); }
+    .chip.purple { background: var(--chip-purple-bg); color: var(--chip-purple-text); }
+    .chip.amber { background: var(--chip-amber-bg); color: var(--chip-amber-text); }
+    .chip.sky { background: var(--chip-sky-bg); color: var(--chip-sky-text); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .score-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .score-details {
+      margin: 0;
+    }
+
+    .score-details summary {
+      list-style: none;
+    }
+
+    .score-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .ring-toggle {
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .ring-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(43, 100, 223, 0.12);
+    }
+
+    .ring-note {
+      margin: 8px 0 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .score-breakdown {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      border: 1px solid #d3d8e4;
+      background: #eef3ff;
+    }
+
+    .score-breakdown h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: -0.2px;
+    }
+
+    .score-breakdown ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .score-breakdown li {
+      font-size: 13px;
+      line-height: 1.45;
+      color: #253042;
+    }
+
+    .score-breakdown .breakdown-note {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .pillar-detail {
+      margin: 6px 0;
+      border: 1px solid #d4daea;
+      border-radius: 12px;
+      background: #f8faff;
       overflow: hidden;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: var(--card-bg);
-    }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 12px 14px; border-bottom: 1px solid #d5dfd9; text-align: left; font-size: 16px; }
-    th { background: var(--header-accent); font-weight: 800; color: #144735; }
-    tr:last-child td { border-bottom: none; }
-
-    @media (max-width: 1100px) {
-      h1 { font-size: 24px; }
-      h2 { font-size: 22px; }
-      h3 { font-size: 19px; }
-      .meta-row { font-size: 15px; }
-      .tile-label { font-size: 12px; }
-      .tile-value { font-size: 32px; }
-      .pill { font-size: 16px; padding: 6px 12px; }
-      .body-copy, li, th, td { font-size: 15px; }
     }
 
-    @media (max-width: 900px) {
+    .pillar-summary {
+      cursor: pointer;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    .pillar-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .pillar-summary::after {
+      content: "Expand";
+      float: right;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .pillar-detail[open] .pillar-summary::after {
+      content: "Collapse";
+    }
+
+    .pillar-meta {
+      margin: 0;
+      padding: 0 12px 10px 28px;
+    }
+
+    .pillar-meta li {
+      font-size: 12px;
+      line-height: 1.45;
+      color: #314057;
+    }
+
+    .ring {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 6px solid var(--ring);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f9faff;
+    }
+
+    .ring .num {
+      font-size: 60px;
+      font-weight: 900;
+      line-height: 1;
+      margin: 0;
+      letter-spacing: -1px;
+    }
+
+    .ring .label {
+      margin: 8px 0 0;
+      font-size: 18px;
+      color: #4a5568;
+      font-weight: 600;
+    }
+
+    .tier-box {
+      background: #eef0f5;
+      border: 1px solid #d3d8e4;
+      border-radius: 18px;
+      padding: 12px 14px;
+      min-height: 170px;
+    }
+
+    .tier-label {
+      font-size: 14px;
+      color: #6a7283;
+      margin: 0 0 4px;
+      font-weight: 700;
+    }
+
+    .tier-value {
+      font-size: 24px;
+      margin: 0 0 8px;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+    }
+
+    .minor-label {
+      font-size: 13px;
+      color: #6a7283;
+      margin: 0 0 3px;
+      font-weight: 700;
+    }
+
+    .minor-value {
+      font-size: 22px;
+      margin: 0 0 8px;
+      font-weight: 800;
+    }
+
+    .review-note {
+      font-size: 15px;
+      color: #991b1b;
+      font-weight: 900;
+      margin: 4px 0 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      line-height: 1.35;
+    }
+
+    .sections h3 {
+      margin: 0 0 4px;
+      font-size: 22px;
+      letter-spacing: -0.3px;
+      font-weight: 900;
+    }
+
+    .sections { display: grid; gap: 10px; }
+
+    .sections ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .sections li {
+      font-size: 14px;
+      line-height: 1.45;
+      margin: 1px 0;
+      color: #253042;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-top: 1px solid #d9dde7;
+      margin-top: 12px;
+      padding-top: 10px;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn {
+      background: var(--button);
+      color: #f9fbff;
+      border: 1px solid var(--button-border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      min-width: 124px;
+      text-align: center;
+    }
+
+    .footnote {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.35;
+      color: #5b6475;
+      max-width: 470px;
+    }
+
+    @media (max-width: 1280px) {
+      .title { font-size: 34px; }
+      .subtitle { font-size: 15px; }
+      .card-head h2 { font-size: 30px; }
+      .request { font-size: 15px; }
+      .evidence { font-size: 16px; }
+      .chip { font-size: 13px; }
+      .layout { grid-template-columns: 220px minmax(0, 1fr); }
+      .ring { width: 180px; height: 180px; }
+      .ring .num { font-size: 54px; }
+      .ring .label { font-size: 17px; }
+      .tier-label, .minor-label { font-size: 13px; }
+      .tier-value, .minor-value { font-size: 20px; }
+      .review-note { font-size: 14px; }
+      .sections h3 { font-size: 20px; }
+      .sections li { font-size: 13px; }
+      .btn { font-size: 12px; min-width: 116px; }
+      .footnote { font-size: 11px; }
+    }
+
+    @media (max-width: 930px) {
       body { padding: 12px; }
-      .meta, .top-stats, .two-col { grid-template-columns: 1fr; }
+      .trust-card { border-radius: 24px; padding: 16px; }
+      .title { font-size: 32px; }
+      .subtitle { font-size: 15px; }
+      .card-head { flex-direction: column; gap: 8px; }
+      .card-head h2 { font-size: 32px; }
+      .request { font-size: 15px; }
+      .evidence { font-size: 16px; }
+      .chip { font-size: 13px; }
+      .layout { grid-template-columns: 1fr; gap: 16px; }
+      .score-wrap { flex-direction: row; flex-wrap: wrap; }
+      .ring { width: 160px; height: 160px; }
+      .ring .num { font-size: 52px; }
+      .ring .label { font-size: 17px; }
+      .tier-box { flex: 1; min-width: 220px; min-height: unset; }
+      .tier-label, .minor-label { font-size: 13px; }
+      .tier-value, .minor-value { font-size: 23px; }
+      .review-note { font-size: 14px; }
+      .sections h3 { font-size: 24px; }
+      .sections li { font-size: 15px; }
+      .actions { flex-direction: column; align-items: stretch; }
+      .btn-row { width: 100%; }
+      .btn { flex: 1; min-width: 0; }
+      .footnote { max-width: unset; font-size: 13px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <section class="panel">
-      <h1>Trusted AI Governance Scorecard</h1>
-      <div class="meta">
-        <p class="meta-row"><span class="label">Project:</span> <span class="value">sample-trusted-ai-project</span></p>
-        <p class="meta-row"><span class="label">Run ID:</span> <span class="value">20260218T143752Z</span></p>
-        <p class="meta-row"><span class="label">Risk Tier:</span> <span class="value">Medium</span></p>
-        <p class="meta-row"><span class="label">Severity Threshold:</span> <span class="value">High</span></p>
-      </div>
-      <div class="top-stats">
-        <div class="subcard">
-          <p class="tile-label">Overall Status</p>
-          
-          <span class="pill pill-pass">PASS</span>
-          
+  
+  
+    
+  
+    
+  
+    
+  
+    
+      
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+
+  
+  
+  
+  
+    
+  
+
+  <div class="frame">
+    <h1 class="title">Trust Card (User-Facing)</h1>
+    <p class="subtitle">Compact, evidence-backed trust summary returned with every AI output</p>
+
+    <section class="trust-card">
+      <div class="card-head">
+        <div>
+          <h2>Trust Card</h2>
+          <p class="request"><strong>Request:</strong> "This governance scorecard summarizes model quality, fairness indicators, security posture, and documentation readiness for release review."</p>
         </div>
-        <div class="subcard">
-          <p class="tile-label">Release Decision</p>
-          
-          <span class="pill pill-pass">GO</span>
-          
+        <p class="evidence">Evidence Pack: 20260218T143752Z</p>
+      </div>
+
+      <div class="chips">
+        <span class="chip pass">Policy FAIL</span>
+        <span class="chip blue">Evidence 100%</span>
+        <span class="chip purple">Pedigree MEDIUM</span>
+        <span class="chip amber">System Trace Off</span>
+        <span class="chip sky">Critical Fails 0</span>
+      </div>
+
+      <div class="layout">
+        <div class="score-wrap">
+          <details class="score-details">
+            <summary>
+              <div class="ring ring-toggle">
+                <p class="num">N/A</p>
+                <p class="label">Trust Score</p>
+              </div>
+              <p class="ring-note">Click for pillar breakdown</p>
+            </summary>
+            <div class="score-breakdown">
+              <h3>Pillar Breakdown</h3>
+              <p class="breakdown-note">Click each pillar to see the formula, weighting, and trust-score contribution.</p>
+              <div>
+                
+                <ul>
+                  <li>Pillar scores are not available for this run.</li>
+                </ul>
+                
+              </div>
+            </div>
+          </details>
+
+          <div class="tier-box">
+            <p class="tier-label">Risk Tier</p>
+            <p class="tier-value">MEDIUM</p>
+
+            <p class="minor-label">Decision Tier</p>
+            <p class="minor-value">medium</p>
+
+            <p class="minor-label">Review Status</p>
+            <p class="minor-value">Fail</p>
+
+            <p class="review-note">Human review required before release.</p>
+          </div>
         </div>
-        <div class="subcard">
-          <p class="tile-label">Evidence Completeness</p>
-          <p class="tile-value">93.3%</p>
+
+        <div class="sections">
+          <div>
+            <h3>Explainability</h3>
+            <ul>
+              <li>Metrics captured: 9 total, 8 passed, 1 failed.</li>
+              <li>Metric pass rate: 0.8889 with 100% evidence coverage.</li>
+              <li>Fairness metrics detected: fairness_demographic_parity_diff, fairness_disparate_impact_ratio, fairness_equal_opportunity_difference, fairness_average_odds_difference.</li>
+              <li>Reasoning evidence available: Yes.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3>Traceability</h3>
+            <ul>
+              <li>Run ID: 20260218T143752Z | Project: sample-trusted-ai-project</li>
+              <li>Decision tier: medium with deployment tier MEDIUM.</li>
+              <li>Stage gates: Evaluation=FAIL; Redteam=PASS; Documentation=PASS; Monitoring=PASS</li>
+              <li>Artifacts present: eval=yes, red-team=yes, reasoning=yes.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3>Security Context</h3>
+            <ul>
+              <li>Severity threshold: HIGH.</li>
+              <li>Red-team findings: low=20, medium=0, high=0, critical=0.</li>
+              <li>Release decision: NO-GO pending governance sign-off.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3>Constraints &amp; Safeguards</h3>
+            <ul>
+              
+              <li>Address failing metrics: fairness_disparate_impact_ratio</li>
+              
+              <li>Documentation completeness: 100.0% of required outputs.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3>Pillar Scores</h3>
+            <ul>
+              
+              <li>Not available for this run.</li>
+              
+            </ul>
+          </div>
         </div>
       </div>
-    </section>
 
-    <section class="panel">
-      <h3>Executive Summary</h3>
-      <p class="body-copy">This governance scorecard summarizes model quality, fairness indicators, security posture, and documentation readiness for release review.</p>
-    </section>
-
-    <section class="two-col">
-      <div class="panel">
-        <h3>Stage Gate Status</h3>
-        <ul>
-          
-          <li>
-            <span class="row-label">Evaluation:</span>
-            
-            <span class="pill pill-pass">PASS</span>
-            
-          </li>
-          
-          <li>
-            <span class="row-label">Redteam:</span>
-            
-            <span class="pill pill-pass">PASS</span>
-            
-          </li>
-          
-          <li>
-            <span class="row-label">Documentation:</span>
-            
-            <span class="pill pill-pass">PASS</span>
-            
-          </li>
-          
-          <li>
-            <span class="row-label">Monitoring:</span>
-            
-            <span class="pill pill-pass">PASS</span>
-            
-          </li>
-          
-        </ul>
+      <div class="actions">
+        <div class="btn-row">
+          <div class="btn">Show Work</div>
+          <div class="btn">Export Evidence</div>
+          <div class="btn">Request Review</div>
+          <div class="btn">Report Issue</div>
+        </div>
+        <p class="footnote">This card travels with the output as an auditable evidence link for governance review.</p>
       </div>
-      <div class="panel">
-        <h3>Red Team Summary</h3>
-        <ul>
-          <li>Low: 20</li>
-          <li>Medium: 0</li>
-          <li>High: 0</li>
-          <li>Critical: 0</li>
-        </ul>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h3>Metrics</h3>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Metric</th><th>Value</th><th>Threshold</th><th>Pass</th></tr>
-          </thead>
-          <tbody>
-          
-            <tr>
-              <td>accuracy_stub</td>
-              <td>0.81</td>
-              <td>0.7</td>
-              <td>
-                
-                <span class="pill pill-pass">PASS</span>
-                
-              </td>
-            </tr>
-          
-            <tr>
-              <td>reliability</td>
-              <td>0.83</td>
-              <td>0.75</td>
-              <td>
-                
-                <span class="pill pill-pass">PASS</span>
-                
-              </td>
-            </tr>
-          
-            <tr>
-              <td>fairness_demographic_parity_diff</td>
-              <td>0.14</td>
-              <td>0.2</td>
-              <td>
-                
-                <span class="pill pill-pass">PASS</span>
-                
-              </td>
-            </tr>
-          
-            <tr>
-              <td>groundedness_stub</td>
-              <td>0.72</td>
-              <td>0.6</td>
-              <td>
-                
-                <span class="pill pill-pass">PASS</span>
-                
-              </td>
-            </tr>
-          
-            <tr>
-              <td>refusal_correctness</td>
-              <td>0.902</td>
-              <td>0.8</td>
-              <td>
-                
-                <span class="pill pill-pass">PASS</span>
-                
-              </td>
-            </tr>
-          
-            <tr>
-              <td>unanswerable_handling</td>
-              <td>0.882</td>
-              <td>0.78</td>
-              <td>
-                
-                <span class="pill pill-pass">PASS</span>
-                
-              </td>
-            </tr>
-          
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h3>Required Actions</h3>
-      <ul>
-        
-        <li>No blocking issues in stub checks; proceed to human governance review.</li>
-        
-      </ul>
     </section>
   </div>
 </body>

@@ -1,10 +1,13 @@
 # Trusted AI Scorecard
 
+
+
 **Project:** sample-trusted-ai-project  
 **Run ID:** 20260218T143752Z  
 **Risk Tier:** Medium  
-**Overall Status:** Pass  
-**Go/No-Go:** GO
+**Decision Tier:** medium  
+**Overall Status:** Fail  
+**Go/No-Go:** NO-GO
 
 ## Executive Summary
 
@@ -14,7 +17,7 @@ This governance scorecard summarizes model quality, fairness indicators, securit
 
 | Stage Gate | Status |
 |---|---|
-| evaluation | pass |
+| evaluation | fail |
 | redteam | pass |
 | documentation | pass |
 | monitoring | pass |
@@ -22,15 +25,21 @@ This governance scorecard summarizes model quality, fairness indicators, securit
 
 ## Evidence Pack Completeness
 
-- Completeness: 93.33%
+- Completeness: 100.0%
 - Required Outputs: 15
+
+## Pillar Scores
+
+
+- Not available
+
 
 ## Responsible AI Dimension Status
 
 | Dimension | Status |
 |---|---|
 | Fairness | Provisionally Met |
-| Reliability and Safety | Provisionally Met |
+| Reliability and Safety | Needs Action |
 | Privacy and Security | Provisionally Met |
 | Transparency | Provisionally Met |
 | Accountability | Provisionally Met |
@@ -50,7 +59,10 @@ This governance scorecard summarizes model quality, fairness indicators, securit
 |---|---:|---:|:---:|
 | accuracy_stub | 0.81 | 0.7 | True |
 | reliability | 0.83 | 0.75 | True |
-| fairness_demographic_parity_diff | 0.14 | 0.2 | True |
+| fairness_demographic_parity_diff | -0.2 | 0.2 | True |
+| fairness_disparate_impact_ratio | 0.714 | 0.8 | False |
+| fairness_equal_opportunity_difference | -0.057 | 0.2 | True |
+| fairness_average_odds_difference | -0.029 | 0.2 | True |
 | groundedness_stub | 0.72 | 0.6 | True |
 | refusal_correctness | 0.902 | 0.8 | True |
 | unanswerable_handling | 0.882 | 0.78 | True |
@@ -68,18 +80,12 @@ This governance scorecard summarizes model quality, fairness indicators, securit
 
 | Control | Status |
 |---|---|
-| Defined Intended Use | Yes |
-| Documented Limitations | Yes |
-| Evaluation Thresholds Defined | Yes |
-| Red-Team Security Testing Completed | Yes |
-| Explainability Report Available | Yes |
-| Human Sign-Off Recorded | Pending |
 
 
 ## Required Actions and Next Steps
 
 
-- No blocking issues in stub checks; proceed to human governance review.
+- Address failing metrics: fairness_disparate_impact_ratio
 
 
 ## Artifact Links
