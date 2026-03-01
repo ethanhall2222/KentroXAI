@@ -27,6 +27,10 @@ pip install -e .
 ```
 
 ```bash
+pytest
+```
+
+```bash
 tat init
 tat run prompt --config config.yaml --prompt "Summarize the policy update."
 ```
@@ -100,3 +104,4 @@ tat redteam run --config config_rt03.yaml
 - Golden suites include 50+ deterministic test cases across low, medium, and high tiers.
 - Red-team suite includes 20 deterministic security cases.
 - This repository is public-facing and designed to allow referenced inspiration patterns with explicit attribution.
+- Pytest disables its built-in `debugging` plugin by default because that plugin can crash under some Python 3.13 environments; for local troubleshooting, re-enable it explicitly with `pytest -p debugging`.

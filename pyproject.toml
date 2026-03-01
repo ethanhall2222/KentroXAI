@@ -36,3 +36,6 @@ trusted_ai_toolkit = [
   "templates/*.j2",
   "eval/suites/*.yaml",
 ]
+
+[tool.pytest.ini_options]
+addopts = "-p no:debugging"

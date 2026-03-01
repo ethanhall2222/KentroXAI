@@ -77,3 +77,81 @@ def test_docs_and_monitor_commands(tmp_path: Path, monkeypatch) -> None:
     assert runner.invoke(app, ["docs", "build", "--config", "config.yaml"]).exit_code == 0
     assert runner.invoke(app, ["monitor", "summarize", "--config", "config.yaml"]).exit_code == 0
     assert runner.invoke(app, ["incident", "generate", "--config", "config.yaml"]).exit_code == 0
+
+
+def test_run_prompt_context_file_validates_missing_path(tmp_path: Path, monkeypatch) -> None:
+    runner = CliRunner()
+    monkeypatch.chdir(tmp_path)
+    assert runner.invoke(app, ["init"]).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "prompt",
+            "--config",
+            "config.yaml",
+            "--prompt",
+            "summarize controls",
+            "--context-file",
+            "missing_context.json",
+        ],
+    )
+    assert result.exit_code != 0
+    assert "context file not found" in result.output
+
+
+def test_run_prompt_context_file_accepts_object_wrapper(tmp_path: Path, monkeypatch) -> None:
+    runner = CliRunner()
+    monkeypatch.chdir(tmp_path)
+    assert runner.invoke(app, ["init"]).exit_code == 0
+
+    context_path = tmp_path / "context.json"
+    context_path.write_text(
+        '{"retrieved_contexts":[{"source":"policy.md","snippet":"Use approved data only."}]}', encoding="utf-8"
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "prompt",
+            "--config",
+            "config.yaml",
+            "--prompt",
+            "summarize controls",
+            "--context-file",
+            "context.json",
+        ],
+    )
+    assert result.exit_code == 0
+
+    artifacts_root = tmp_path / "artifacts"
+    latest = sorted([p for p in artifacts_root.iterdir() if p.is_dir()])[-1]
+    prompt_run = (latest / "prompt_run.json").read_text(encoding="utf-8")
+    assert "Use approved data only." in prompt_run
+
+
+def test_run_prompt_context_file_rejects_non_object_items(tmp_path: Path, monkeypatch) -> None:
+    runner = CliRunner()
+    monkeypatch.chdir(tmp_path)
+    assert runner.invoke(app, ["init"]).exit_code == 0
+
+    context_path = tmp_path / "bad_context.json"
+    context_path.write_text('{"retrieved_contexts":["not-an-object"]}', encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "prompt",
+            "--config",
+            "config.yaml",
+            "--prompt",
+            "summarize controls",
+            "--context-file",
+            "bad_context.json",
+        ],
+    )
+    assert result.exit_code != 0
+    assert "'retrieved_contexts' items must be JSON objects" in result.output

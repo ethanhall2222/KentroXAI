@@ -80,6 +80,42 @@ def _write_redteam_summary(store: ArtifactStore, findings: list[dict]) -> Path:
     return store.write_json("redteam_summary.json", {"severity": severity_summary, "tags": by_tag})
 
 
+def _load_retrieved_contexts(context_file: str | None) -> list[dict]:
+    """Load optional context payload from JSON file.
+
+    Accepts either:
+    - a JSON array of context objects, or
+    - an object with `retrieved_contexts` array.
+    """
+
+    if not context_file:
+        return []
+
+    path = Path(context_file)
+    if not path.exists():
+        raise typer.BadParameter(f"context file not found: {path}")
+
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise typer.BadParameter(f"context file is not valid JSON: {path}") from exc
+
+    if isinstance(loaded, list):
+        if not all(isinstance(item, dict) for item in loaded):
+            raise typer.BadParameter("context file list items must be JSON objects")
+        return loaded
+
+    if isinstance(loaded, dict):
+        contexts = loaded.get("retrieved_contexts", [])
+        if not isinstance(contexts, list):
+            raise typer.BadParameter("'retrieved_contexts' must be a JSON array when context file is an object")
+        if not all(isinstance(item, dict) for item in contexts):
+            raise typer.BadParameter("'retrieved_contexts' items must be JSON objects")
+        return contexts
+
+    raise typer.BadParameter("context file must be a JSON array or object with 'retrieved_contexts'")
+
+
 def _monitoring_for_run(store: ArtifactStore) -> MonitoringSummary:
     telemetry_path = store.path_for("telemetry.jsonl")
     events = load_telemetry_events(telemetry_path)
@@ -297,13 +333,7 @@ def run_prompt(
     run_id = _resolve_run_id(cfg)
     store, telemetry = _build_store_and_telemetry(cfg, run_id)
 
-    retrieved_contexts: list[dict] = []
-    if context_file:
-        path = Path(context_file)
-        if path.exists():
-            loaded = json.loads(path.read_text(encoding="utf-8"))
-            if isinstance(loaded, list):
-                retrieved_contexts = loaded
+    retrieved_contexts = _load_retrieved_contexts(context_file)
 
     resolved_output = model_output or (
         "Stub model response: real provider integration is pending. "
