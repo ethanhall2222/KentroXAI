@@ -57,6 +57,10 @@ def test_run_prompt_generates_full_evidence_pack(tmp_path: Path, monkeypatch) ->
 
     assert (latest / "incident_report.md").exists()
 
+    scorecard_payload = json.loads((latest / "scorecard.json").read_text(encoding="utf-8"))
+    manifest_payload = json.loads((latest / "artifact_manifest.json").read_text(encoding="utf-8"))
+    assert manifest_payload["completeness"] == scorecard_payload["evidence_completeness"]
+
 
 def test_docs_and_monitor_commands(tmp_path: Path, monkeypatch) -> None:
     runner = CliRunner()

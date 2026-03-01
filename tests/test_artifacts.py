@@ -21,3 +21,13 @@ def test_artifact_store_writes_files_and_manifest(tmp_path: Path) -> None:
     assert manifest_path.exists()
     assert payload["completeness"] == 100.0
     assert len(payload["items"]) >= 2
+
+
+def test_manifest_completeness_counts_manifest_itself(tmp_path: Path) -> None:
+    store = ArtifactStore(output_dir=tmp_path / "artifacts", run_id="run123")
+    store.write_json("a.json", {"x": 1})
+
+    manifest_path = store.write_manifest(["a.json", "artifact_manifest.json"])
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert payload["completeness"] == 100.0

@@ -78,7 +78,7 @@ class ArtifactStore:
 
         return self.write_html(output_name, self.render_template(template_name, context))
 
-    def build_manifest(self, required_outputs: list[str]) -> ArtifactManifest:
+    def build_manifest(self, required_outputs: list[str], present_outputs: list[str] | None = None) -> ArtifactManifest:
         """Build manifest for all files in run_dir with completeness metadata."""
 
         items: list[ArtifactManifestItem] = []
@@ -96,6 +96,8 @@ class ArtifactStore:
                 )
             )
         generated_names = {Path(item.path).name for item in items}
+        if present_outputs:
+            generated_names.update(present_outputs)
         required_set = set(required_outputs)
         matched = len(required_set.intersection(generated_names))
         completeness = (matched / len(required_set) * 100.0) if required_set else 100.0
@@ -110,5 +112,6 @@ class ArtifactStore:
     def write_manifest(self, required_outputs: list[str], filename: str = "artifact_manifest.json") -> Path:
         """Generate and persist artifact manifest as JSON."""
 
-        manifest = self.build_manifest(required_outputs)
+        # Count the manifest as present for completeness even though the file is being written now.
+        manifest = self.build_manifest(required_outputs, present_outputs=[filename])
         return self.write_json(filename, manifest.model_dump(mode="json"))

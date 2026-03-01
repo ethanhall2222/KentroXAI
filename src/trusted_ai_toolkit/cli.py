@@ -245,6 +245,7 @@ def _run_prompt_workflow(
 
     # Refresh scorecard once docs/monitoring/incident artifacts exist for completeness calculations.
     scorecard = generate_scorecard(cfg, store)
+    _docs_for_run(cfg, store)
     telemetry.log_event(
         "RUN_FINISHED",
         "orchestration",
