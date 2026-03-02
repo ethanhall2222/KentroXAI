@@ -6,10 +6,10 @@
 ## What Exists
 
 This workstream is represented by the documentation and artifact pipeline:
-- Example evidence pack: [sample_evidence_pack/20260218T143752Z](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/sample_evidence_pack/20260218T143752Z)
-- Runtime code: [src/trusted_ai_toolkit/artifacts.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/artifacts.py)
-- Runtime code: [src/trusted_ai_toolkit/documentation.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/documentation.py)
-- Templates: [src/trusted_ai_toolkit/templates](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/templates)
+- Example evidence pack: [`sample_evidence_pack/20260218T143752Z`](../../../sample_evidence_pack/20260218T143752Z)
+- Runtime code: [`src/trusted_ai_toolkit/artifacts.py`](../../../src/trusted_ai_toolkit/artifacts.py)
+- Runtime code: [`src/trusted_ai_toolkit/documentation.py`](../../../src/trusted_ai_toolkit/documentation.py)
+- Templates: [`src/trusted_ai_toolkit/templates`](../../../src/trusted_ai_toolkit/templates)
 
 ## Demonstrated Outputs
 

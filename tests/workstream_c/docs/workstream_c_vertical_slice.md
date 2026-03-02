@@ -6,18 +6,18 @@
 ## What Exists
 
 This workstream is represented by the red-team vertical slice:
-- Backing fixtures: [tests/redteam](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/redteam)
-- Runtime code: [src/trusted_ai_toolkit/redteam/runner.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/redteam/runner.py)
-- Runtime code: [src/trusted_ai_toolkit/monitoring.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/monitoring.py)
-- Runtime code: [src/trusted_ai_toolkit/incident.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/incident.py)
+- Backing fixtures: [`tests/redteam`](../../redteam)
+- Runtime code: [`src/trusted_ai_toolkit/redteam/runner.py`](../../../src/trusted_ai_toolkit/redteam/runner.py)
+- Runtime code: [`src/trusted_ai_toolkit/monitoring.py`](../../../src/trusted_ai_toolkit/monitoring.py)
+- Runtime code: [`src/trusted_ai_toolkit/incident.py`](../../../src/trusted_ai_toolkit/incident.py)
 
 ## Demonstrated Inputs
 
 - Configs:
-  - [tests/redteam/configs/config_rt01.yaml](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/redteam/configs/config_rt01.yaml)
-  - [tests/redteam/configs/config_rt03.yaml](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/redteam/configs/config_rt03.yaml)
-- Case registry: [tests/redteam/redteam_cases.yaml](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/redteam/redteam_cases.yaml)
-- Expected outcomes: [tests/redteam/expected_outcomes.yaml](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/redteam/expected_outcomes.yaml)
+  - [`tests/redteam/configs/config_rt01.yaml`](../../redteam/configs/config_rt01.yaml)
+  - [`tests/redteam/configs/config_rt03.yaml`](../../redteam/configs/config_rt03.yaml)
+- Case registry: [`tests/redteam/redteam_cases.yaml`](../../redteam/redteam_cases.yaml)
+- Expected outcomes: [`tests/redteam/expected_outcomes.yaml`](../../redteam/expected_outcomes.yaml)
 
 ## Demonstrated Outputs
 

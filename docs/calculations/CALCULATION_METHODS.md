@@ -19,13 +19,13 @@ The toolkit's governance workflow is more mature than the underlying measurement
 
 ## 1) Evaluation Metrics
 
-Evaluation metrics are computed in [src/trusted_ai_toolkit/eval/metrics/__init__.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/eval/metrics/__init__.py) and executed by [src/trusted_ai_toolkit/eval/runner.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/eval/runner.py).
+Evaluation metrics are computed in [`src/trusted_ai_toolkit/eval/metrics/__init__.py`](../../src/trusted_ai_toolkit/eval/metrics/__init__.py) and executed by [`src/trusted_ai_toolkit/eval/runner.py`](../../src/trusted_ai_toolkit/eval/runner.py).
 
 Threshold precedence:
 - First: `config.yaml` thresholds
 - Second: suite-local thresholds from `suites/<tier>.yaml`
 
-This precedence is implemented in [src/trusted_ai_toolkit/eval/runner.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/eval/runner.py).
+This precedence is implemented in [`src/trusted_ai_toolkit/eval/runner.py`](../../src/trusted_ai_toolkit/eval/runner.py).
 
 ### `accuracy_stub`
 - Current value source: fixed deterministic value `0.81`
@@ -63,8 +63,8 @@ This precedence is implemented in [src/trusted_ai_toolkit/eval/runner.py](/Users
 These metrics are implemented using real formulas but synthetic hardcoded label arrays.
 
 Source files:
-- [src/trusted_ai_toolkit/eval/metrics/__init__.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/eval/metrics/__init__.py)
-- [src/trusted_ai_toolkit/eval/metrics/aif360_compat.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/eval/metrics/aif360_compat.py)
+- [`src/trusted_ai_toolkit/eval/metrics/__init__.py`](../../src/trusted_ai_toolkit/eval/metrics/__init__.py)
+- [`src/trusted_ai_toolkit/eval/metrics/aif360_compat.py`](../../src/trusted_ai_toolkit/eval/metrics/aif360_compat.py)
 
 #### `fairness_demographic_parity_diff`
 - Formula: `Pr(Y=1|unprivileged) - Pr(Y=1|privileged)`
@@ -92,7 +92,7 @@ Source files:
 
 ## 2) Evaluation Gate Logic
 
-The evaluation gate is calculated in [src/trusted_ai_toolkit/reporting.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/reporting.py).
+The evaluation gate is calculated in [`src/trusted_ai_toolkit/reporting.py`](../../src/trusted_ai_toolkit/reporting.py).
 
 - `evaluation = fail` if any metric has `passed = false`
 - `evaluation = pass` otherwise
@@ -107,8 +107,8 @@ Current limitation:
 ## 3) Explainability / Workstream A Signals
 
 Explainability signals are produced by:
-- [src/trusted_ai_toolkit/xai/reasoning_report.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/xai/reasoning_report.py)
-- [src/trusted_ai_toolkit/xai/lineage.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/xai/lineage.py)
+- [`src/trusted_ai_toolkit/xai/reasoning_report.py`](../../src/trusted_ai_toolkit/xai/reasoning_report.py)
+- [`src/trusted_ai_toolkit/xai/lineage.py`](../../src/trusted_ai_toolkit/xai/lineage.py)
 
 ### `citation_coverage`
 - Current value source: simple comparison of output text against provided lineage node IDs or titles
@@ -132,7 +132,7 @@ Explainability signals are produced by:
 
 ## 4) Red-Team Summary Calculations
 
-Red-team findings are generated in [src/trusted_ai_toolkit/redteam/runner.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/redteam/runner.py) and summarized in [src/tat/controls/scoring.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/tat/controls/scoring.py).
+Red-team findings are generated in [`src/trusted_ai_toolkit/redteam/runner.py`](../../src/trusted_ai_toolkit/redteam/runner.py) and summarized in [`src/tat/controls/scoring.py`](../../src/tat/controls/scoring.py).
 
 Current summary fields:
 - `low`
@@ -159,7 +159,7 @@ Current limitation:
 
 ## 5) Monitoring Calculations
 
-Monitoring summaries are calculated in [src/trusted_ai_toolkit/monitoring.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/monitoring.py).
+Monitoring summaries are calculated in [`src/trusted_ai_toolkit/monitoring.py`](../../src/trusted_ai_toolkit/monitoring.py).
 
 Current summary fields:
 - `total_events`
@@ -185,8 +185,8 @@ Current limitation:
 ## 6) Governance Controls and Trust Score
 
 Governance control logic is implemented in:
-- [src/tat/controls/library.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/tat/controls/library.py)
-- [src/tat/controls/scoring.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/tat/controls/scoring.py)
+- [`src/tat/controls/library.py`](../../src/tat/controls/library.py)
+- [`src/tat/controls/scoring.py`](../../src/tat/controls/scoring.py)
 
 ### Control Results
 - Current value source: deterministic checks against `config.system`
@@ -214,7 +214,7 @@ Governance control logic is implemented in:
 
 ## 7) Scorecard Stage Gates and Go/No-Go
 
-Scorecard aggregation is implemented in [src/trusted_ai_toolkit/reporting.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/reporting.py).
+Scorecard aggregation is implemented in [`src/trusted_ai_toolkit/reporting.py`](../../src/trusted_ai_toolkit/reporting.py).
 
 ### Stage Gates
 - `evaluation`: fails on any failed metric
@@ -236,8 +236,8 @@ Current limitation:
 ## 8) Evidence Completeness and Artifact Manifest
 
 Artifact completeness is implemented in:
-- [src/trusted_ai_toolkit/artifacts.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/artifacts.py)
-- [src/trusted_ai_toolkit/documentation.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/documentation.py)
+- [`src/trusted_ai_toolkit/artifacts.py`](../../src/trusted_ai_toolkit/artifacts.py)
+- [`src/trusted_ai_toolkit/documentation.py`](../../src/trusted_ai_toolkit/documentation.py)
 
 ### Evidence Completeness
 - Formula: `present_required_outputs / total_required_outputs * 100`
@@ -254,7 +254,7 @@ Current limitation:
 
 ## 9) Incident Trigger Logic
 
-Incident logic is implemented in [src/trusted_ai_toolkit/incident.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/incident.py).
+Incident logic is implemented in [`src/trusted_ai_toolkit/incident.py`](../../src/trusted_ai_toolkit/incident.py).
 
 An incident is opened when any of the following are true:
 - red-team severity meets or exceeds the configured threshold

@@ -63,7 +63,7 @@ Important: this is currently a **presentation heuristic** in the HTML template, 
 
 ## 6) Source of Truth in Code
 
-- Metric definitions: `/Users/ethanhall/Kentro_Workspace/src/trusted_ai_toolkit/eval/metrics/__init__.py`
-- Fairness formulas: `/Users/ethanhall/Kentro_Workspace/src/trusted_ai_toolkit/eval/metrics/aif360_compat.py`
-- Decision logic: `/Users/ethanhall/Kentro_Workspace/src/trusted_ai_toolkit/reporting.py`
-- UI trust-score formula: `/Users/ethanhall/Kentro_Workspace/src/trusted_ai_toolkit/templates/scorecard.html.j2`
+- Metric definitions: `src/trusted_ai_toolkit/eval/metrics/__init__.py`
+- Fairness formulas: `src/trusted_ai_toolkit/eval/metrics/aif360_compat.py`
+- Decision logic: `src/trusted_ai_toolkit/reporting.py`
+- UI trust-score formula: `src/trusted_ai_toolkit/templates/scorecard.html.j2`

@@ -6,18 +6,18 @@
 ## What Exists
 
 This workstream is represented by the evaluation portion of the combined evaluation + explainability slice:
-- Backing fixtures: [tests/evaluation_explainability](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/evaluation_explainability)
-- Runtime code: [src/trusted_ai_toolkit/eval/runner.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/eval/runner.py)
-- Runtime code: [src/trusted_ai_toolkit/reporting.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/reporting.py)
+- Backing fixtures: [`tests/evaluation_explainability`](../../evaluation_explainability)
+- Runtime code: [`src/trusted_ai_toolkit/eval/runner.py`](../../../src/trusted_ai_toolkit/eval/runner.py)
+- Runtime code: [`src/trusted_ai_toolkit/reporting.py`](../../../src/trusted_ai_toolkit/reporting.py)
 
 ## Demonstrated Inputs
 
 - Configs:
-  - [tests/evaluation_explainability/configs/config_ev01.yaml](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/evaluation_explainability/configs/config_ev01.yaml)
-  - [tests/evaluation_explainability/configs/config_ev02.yaml](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/evaluation_explainability/configs/config_ev02.yaml)
-  - [tests/evaluation_explainability/configs/config_ev03.yaml](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/evaluation_explainability/configs/config_ev03.yaml)
-- Scenario registry: [tests/evaluation_explainability/evaluation_cases.yaml](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/evaluation_explainability/evaluation_cases.yaml)
-- Expected outcomes: [tests/evaluation_explainability/expected_outcomes.yaml](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/evaluation_explainability/expected_outcomes.yaml)
+  - [`tests/evaluation_explainability/configs/config_ev01.yaml`](../../evaluation_explainability/configs/config_ev01.yaml)
+  - [`tests/evaluation_explainability/configs/config_ev02.yaml`](../../evaluation_explainability/configs/config_ev02.yaml)
+  - [`tests/evaluation_explainability/configs/config_ev03.yaml`](../../evaluation_explainability/configs/config_ev03.yaml)
+- Scenario registry: [`tests/evaluation_explainability/evaluation_cases.yaml`](../../evaluation_explainability/evaluation_cases.yaml)
+- Expected outcomes: [`tests/evaluation_explainability/expected_outcomes.yaml`](../../evaluation_explainability/expected_outcomes.yaml)
 
 ## Demonstrated Outputs
 

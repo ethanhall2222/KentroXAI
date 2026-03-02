@@ -6,9 +6,9 @@
 ## What Exists
 
 This workstream is represented by the explainability portion of the combined evaluation + explainability slice:
-- Backing fixtures: [tests/evaluation_explainability](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/evaluation_explainability)
-- Runtime code: [src/trusted_ai_toolkit/xai/reasoning_report.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/xai/reasoning_report.py)
-- Runtime code: [src/trusted_ai_toolkit/xai/lineage.py](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/src/trusted_ai_toolkit/xai/lineage.py)
+- Backing fixtures: [`tests/evaluation_explainability`](../../evaluation_explainability)
+- Runtime code: [`src/trusted_ai_toolkit/xai/reasoning_report.py`](../../../src/trusted_ai_toolkit/xai/reasoning_report.py)
+- Runtime code: [`src/trusted_ai_toolkit/xai/lineage.py`](../../../src/trusted_ai_toolkit/xai/lineage.py)
 
 ## Demonstrated Artifacts
 

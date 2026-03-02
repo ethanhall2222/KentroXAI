@@ -4,16 +4,16 @@ This folder now exposes all four workstreams in a way that is easy to show durin
 
 ## Workstream Layout
 
-- Workstream A: [tests/workstream_a/docs/workstream_a_vertical_slice.md](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/workstream_a/docs/workstream_a_vertical_slice.md)
-- Workstream B: [tests/workstream_b/docs/workstream_b_vertical_slice.md](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/workstream_b/docs/workstream_b_vertical_slice.md)
-- Workstream C: [tests/workstream_c/docs/workstream_c_vertical_slice.md](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/workstream_c/docs/workstream_c_vertical_slice.md)
-- Workstream D: [tests/workstream_d/docs/workstream_d_vertical_slice.md](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/workstream_d/docs/workstream_d_vertical_slice.md)
+- Workstream A: [`tests/workstream_a/docs/workstream_a_vertical_slice.md`](workstream_a/docs/workstream_a_vertical_slice.md)
+- Workstream B: [`tests/workstream_b/docs/workstream_b_vertical_slice.md`](workstream_b/docs/workstream_b_vertical_slice.md)
+- Workstream C: [`tests/workstream_c/docs/workstream_c_vertical_slice.md`](workstream_c/docs/workstream_c_vertical_slice.md)
+- Workstream D: [`tests/workstream_d/docs/workstream_d_vertical_slice.md`](workstream_d/docs/workstream_d_vertical_slice.md)
 
 ## Existing Backing Test Assets
 
-- Evaluation + Explainability fixtures live under [tests/evaluation_explainability](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/evaluation_explainability)
-- Red-team + monitoring fixtures live under [tests/redteam](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/tests/redteam)
-- Full paper-trail evidence pack example lives under [sample_evidence_pack/20260218T143752Z](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/sample_evidence_pack/20260218T143752Z)
+- Evaluation + Explainability fixtures live under [`tests/evaluation_explainability`](evaluation_explainability)
+- Red-team + monitoring fixtures live under [`tests/redteam`](redteam)
+- Full paper-trail evidence pack example lives under [`sample_evidence_pack/20260218T143752Z`](../sample_evidence_pack/20260218T143752Z)
 
 ## Purpose
 

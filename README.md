@@ -12,7 +12,7 @@ A lightweight, offline-first Trusted AI governance toolkit aligned to four works
 - AIF360 (fairness and bias evaluation patterns): https://github.com/Trusted-AI/AIF360
 
 See `DESIGN_NOTES.md` for how this repository maps inspiration patterns into local modules, and `ATTRIBUTION.md` for public reuse guidance.
-See [docs/calculations/CALCULATION_METHODS.md](/Users/jacksonsmith/Desktop/KnetroXai/KentroXAI/docs/calculations/CALCULATION_METHODS.md) for a plain-English explanation of the current formulas, thresholds, and known limitations behind scorecard decisions.
+See [Calculation Methods](docs/calculations/CALCULATION_METHODS.md) for a plain-English explanation of the current formulas, thresholds, and known limitations behind scorecard decisions.
 
 Current AIF360-inspired implementations:
 - Statistical Parity Difference (SPD) fairness metric
@@ -92,20 +92,7 @@ Example execution:
 ```bash
 tat redteam run --config tests/redteam/configs/config_rt01.yaml
 tat redteam run --config tests/redteam/configs/config_rt03.yaml
-
-## Red-Team & Monitoring Vertical Slice
-
-A configuration-driven red-team vertical slice has been implemented under:
-
-`tests/redteam/`
-
-This demonstrates deterministic adversarial validation, artifact persistence, and telemetry instrumentation.
-
-Example execution:
-
-```bash
-tat redteam run --config config_rt01.yaml
-tat redteam run --config config_rt03.yaml
+```
 
 ## Notes
 
