@@ -97,7 +97,7 @@
 
     .brand-logo {
       display: block;
-      width: min(220px, 100%);
+      width: min(240px, 100%);
       height: auto;
       object-fit: contain;
     }
@@ -690,26 +690,22 @@
   {% endfor %}
 
   <div class="frame">
-    <div class="brand-bar">
-      <div class="brand-lockup">
-        {% if brand_logo_path %}
-        <img class="brand-logo" src="{{ brand_logo_path }}" alt="Kentro logo" />
-        {% else %}
-        <div style="display:flex; align-items:center; gap:18px;">
-          <div class="brand-mark" aria-hidden="true"></div>
-          <div class="brand-copy">
-            <p class="brand-name">KENTRO</p>
-          </div>
-        </div>
-        {% endif %}
-        <p class="brand-tag">Trusted AI Review</p>
-      </div>
-    </div>
     <section class="trust-card">
       <div class="card-head">
         <div>
-          <h2 class="hint" title="Trust score is the baseline confidence score for this answer. It summarizes the underlying trust inputs for this prompt and response.">Trust Score</h2>
-          <p class="request"><strong>Request:</strong> "{{ executive_summary }}"</p>
+          <div class="brand-lockup">
+            {% if brand_logo_path %}
+            <img class="brand-logo" src="{{ brand_logo_path }}" alt="Kentro logo" />
+            {% else %}
+            <div style="display:flex; align-items:center; gap:18px;">
+              <div class="brand-mark" aria-hidden="true"></div>
+              <div class="brand-copy">
+                <p class="brand-name">KENTRO</p>
+              </div>
+            </div>
+            {% endif %}
+            <p class="brand-tag">Trusted AI Review</p>
+          </div>
         </div>
         <p class="evidence">Evidence Pack: {{ run_id }}</p>
       </div>
