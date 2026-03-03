@@ -429,7 +429,6 @@
     {% endif %}
   {% endfor %}
 
-  {% set citation_pct = "%.0f"|format(evidence_completeness) %}
   {% set display_risk_tier = deployment_risk_tier or risk_tier %}
   {% set pedigree = display_risk_tier | upper %}
   {% if overall_status == "pass" %}
@@ -466,14 +465,17 @@
           <details class="score-details">
             <summary>
               <div class="ring ring-toggle">
-                <p class="num">{{ trust_score_pct if trust_score_pct is not none else "N/A" }}</p>
-                <p class="label">Trust Score</p>
+                <p class="num">{{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }}</p>
+                <p class="label">{{ card_score.label }}</p>
               </div>
               <p class="ring-note">Click for pillar breakdown</p>
             </summary>
             <div class="score-breakdown">
               <h3>Pillar Breakdown</h3>
-              <p class="breakdown-note">Click each pillar to see the formula, weighting, and trust-score contribution.</p>
+              <p class="breakdown-note">
+                Underlying control score: {{ card_score.control_score_pct if card_score.control_score_pct is not none else "N/A" }}.
+                Click each pillar to see the formula, weighting, and control-score contribution.
+              </p>
               <div>
                 {% if pillar_breakdowns %}
                 {% for pillar_name, breakdown in pillar_breakdowns.items() %}
@@ -487,8 +489,8 @@
                     {% endif %}
                     <li>Formula: {{ breakdown.formula }}</li>
                     <li>Pillar score: {{ breakdown.pillar_score }}</li>
-                    <li>Trust score weight: {{ breakdown.trust_weight }}</li>
-                    <li>Weighted contribution to trust score: {{ breakdown.trust_contribution }}</li>
+                    <li>Control score weight: {{ breakdown.trust_weight }}</li>
+                    <li>Weighted contribution to control score: {{ breakdown.trust_contribution }}</li>
                   </ul>
                 </details>
                 {% endfor %}
@@ -511,58 +513,57 @@
             <p class="minor-label">Review Status</p>
             <p class="minor-value">{{ overall_status | replace("_", " ") | title }}</p>
 
-            <p class="review-note">Human review required before release.</p>
+            <p class="review-note">{{ card_score.status_note }}</p>
           </div>
         </div>
 
         <div class="sections">
           <div>
-            <h3>Explainability</h3>
+            <h3>Evaluation Summary</h3>
             <ul>
-              <li>Metrics captured: {{ metric_summary.total }} total, {{ metric_summary.passed }} passed, {{ metric_summary.failed }} failed.</li>
-              <li>Metric pass rate: {{ metric_summary.pass_rate if metric_summary.pass_rate is not none else "N/A" }} with {{ citation_pct }}% evidence coverage.</li>
-              <li>Fairness metrics detected: {{ metric_summary.fairness_metrics | join(", ") if metric_summary.fairness_metrics else "none" }}.</li>
+              <li>Evaluation checks: {{ metric_summary.passed }} of {{ metric_summary.total }} passed{% if metric_summary.failed %}; {{ metric_summary.failed }} blocking issue{% if metric_summary.failed != 1 %}s{% endif %} remain{% endif %}.</li>
+              <li>Metric pass rate: {{ "%.0f"|format((metric_summary.pass_rate * 100)) if metric_summary.pass_rate is not none else "N/A" }}%.</li>
+              <li>Fairness checks included: {{ "Yes" if metric_summary.fairness_metrics else "No" }}.</li>
               <li>Reasoning evidence available: {{ "Yes" if artifact_presence.reasoning_report else "No" }}.</li>
             </ul>
           </div>
 
           <div>
-            <h3>Traceability</h3>
+            <h3>Governance Trace</h3>
             <ul>
               <li>Run ID: {{ run_id }} | Project: {{ project_name }}</li>
-              <li>Decision tier: {{ risk_tier }} with deployment tier {{ display_risk_tier | upper }}.</li>
+              <li>Governance tier: {{ risk_tier }} | Deployment tier: {{ display_risk_tier | upper }}.</li>
               <li>Stage gates: {% for gate, status in stage_gate_status.items() %}{{ gate | replace("_", " ") | title }}={{ status | upper }}{% if not loop.last %}; {% endif %}{% endfor %}</li>
-              <li>Artifacts present: eval={{ "yes" if artifact_presence.eval_results else "no" }}, red-team={{ "yes" if artifact_presence.redteam_findings else "no" }}, reasoning={{ "yes" if artifact_presence.reasoning_report else "no" }}.</li>
+              <li>Evidence package complete: {{ "Yes" if evidence_completeness >= 90 else "No" }} ({{ "%.0f"|format(evidence_completeness) }}%).</li>
             </ul>
           </div>
 
           <div>
-            <h3>Security Context</h3>
+            <h3>Security Findings</h3>
             <ul>
-              <li>Severity threshold: {{ severity_threshold | upper }}.</li>
-              <li>Red-team findings: low={{ redteam_summary.low }}, medium={{ redteam_summary.medium }}, high={{ redteam_summary.high }}, critical={{ redteam_summary.critical }}.</li>
-              <li>Release decision: {{ go_no_go | upper }} pending governance sign-off.</li>
+              <li>Blocking threshold: {{ severity_threshold | upper }}.</li>
+              <li>Red-team findings: {{ redteam_summary.high + redteam_summary.critical }} high-severity blocker{% if (redteam_summary.high + redteam_summary.critical) != 1 %}s{% endif %}, {{ redteam_summary.medium }} medium, {{ redteam_summary.low }} low.</li>
+              <li>Release decision: {{ go_no_go | upper }} based on stage-gate outcomes.</li>
             </ul>
           </div>
 
           <div>
-            <h3>Constraints &amp; Safeguards</h3>
+            <h3>Actions Required</h3>
             <ul>
               {% for action in required_actions %}
               <li>{{ action }}</li>
               {% endfor %}
-              <li>Documentation completeness: {{ "%.1f"|format(evidence_completeness) }}% of required outputs.</li>
+              <li>Documentation completeness: {{ "%.0f"|format(evidence_completeness) }}% of required outputs.</li>
             </ul>
           </div>
 
           <div>
-            <h3>Pillar Scores</h3>
+            <h3>Control Summary</h3>
             <ul>
               {% if pillar_scores %}
-              <li>Security: {{ pillar_scores.security }}</li>
-              <li>Reliability: {{ pillar_scores.reliability }}</li>
-              <li>Transparency: {{ pillar_scores.transparency }}</li>
-              <li>Governance: {{ pillar_scores.governance }}</li>
+              <li>Underlying control score: {{ card_score.control_score_pct if card_score.control_score_pct is not none else "N/A" }}.</li>
+              <li>Security controls: {{ "%.0f"|format(pillar_scores.security * 100) }}%.</li>
+              <li>Reliability, transparency, and governance controls: {{ "%.0f"|format(pillar_scores.reliability * 100) }}%, {{ "%.0f"|format(pillar_scores.transparency * 100) }}%, and {{ "%.0f"|format(pillar_scores.governance * 100) }}%.</li>
               {% else %}
               <li>Not available for this run.</li>
               {% endif %}

@@ -152,6 +152,51 @@ def _artifact_signal(scorecard: Scorecard) -> dict[str, str]:
     }
 
 
+def _card_score_summary(
+    control_score_pct: float | None,
+    failing_metrics_count: int,
+    severity_counts: dict[str, int],
+    evidence_completeness: float,
+    overall_status: str,
+    stage_gate_status: dict[str, str],
+) -> dict[str, Any]:
+    """Compute a UI-facing score that is aligned with release readiness."""
+
+    base = float(control_score_pct) if control_score_pct is not None else 70.0
+    penalty = 0.0
+    penalty += failing_metrics_count * 12.0
+    penalty += severity_counts.get("medium", 0) * 6.0
+    penalty += severity_counts.get("high", 0) * 18.0
+    penalty += severity_counts.get("critical", 0) * 25.0
+    penalty += max(0.0, 90.0 - evidence_completeness) * 0.5
+
+    if stage_gate_status.get("redteam") == "fail":
+        penalty += 10.0
+    if stage_gate_status.get("evaluation") == "fail":
+        penalty += 10.0
+    if stage_gate_status.get("documentation") == "needs_review":
+        penalty += 5.0
+
+    display_score = max(0.0, min(100.0, round(base - penalty, 0)))
+    if overall_status == "fail":
+        display_score = min(display_score, 59.0)
+    elif overall_status == "needs_review":
+        display_score = min(display_score, 79.0)
+
+    status_note = {
+        "pass": "All stage gates passed. Ready for governed release.",
+        "needs_review": "Blocking review items remain. Human sign-off is still required.",
+        "fail": "One or more blocking gates failed. Release is currently blocked.",
+    }[overall_status]
+
+    return {
+        "display_score_pct": int(display_score),
+        "control_score_pct": int(round(control_score_pct, 0)) if control_score_pct is not None else None,
+        "label": "Trust Score",
+        "status_note": status_note,
+    }
+
+
 def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard:
     """Generate and persist scorecard markdown/html artifacts."""
 
@@ -271,6 +316,14 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     context["pillar_breakdowns"] = _pillar_breakdowns(scorecard)
     context["artifact_signal"] = _artifact_signal(scorecard)
     context["trust_score_pct"] = round(scorecard.trust_score * 100.0, 0) if scorecard.trust_score is not None else None
+    context["card_score"] = _card_score_summary(
+        context["trust_score_pct"],
+        len(failing_metrics),
+        severity_counts,
+        evidence_completeness,
+        overall_status,
+        stage_gate_status,
+    )
     context["severity_threshold"] = config.redteam.severity_threshold
     context["go_no_go"] = go_no_go
     context["stage_gate_status"] = stage_gate_status

@@ -46,7 +46,7 @@ redteam:
   suites:
   - baseline
   cases:
-  - RT-03
+  - RT-05
   severity_threshold: high
 monitoring:
   enabled: true
@@ -102,6 +102,23 @@ artifact_policy:
     - scorecard.json
     - artifact_manifest.json
     - telemetry.jsonl
+    high:
+    - prompt_run.json
+    - eval_results.json
+    - redteam_findings.json
+    - monitoring_summary.json
+    - reasoning_report.md
+    - lineage_report.md
+    - authoritative_data_index.json
+    - incident_report.md
+    - system_card.md
+    - data_card.md
+    - model_card.md
+    - scorecard.md
+    - scorecard.html
+    - scorecard.json
+    - artifact_manifest.json
+    - telemetry.jsonl
 system:
   system_id: sample-trusted-ai-system
   system_name: Sample Trusted AI System
@@ -120,20 +137,3 @@ system:
     limitations: Synthetic records for demonstration
     change_ticket: DEMO-100
     data_classification: internal
-    high:
-    - prompt_run.json
-    - eval_results.json
-    - redteam_findings.json
-    - monitoring_summary.json
-    - reasoning_report.md
-    - lineage_report.md
-    - authoritative_data_index.json
-    - incident_report.md
-    - system_card.md
-    - data_card.md
-    - model_card.md
-    - scorecard.md
-    - scorecard.html
-    - scorecard.json
-    - artifact_manifest.json
-    - telemetry.jsonl
