@@ -1,7 +1,25 @@
 project_name: sample-trusted-ai-project
 risk_tier: medium
 output_dir: artifacts
-system: null
+system:
+  created_at: 2026-03-02 20:52:41.525569+00:00
+  system_id: sample-trusted-ai-system
+  system_name: Sample Trusted AI System
+  version: 1.0.0
+  model_provider: OpenAI
+  model_name: sample-classifier
+  model_version: '2026-03-01'
+  environment: staging
+  risk_level: medium
+  compliance_profile: internal
+  telemetry_level: standard
+  deployment_region: us-east-1
+  owner: responsible-ai-team
+  metadata:
+    intended_use: Evaluate governance shell and workflows
+    limitations: Synthetic records for demonstration
+    change_ticket: DEMO-100
+    data_classification: internal
 data:
   dataset_name: sample_customer_data
   source: local_csv

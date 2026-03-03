@@ -13,6 +13,8 @@ A lightweight, offline-first Trusted AI governance toolkit aligned to four works
 
 See `DESIGN_NOTES.md` for how this repository maps inspiration patterns into local modules, and `ATTRIBUTION.md` for public reuse guidance.
 See [Calculation Methods](docs/calculations/CALCULATION_METHODS.md) for a plain-English explanation of the current formulas, thresholds, and known limitations behind scorecard decisions.
+See [Trust Metrics Specification](docs/architecture/TRUST_METRICS_SPEC.md) for the current trust-score and stage-gate contract.
+See [Scorecard Data Backing](docs/architecture/SCORECARD_DATA_BACKING.md) for what scorecard values are directly backed versus proxy-backed.
 
 Current AIF360-inspired implementations:
 - Statistical Parity Difference (SPD) fairness metric

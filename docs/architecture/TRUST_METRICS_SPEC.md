@@ -37,15 +37,27 @@ This document defines the metrics currently used to establish trust in the toolk
 
 ## 3) Trust Score in HTML Card (UI Layer)
 
-The current Trust Card UI computes a display score as:
+The current HTML card computes a display-oriented `Trust Score` that is aligned to release outcomes.
 
-`trust_score = 92 - (blocker_count * 9) - ((100 - evidence_completeness) / 4)`
+The score now works as:
 
-Where:
-- `blocker_count = redteam_high + redteam_critical + failed_metric_count`
-- score is clamped to `[35, 96]`
+1. Start from the underlying control score percentage (or a fallback baseline when no control score is available).
+2. Subtract penalties for:
+   - failed evaluation metrics
+   - medium, high, and critical red-team findings
+   - evidence completeness below `90%`
+   - failed or weak stage gates
+3. Clamp the score to the `0` to `100` range.
+4. Cap the score by final run status:
+   - `fail` cannot exceed `59`
+   - `needs_review` cannot exceed `79`
+   - `pass` can reach `100`
 
-Important: this is currently a **presentation heuristic** in the HTML template, not a backend governance contract.
+Important:
+
+- This headline `Trust Score` is still a summary layer for the HTML card.
+- The actual release decision remains the stage-gate logic described above.
+- The pillar breakdown shown on the card reflects the underlying control score, which is narrower than the headline score.
 
 ## 4) Current Gaps (Directly Related to Your Concern)
 
@@ -59,11 +71,11 @@ Important: this is currently a **presentation heuristic** in the HTML template, 
 2. Replace fairness synthetic cohorts with run-specific cohort labels from evaluation data.
 3. Replace `groundedness_stub` with citation/context overlap scoring from prompt/output/context artifacts.
 4. Keep existing gate logic, but treat stub metrics as non-production until replaced.
-5. Version the trust-scoring contract so UI score and backend decision logic are explicitly synchronized.
+5. Replace remaining proxy-backed inputs so the headline trust score rests on more production-grade evidence.
 
 ## 6) Source of Truth in Code
 
 - Metric definitions: `src/trusted_ai_toolkit/eval/metrics/__init__.py`
 - Fairness formulas: `src/trusted_ai_toolkit/eval/metrics/aif360_compat.py`
 - Decision logic: `src/trusted_ai_toolkit/reporting.py`
-- UI trust-score formula: `src/trusted_ai_toolkit/templates/scorecard.html.j2`
+- HTML card presentation: `src/trusted_ai_toolkit/templates/scorecard.html.j2`
