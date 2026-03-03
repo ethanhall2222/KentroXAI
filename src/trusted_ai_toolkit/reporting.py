@@ -92,32 +92,47 @@ def _pillar_breakdowns(scorecard: Scorecard) -> dict[str, dict[str, Any]] | None
         return None
 
     breakdowns: dict[str, dict[str, Any]] = {}
+    trust_weights = {
+        "security": 0.30,
+        "reliability": 0.30,
+        "transparency": 0.25,
+        "governance": 0.15,
+    }
+    control_weights = {"low": 1.0, "medium": 2.0, "high": 3.0, "critical": 4.0}
     for pillar in ("security", "reliability", "transparency", "governance"):
         pillar_controls = [item for item in scorecard.control_results if item.get("pillar") == pillar]
         control_total = len(pillar_controls)
         control_passed = sum(1 for item in pillar_controls if item.get("passed") is True)
-        control_pass_rate = round(control_passed / control_total, 4) if control_total else None
+        control_weight_total = sum(control_weights.get(str(item.get("severity", "")).lower(), 1.0) for item in pillar_controls)
+        control_weight_passed = sum(
+            control_weights.get(str(item.get("severity", "")).lower(), 1.0)
+            for item in pillar_controls
+            if item.get("passed") is True
+        )
+        control_pass_rate = round(control_weight_passed / control_weight_total, 4) if control_weight_total else None
         pillar_score = scorecard.pillar_scores.get(pillar)
-        trust_weight = 0.25
+        trust_weight = trust_weights[pillar]
 
         breakdown: dict[str, Any] = {
             "control_total": control_total,
             "control_passed": control_passed,
+            "control_weight_total": round(control_weight_total, 2),
+            "control_weight_passed": round(control_weight_passed, 2),
             "control_pass_rate": control_pass_rate,
             "pillar_score": pillar_score,
             "trust_weight": trust_weight,
             "trust_contribution": round((pillar_score or 0.0) * trust_weight, 4) if pillar_score is not None else None,
-            "formula": "Derived from the pillar control pass rate.",
+            "formula": "Weighted control pass rate (high=3, medium=2, low=1).",
         }
 
         if pillar == "security" and "pass_rate" in scorecard.redteam_summary:
             redteam_pass_rate = float(scorecard.redteam_summary["pass_rate"])
             breakdown["redteam_pass_rate"] = redteam_pass_rate
             breakdown["formula"] = (
-                "50% control pass rate + 50% red-team pass rate."
+                "50% weighted security controls + 50% red-team pass rate."
             )
         elif pillar != "security":
-            breakdown["formula"] = "100% control pass rate."
+            breakdown["formula"] = "100% weighted control pass rate."
 
         breakdowns[pillar] = breakdown
 
@@ -337,6 +352,10 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     context["stage_gate_status"] = stage_gate_status
     context["evidence_completeness"] = evidence_completeness
     context["required_outputs"] = required_outputs
+    context["redteam_gate_rules"] = {
+        "require_redteam": bool(risk_rules.get("require_redteam", False)),
+        "block_on_high_severity": bool(risk_rules.get("block_on_high_severity", False)),
+    }
     context["raw_trust_score_pct"] = context["trust_score_pct"]
     context["release_readiness_score_pct"] = context["card_score"]["display_score_pct"]
     context["brand_logo_path"] = _resolve_brand_logo()

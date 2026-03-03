@@ -115,13 +115,13 @@ def test_reporting_writes_computed_scores_and_system_context(tmp_path: Path) -> 
         "transparency": 1.0,
         "governance": 1.0,
     }
-    assert scorecard.trust_score == 0.9375
+    assert scorecard.trust_score == 0.925
     assert scorecard.risk_tier == "Tier 1"
     assert scorecard.deployment_risk_tier == "medium"
     assert scorecard.system_context is not None
     assert payload["system_context"] == scorecard.system_context
     assert payload["pillar_scores"] == scorecard.pillar_scores
-    assert payload["trust_score"] == 0.9375
+    assert payload["trust_score"] == 0.925
     assert payload["risk_tier"] == "Tier 1"
     assert len(payload["control_results"]) == 12
     assert payload["redteam_summary"]["pass_rate"] == 0.5
@@ -134,8 +134,8 @@ def test_reporting_writes_computed_scores_and_system_context(tmp_path: Path) -> 
     scorecard_html = store.path_for("scorecard.html").read_text(encoding="utf-8")
     assert "Trust Score" in scorecard_html
     assert "Baseline Trust Inputs" in scorecard_html
-    assert "Weighted contribution to trust score: 19 points" in scorecard_html
-    assert "50% control pass rate + 50% red-team pass rate." in scorecard_html
+    assert "Contribution to the final trust score: 22 points out of 100." in scorecard_html
+    assert "50% weighted security controls + 50% red-team pass rate." in scorecard_html
     assert "Evidence Complete 7%" in scorecard_html
     assert "Traceability On" in scorecard_html
     assert "Blocker Findings 1" in scorecard_html

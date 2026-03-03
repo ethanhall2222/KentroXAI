@@ -42,10 +42,10 @@ def test_controls_compute_deterministic_pillar_scores() -> None:
     assert scores == {
         "security": 1.0,
         "reliability": 1.0,
-        "transparency": 0.6667,
+        "transparency": 0.75,
         "governance": 1.0,
     }
-    assert trust_score(scores) == pytest.approx(0.9167, abs=1e-4)
+    assert trust_score(scores) == pytest.approx(0.9375, abs=1e-4)
 
 
 def test_risk_tier_gates_on_failed_control_severity() -> None:

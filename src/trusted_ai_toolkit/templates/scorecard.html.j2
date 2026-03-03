@@ -3,43 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Release Readiness Card</title>
+  <title>Trust Score Card</title>
   <style>
     :root {
-      --bg: #dde3e5;
-      --card: #f7faf9;
-      --card-border: #b8c9cc;
-      --ink: #000000;
-      --muted: #000000;
+      --bg: #f3f5f7;
+      --card: rgba(255, 255, 255, 0.88);
+      --card-border: rgba(16, 24, 40, 0.08);
+      --ink: #0f1728;
+      --muted: #5f6b7a;
       --brand: #176f76;
-      --brand-deep: #0f5960;
-      --brand-soft: #d8ecec;
-      --chip-pass-bg: #d7efea;
-      --chip-pass-text: #0f5960;
-      --chip-blue-bg: #dceff1;
-      --chip-blue-text: #0f5960;
-      --chip-purple-bg: #d9ebee;
-      --chip-purple-text: #0f5960;
-      --chip-amber-bg: #eef5df;
-      --chip-amber-text: #4b6651;
-      --chip-sky-bg: #d7e8ea;
-      --chip-sky-text: #0f5960;
+      --brand-deep: #114f55;
+      --brand-soft: rgba(23, 111, 118, 0.08);
+      --chip-pass-bg: rgba(16, 185, 129, 0.10);
+      --chip-pass-text: #166a4a;
+      --chip-blue-bg: rgba(37, 99, 235, 0.08);
+      --chip-blue-text: #2547a8;
+      --chip-purple-bg: rgba(23, 111, 118, 0.08);
+      --chip-purple-text: #155e75;
+      --chip-amber-bg: rgba(217, 119, 6, 0.10);
+      --chip-amber-text: #8a5100;
+      --chip-sky-bg: rgba(14, 165, 233, 0.08);
+      --chip-sky-text: #0f5f7a;
       --ring: #176f76;
-      --button: #10353a;
-      --button-border: #176f76;
-      --shadow: 0 1px 0 rgba(16, 53, 58, 0.08), 0 12px 28px rgba(16, 53, 58, 0.08);
+      --button: #111827;
+      --button-border: rgba(17, 24, 39, 0.10);
+      --shadow: 0 8px 24px rgba(15, 23, 40, 0.06), 0 1px 2px rgba(15, 23, 40, 0.04);
     }
 
     * { box-sizing: border-box; }
     body {
       margin: 0;
       background:
-        radial-gradient(circle at top right, rgba(23, 111, 118, 0.12) 0%, rgba(23, 111, 118, 0) 34%),
-        radial-gradient(circle at top left, rgba(15, 89, 96, 0.08) 0%, rgba(15, 89, 96, 0) 28%),
-        linear-gradient(180deg, #eef3f4 0%, var(--bg) 100%);
+        radial-gradient(circle at top right, rgba(23, 111, 118, 0.05) 0%, rgba(23, 111, 118, 0) 28%),
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.04) 0%, rgba(37, 99, 235, 0) 24%),
+        linear-gradient(180deg, #fafbfc 0%, var(--bg) 100%);
       color: var(--ink);
-      font-family: "Avenir Next", "Montserrat", "Segoe UI", Helvetica, Arial, sans-serif;
-      padding: 18px;
+      font-family: "SF Pro Display", "SF Pro Text", "Segoe UI Variable", "Segoe UI", Helvetica, Arial, sans-serif;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
 
     .frame {
@@ -64,11 +66,13 @@
     }
 
     .trust-card {
-      border: 2px solid var(--card-border);
-      border-radius: 40px;
+      border: 1px solid var(--card-border);
+      border-radius: 30px;
       background: var(--card);
       box-shadow: var(--shadow);
-      padding: 18px 22px 18px;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      padding: 20px 24px 18px;
       position: relative;
       overflow: hidden;
     }
@@ -78,22 +82,22 @@
       position: absolute;
       inset: 0 auto auto 0;
       width: 100%;
-      height: 8px;
-      background: linear-gradient(90deg, var(--brand) 0%, #2a8b92 50%, var(--brand-deep) 100%);
+      height: 4px;
+      background: linear-gradient(90deg, rgba(23, 111, 118, 0.9) 0%, rgba(42, 139, 146, 0.55) 55%, rgba(17, 79, 85, 0.85) 100%);
     }
 
     .brand-bar {
       display: flex;
       align-items: flex-end;
       gap: 14px;
-      margin: 0 0 14px;
+      margin: 0 0 16px;
       flex-wrap: nowrap;
       overflow: visible;
     }
 
     .brand-logo {
       display: block;
-      width: min(260px, 100%);
+      width: min(220px, 100%);
       height: auto;
       object-fit: contain;
     }
@@ -141,10 +145,10 @@
       margin: 0;
       font-size: 13px;
       line-height: 1.2;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #000000;
-      font-weight: 800;
+      color: var(--muted);
+      font-weight: 700;
       white-space: nowrap;
     }
 
@@ -153,32 +157,32 @@
       justify-content: space-between;
       align-items: flex-start;
       gap: 16px;
-      border-bottom: 1px solid #d5e2e3;
-      padding-bottom: 10px;
-      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(15, 23, 40, 0.07);
+      padding-bottom: 12px;
+      margin-bottom: 12px;
     }
 
     .card-head h2 {
       font-size: 34px;
       line-height: 1;
       margin: 0 0 6px;
-      font-weight: 900;
-      letter-spacing: -0.5px;
-      color: #000000;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--ink);
     }
 
     .request {
       margin: 0;
       font-size: 16px;
-      color: #000000;
+      color: var(--ink);
       line-height: 1.35;
       max-width: 920px;
     }
 
     .evidence {
-      font-size: 18px;
-      font-weight: 700;
-      color: #000000;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--muted);
       white-space: nowrap;
       padding-top: 4px;
     }
@@ -186,90 +190,92 @@
     .chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
       margin: 6px 0 14px;
     }
 
     .chip {
-      padding: 7px 14px;
-      border-radius: 9px;
-      font-size: 14px;
-      font-weight: 800;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
       line-height: 1;
-      letter-spacing: 0.1px;
-      border: 1px solid rgba(16, 53, 58, 0.08);
+      letter-spacing: 0.01em;
+      border: 1px solid rgba(15, 23, 40, 0.06);
     }
 
     .hint {
       cursor: help;
     }
 
-    .chip.pass { background: var(--chip-pass-bg); color: #000000; }
-    .chip.blue { background: var(--chip-blue-bg); color: #000000; }
-    .chip.purple { background: var(--chip-purple-bg); color: #000000; }
-    .chip.amber { background: var(--chip-amber-bg); color: #000000; }
-    .chip.sky { background: var(--chip-sky-bg); color: #000000; }
+    .chip.pass { background: var(--chip-pass-bg); color: var(--chip-pass-text); }
+    .chip.blue { background: var(--chip-blue-bg); color: var(--chip-blue-text); }
+    .chip.purple { background: var(--chip-purple-bg); color: var(--chip-purple-text); }
+    .chip.amber { background: var(--chip-amber-bg); color: var(--chip-amber-text); }
+    .chip.sky { background: var(--chip-sky-bg); color: var(--chip-sky-text); }
 
     .layout {
       display: grid;
       grid-template-columns: 240px minmax(0, 1fr);
-      gap: 20px;
+      gap: 24px;
       align-items: start;
     }
 
     .score-wrap {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
     }
 
     .ring-note {
       margin: 0;
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 13px;
+      font-weight: 600;
       color: var(--muted);
       text-align: center;
     }
 
     .score-sidecard {
       width: 100%;
-      border: 1px solid #d5e2e3;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.82);
-      padding: 12px 14px;
+      border: 1px solid rgba(15, 23, 40, 0.06);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+      padding: 14px 16px;
     }
 
     .mini-section + .mini-section {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid #dbe5e6;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(15, 23, 40, 0.06);
     }
 
     .detail-panel {
-      border: 1px solid #d5e2e3;
-      border-radius: 28px;
-      background: rgba(255, 255, 255, 0.74);
-      padding: 16px 18px;
+      border: 1px solid rgba(15, 23, 40, 0.06);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+      padding: 18px 20px;
     }
 
     .detail-group + .detail-group {
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid #dde7e8;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(15, 23, 40, 0.06);
     }
 
     .detail-group h3 {
       margin: 0 0 8px;
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: -0.2px;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
     .detail-group p {
       margin: 0 0 8px;
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 13px;
+      font-weight: 600;
       line-height: 1.45;
     }
 
@@ -279,37 +285,37 @@
     }
 
     .detail-group li {
-      font-size: 13px;
+      font-size: 14px;
       line-height: 1.45;
       margin: 2px 0;
-      color: #000000;
+      color: var(--ink);
     }
 
     .score-explainer {
       margin: 0;
       padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid #d3d8e4;
-      background: #f8faff;
-      color: #000000;
+      border-radius: 16px;
+      border: 1px solid rgba(37, 99, 235, 0.08);
+      background: rgba(248, 250, 252, 0.95);
+      color: var(--ink);
       font-size: 13px;
       line-height: 1.4;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .score-breakdown {
       margin-top: 0;
       padding: 12px 14px;
-      border-radius: 18px;
-      border: 1px solid #c7d8da;
-      background: linear-gradient(180deg, #eef7f7 0%, #e6f1f1 100%);
+      border-radius: 20px;
+      border: 1px solid rgba(15, 23, 40, 0.06);
+      background: rgba(247, 250, 252, 0.95);
     }
 
     .score-breakdown h3 {
       margin: 0 0 6px;
-      font-size: 16px;
-      font-weight: 900;
-      letter-spacing: -0.2px;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
     .score-breakdown ul {
@@ -318,31 +324,31 @@
     }
 
     .score-breakdown li {
-      font-size: 13px;
+      font-size: 14px;
       line-height: 1.45;
-      color: #000000;
+      color: var(--ink);
     }
 
     .score-breakdown .breakdown-note {
       margin: 0 0 8px;
       font-size: 12px;
-      font-weight: 700;
-      color: #000000;
+      font-weight: 600;
+      color: var(--muted);
     }
 
     .pillar-detail {
       margin: 6px 0;
-      border: 1px solid #c8dadd;
-      border-radius: 12px;
-      background: #fbfdfd;
+      border: 1px solid rgba(15, 23, 40, 0.06);
+      border-radius: 14px;
+      background: #ffffff;
       overflow: hidden;
     }
 
     .pillar-summary {
       cursor: pointer;
-      padding: 8px 10px;
-      font-size: 13px;
-      font-weight: 800;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 700;
       list-style: none;
     }
 
@@ -355,7 +361,7 @@
       float: right;
       font-size: 11px;
       font-weight: 700;
-      color: #000000;
+      color: var(--muted);
     }
 
     .pillar-detail[open] .pillar-summary::after {
@@ -370,113 +376,115 @@
     .pillar-meta li {
       font-size: 12px;
       line-height: 1.45;
-      color: #000000;
+      color: var(--ink);
     }
 
     .ring {
-      width: 200px;
-      height: 200px;
+      width: 196px;
+      height: 196px;
       border-radius: 50%;
-      border: 6px solid var(--ring);
+      border: 5px solid rgba(23, 111, 118, 0.9);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       background:
-        radial-gradient(circle at 50% 35%, rgba(23, 111, 118, 0.08) 0%, rgba(23, 111, 118, 0) 58%),
-        #ffffff;
-      box-shadow: inset 0 0 0 6px rgba(23, 111, 118, 0.06);
+        radial-gradient(circle at 50% 30%, rgba(23, 111, 118, 0.06) 0%, rgba(23, 111, 118, 0) 56%),
+        rgba(255,255,255,0.98);
+      box-shadow:
+        inset 0 0 0 1px rgba(15, 23, 40, 0.03),
+        0 8px 20px rgba(15, 23, 40, 0.04);
     }
 
     .ring .num {
       font-size: 60px;
-      font-weight: 900;
+      font-weight: 700;
       line-height: 1;
       margin: 0;
       letter-spacing: -1px;
-      color: #000000;
+      color: var(--ink);
     }
 
     .ring .label {
       margin: 8px 0 0;
-      font-size: 18px;
-      color: #000000;
-      font-weight: 800;
+      font-size: 17px;
+      color: var(--ink);
+      font-weight: 600;
       text-align: center;
     }
 
     .tier-box {
-      background: linear-gradient(180deg, #eef6f7 0%, #e7eff0 100%);
-      border: 1px solid #c8d7d9;
-      border-radius: 18px;
-      padding: 12px 14px;
+      background: rgba(248, 250, 252, 0.92);
+      border: 1px solid rgba(15, 23, 40, 0.06);
+      border-radius: 20px;
+      padding: 14px 16px;
       min-height: 170px;
     }
 
     .tier-label {
-      font-size: 14px;
-      color: #000000;
+      font-size: 15px;
+      color: var(--muted);
       margin: 0 0 4px;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .tier-value {
       font-size: 24px;
       margin: 0 0 8px;
-      font-weight: 900;
-      letter-spacing: -0.4px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
     .minor-label {
-      font-size: 13px;
-      color: #000000;
+      font-size: 14px;
+      color: var(--muted);
       margin: 0 0 3px;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .minor-value {
       font-size: 22px;
       margin: 0 0 8px;
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .review-note {
       font-size: 15px;
       color: #7a1f1f;
-      font-weight: 900;
+      font-weight: 700;
       margin: 4px 0 0;
       padding: 10px 12px;
-      border-radius: 12px;
-      background: #f9e6e4;
-      border: 1px solid #eab6b0;
+      border-radius: 14px;
+      background: rgba(239, 68, 68, 0.10);
+      border: 1px solid rgba(239, 68, 68, 0.14);
       line-height: 1.35;
     }
 
     .review-note.pass {
       color: #115e3b;
-      background: #e4f5ea;
-      border-color: #afd6bf;
+      background: rgba(16, 185, 129, 0.10);
+      border-color: rgba(16, 185, 129, 0.14);
     }
 
     .review-note.review {
       color: #7a4b00;
-      background: #f8eed1;
-      border-color: #e7d39b;
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.18);
     }
 
     .gate-alert {
       margin-top: 10px;
       padding: 10px 12px;
-      border-radius: 12px;
-      background: #fff3f1;
-      border: 1px solid #efb8b2;
+      border-radius: 14px;
+      background: rgba(239, 68, 68, 0.06);
+      border: 1px solid rgba(239, 68, 68, 0.12);
     }
 
     .gate-alert-title {
       margin: 0 0 8px;
-      font-size: 12px;
+      font-size: 11px;
       line-height: 1.2;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       font-weight: 900;
       color: #8b1e1e;
@@ -494,27 +502,27 @@
       align-items: center;
       padding: 6px 10px;
       border-radius: 999px;
-      background: #f7d9d5;
-      border: 1px solid #e7aaa2;
+      background: rgba(239, 68, 68, 0.10);
+      border: 1px solid rgba(239, 68, 68, 0.14);
       color: #7a1f1f;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 900;
       line-height: 1;
     }
 
     .gate-detail {
       margin-top: 8px;
-      border: 1px solid #efb8b2;
-      border-radius: 12px;
-      background: #fff9f8;
+      border: 1px solid rgba(239, 68, 68, 0.12);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.92);
       overflow: hidden;
     }
 
     .gate-summary {
       cursor: pointer;
-      padding: 9px 10px;
-      font-size: 12px;
-      font-weight: 900;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 700;
       list-style: none;
       color: #7a1f1f;
     }
@@ -528,7 +536,7 @@
       float: right;
       font-size: 11px;
       font-weight: 800;
-      color: #8b1e1e;
+      color: #a12b2b;
     }
 
     .gate-detail[open] .gate-summary::after {
@@ -541,7 +549,7 @@
 
     .gate-body p {
       margin: 0 0 8px;
-      font-size: 12px;
+      font-size: 13px;
       line-height: 1.45;
       color: #000000;
       font-weight: 700;
@@ -550,9 +558,9 @@
     .gate-code {
       margin: 0;
       padding: 10px 12px;
-      border-radius: 10px;
-      background: #fff1ef;
-      border: 1px solid #efc9c4;
+      border-radius: 12px;
+      background: rgba(248, 250, 252, 0.98);
+      border: 1px solid rgba(15, 23, 40, 0.06);
       font-size: 11px;
       line-height: 1.45;
       color: #000000;
@@ -568,7 +576,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      border-top: 1px solid #d9dde7;
+      border-top: 1px solid rgba(15, 23, 40, 0.07);
       margin-top: 12px;
       padding-top: 10px;
     }
@@ -583,19 +591,19 @@
       background: var(--button);
       color: #f9fbff;
       border: 1px solid var(--button-border);
-      border-radius: 10px;
-      padding: 8px 14px;
-      font-size: 13px;
-      font-weight: 800;
+      border-radius: 12px;
+      padding: 9px 14px;
+      font-size: 14px;
+      font-weight: 700;
       min-width: 124px;
       text-align: center;
     }
 
     .footnote {
       margin: 0;
-      font-size: 12px;
+      font-size: 13px;
       line-height: 1.35;
-      color: #000000;
+      color: var(--muted);
       max-width: 470px;
     }
 
@@ -667,7 +675,7 @@
   {% endfor %}
 
   {% set display_risk_tier = deployment_risk_tier or risk_tier %}
-  {% set pedigree = display_risk_tier | upper %}
+  {% set pedigree = display_risk_tier | title %}
   {% if overall_status == "pass" %}
     {% set policy_text = "Gates Passed" %}
   {% elif overall_status == "fail" %}
@@ -694,7 +702,7 @@
           </div>
         </div>
         {% endif %}
-        <p class="brand-tag">Trusted AI Readiness Review</p>
+        <p class="brand-tag">Trusted AI Review</p>
       </div>
     </div>
     <section class="trust-card">
@@ -724,7 +732,7 @@
           <div class="score-sidecard">
             <div class="mini-section">
               <p class="tier-label hint" title="Deployment risk is the declared risk category for the system or use case. It is chosen in configuration and represents the intended operating context.">Deployment Risk</p>
-              <p class="tier-value">{{ display_risk_tier | upper }}</p>
+              <p class="tier-value">{{ display_risk_tier | title }}</p>
 
               <p class="minor-label hint" title="Control tier is derived from the worst failed control severity. Tier 1 is best, Tier 3 is worst.">Control Tier</p>
               <p class="minor-value">{{ risk_tier }}</p>
@@ -750,19 +758,33 @@
                     <div class="gate-body">
                       {% if gate == "evaluation" %}
                       <p>The evaluation gate fails when one or more configured metrics do not meet their thresholds.</p>
-                      <pre class="gate-code">failing_metrics = [m for m in metric_results if m.passed is False]
-evaluation = "fail" if failing_metrics else "pass"</pre>
+                      <pre class="gate-code">failing_metric_count = {{ metric_summary.failed }}
+evaluation = "fail" if failing_metric_count &gt; 0 else "pass"
+
+{{ metric_summary.failed }} &gt; 0 -> {{ status | upper }}</pre>
                       {% elif gate == "redteam" %}
                       <p>The red-team gate fails when blocker-level findings are present for this risk tier, or when red-team evidence is required but missing.</p>
                       <pre class="gate-code">high_findings = redteam_summary["high"] + redteam_summary["critical"]
+require_redteam = {{ "true" if redteam_gate_rules.require_redteam else "false" }}
+block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity else "false" }}
+total_findings = {{ redteam_summary.total_findings if redteam_summary.total_findings is defined else (redteam_summary.low + redteam_summary.medium + redteam_summary.high + redteam_summary.critical) }}
+
 redteam = "needs_review" if high_findings else "pass"
-if require_redteam and not findings:
+if require_redteam and total_findings == 0:
     redteam = "fail"
-if block_on_high_severity and high_findings:
-    redteam = "fail"</pre>
+if block_on_high_severity and high_findings &gt; 0:
+    redteam = "fail"
+
+high_findings = {{ redteam_summary.high }} + {{ redteam_summary.critical }} = {{ redteam_summary.high + redteam_summary.critical }}
+require_redteam = {{ "true" if redteam_gate_rules.require_redteam else "false" }}, total_findings = {{ redteam_summary.total_findings if redteam_summary.total_findings is defined else (redteam_summary.low + redteam_summary.medium + redteam_summary.high + redteam_summary.critical) }}
+block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity else "false" }}
+
+{{ "true" if redteam_gate_rules.block_on_high_severity else "false" }} and {{ redteam_summary.high + redteam_summary.critical }} &gt; 0 -> {{ status | upper }}</pre>
                       {% elif gate == "documentation" %}
                       <p>The documentation gate fails review when the evidence pack is incomplete.</p>
-                      <pre class="gate-code">documentation = "pass" if evidence_completeness &gt;= 90 else "needs_review"</pre>
+                      <pre class="gate-code">documentation = "pass" if evidence_completeness &gt;= 90 else "needs_review"
+
+{{ "%.0f"|format(evidence_completeness) }} &gt;= 90 -> {{ status | upper }}</pre>
                       {% elif gate == "monitoring" %}
                       <p>The monitoring gate reflects whether required monitoring evidence is available for the run.</p>
                       <pre class="gate-code">monitoring = "pass"</pre>
@@ -821,15 +843,22 @@ if block_on_high_severity and high_findings:
               <details class="pillar-detail">
                 <summary class="pillar-summary">{{ pillar_name | title }}: {{ "%.0f"|format(breakdown.pillar_score * 100) }}%</summary>
                 <ul class="pillar-meta">
-                  <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
-                  <li>Control pass rate: {{ "%.0f"|format(breakdown.control_pass_rate * 100) if breakdown.control_pass_rate is not none else "N/A" }}%</li>
                   {% if breakdown.redteam_pass_rate is defined %}
-                  <li>Red-team pass rate: {{ "%.0f"|format(breakdown.redteam_pass_rate * 100) }}%</li>
+                  <li>Why it looks different: security blends weighted controls with red-team results.</li>
+                  <li>Weighted controls: {{ breakdown.control_weight_passed|round(0)|int }} of {{ breakdown.control_weight_total|round(0)|int }} control points passed = {{ "%.0f"|format(breakdown.control_pass_rate * 100) if breakdown.control_pass_rate is not none else "N/A" }}%</li>
+                  {% else %}
+                  <li>Why it is {{ "%.0f"|format(breakdown.pillar_score * 100) }}%: this pillar uses weighted control points, not a flat control count.</li>
                   {% endif %}
-                  <li>Formula: {{ breakdown.formula }}</li>
-                  <li>Pillar score: {{ "%.0f"|format(breakdown.pillar_score * 100) }}%</li>
-                  <li>Trust score weight: {{ "%.0f"|format(breakdown.trust_weight * 100) }}%</li>
-                  <li>Weighted contribution to trust score: {{ "%.0f"|format(breakdown.trust_contribution * 100) }} points</li>
+                  {% if breakdown.redteam_pass_rate is defined %}
+                  <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
+                  <li>Controls alone: {{ "%.0f"|format(breakdown.control_pass_rate * 100) if breakdown.control_pass_rate is not none else "N/A" }}%</li>
+                  <li>Red-team result: {{ "%.0f"|format(breakdown.redteam_pass_rate * 100) }}%</li>
+                  {% else %}
+                  <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
+                  <li>Controls checked: {{ breakdown.control_total }}</li>
+                  {% endif %}
+                  <li>How much this matters: this pillar is {{ "%.0f"|format(breakdown.trust_weight * 100) }}% of the total trust score.</li>
+                  <li>Contribution to the final trust score: {{ "%.0f"|format(breakdown.trust_contribution * 100) }} points out of 100.</li>
                 </ul>
               </details>
               {% endfor %}
