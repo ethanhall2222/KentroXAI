@@ -1,0 +1,16 @@
+{
+  "retrieved_contexts": [
+    {
+      "id": "ctx-policy-01",
+      "title": "Model Release Policy 4.2",
+      "uri": "file://policies/model_release_policy_4_2.md",
+      "used_for": "deployment gate grounding"
+    },
+    {
+      "id": "ctx-standard-02",
+      "title": "Telemetry Retention Standard",
+      "uri": "file://standards/telemetry_retention_standard.md",
+      "used_for": "monitoring evidence"
+    }
+  ]
+}

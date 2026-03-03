@@ -127,18 +127,16 @@ def test_reporting_writes_computed_scores_and_system_context(tmp_path: Path) -> 
     assert payload["redteam_summary"]["pass_rate"] == 0.5
     assert payload["redteam_summary"]["critical_fail_count"] == 1
     scorecard_md = store.path_for("scorecard.md").read_text(encoding="utf-8")
-    assert "**Risk Tier:** Medium" in scorecard_md
-    assert "**Decision Tier:** Tier 1" in scorecard_md
+    assert "**Deployment Risk:** Medium" in scorecard_md
+    assert "**Control-Derived Tier:** Tier 1" in scorecard_md
     assert "## Pillar Scores" in scorecard_md
-    assert "- Security: 0.75" in scorecard_md
+    assert "- Security: 75%" in scorecard_md
     scorecard_html = store.path_for("scorecard.html").read_text(encoding="utf-8")
-    assert "Click for pillar breakdown" in scorecard_html
-    assert "Pillar Breakdown" in scorecard_html
-    assert "Click each pillar to see the formula, weighting, and trust-score contribution." in scorecard_html
-    assert "Weighted contribution to trust score: 0.1875" in scorecard_html
+    assert "Trust Score" in scorecard_html
+    assert "Baseline Trust Inputs" in scorecard_html
+    assert "Weighted contribution to trust score: 19 points" in scorecard_html
     assert "50% control pass rate + 50% red-team pass rate." in scorecard_html
-    assert "Evidence 7%" in scorecard_html
-    assert "System Trace On" in scorecard_html
-    assert "Critical Fails 1" in scorecard_html
-    assert "Metrics captured: 0 total, 0 passed, 0 failed." in scorecard_html
-    assert "Reasoning evidence available: No." in scorecard_html
+    assert "Evidence Complete 7%" in scorecard_html
+    assert "Traceability On" in scorecard_html
+    assert "Blocker Findings 1" in scorecard_html
+    assert "This answer has governance blockers. Review the failed gates and findings." in scorecard_html
