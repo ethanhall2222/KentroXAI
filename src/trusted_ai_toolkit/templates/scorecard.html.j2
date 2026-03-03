@@ -3,36 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trust Card</title>
+  <title>Release Readiness Card</title>
   <style>
     :root {
-      --bg: #ececef;
-      --card: #f4f5f8;
-      --card-border: #d8dbe3;
-      --ink: #1b2230;
-      --muted: #5f6778;
-      --chip-pass-bg: #d6f0df;
-      --chip-pass-text: #0f6c3b;
-      --chip-blue-bg: #dbe8ff;
-      --chip-blue-text: #1d4ed8;
-      --chip-purple-bg: #ece5ff;
-      --chip-purple-text: #5b21b6;
-      --chip-amber-bg: #f9ebca;
-      --chip-amber-text: #9a5a00;
-      --chip-sky-bg: #dceef9;
-      --chip-sky-text: #075985;
-      --ring: #2b64df;
-      --button: #10182e;
-      --button-border: #1c2949;
-      --shadow: 0 1px 0 rgba(17, 24, 39, 0.08), 0 10px 24px rgba(17, 24, 39, 0.07);
+      --bg: #dde3e5;
+      --card: #f7faf9;
+      --card-border: #b8c9cc;
+      --ink: #000000;
+      --muted: #000000;
+      --brand: #176f76;
+      --brand-deep: #0f5960;
+      --brand-soft: #d8ecec;
+      --chip-pass-bg: #d7efea;
+      --chip-pass-text: #0f5960;
+      --chip-blue-bg: #dceff1;
+      --chip-blue-text: #0f5960;
+      --chip-purple-bg: #d9ebee;
+      --chip-purple-text: #0f5960;
+      --chip-amber-bg: #eef5df;
+      --chip-amber-text: #4b6651;
+      --chip-sky-bg: #d7e8ea;
+      --chip-sky-text: #0f5960;
+      --ring: #176f76;
+      --button: #10353a;
+      --button-border: #176f76;
+      --shadow: 0 1px 0 rgba(16, 53, 58, 0.08), 0 12px 28px rgba(16, 53, 58, 0.08);
     }
 
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: radial-gradient(circle at top right, #f7f8fc 0%, var(--bg) 42%, #e8e9ee 100%);
+      background:
+        radial-gradient(circle at top right, rgba(23, 111, 118, 0.12) 0%, rgba(23, 111, 118, 0) 34%),
+        radial-gradient(circle at top left, rgba(15, 89, 96, 0.08) 0%, rgba(15, 89, 96, 0) 28%),
+        linear-gradient(180deg, #eef3f4 0%, var(--bg) 100%);
       color: var(--ink);
-      font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      font-family: "Avenir Next", "Montserrat", "Segoe UI", Helvetica, Arial, sans-serif;
       padding: 18px;
     }
 
@@ -46,14 +52,15 @@
       letter-spacing: -0.9px;
       line-height: 1;
       font-weight: 900;
-      margin: 0 0 2px;
+      margin: 0 0 4px;
+      color: var(--brand-deep);
     }
 
     .subtitle {
       margin: 0 0 14px;
       font-size: 16px;
-      color: #3f4758;
-      font-weight: 600;
+      color: var(--muted);
+      font-weight: 700;
     }
 
     .trust-card {
@@ -62,6 +69,83 @@
       background: var(--card);
       box-shadow: var(--shadow);
       padding: 18px 22px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .trust-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 8px;
+      background: linear-gradient(90deg, var(--brand) 0%, #2a8b92 50%, var(--brand-deep) 100%);
+    }
+
+    .brand-bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+      margin: 0 0 14px;
+      flex-wrap: nowrap;
+      overflow: visible;
+    }
+
+    .brand-logo {
+      display: block;
+      width: min(260px, 100%);
+      height: auto;
+      object-fit: contain;
+    }
+
+    .brand-lockup {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .brand-mark {
+      width: 96px;
+      height: 96px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at center, rgba(247, 250, 249, 0.98) 0 24%, transparent 26%),
+        linear-gradient(45deg, transparent 37%, #1698c7 37% 48%, #0a6f86 48% 63%, transparent 63%),
+        linear-gradient(-45deg, transparent 37%, #2bc0ff 37% 48%, #0a6f86 48% 63%, transparent 63%);
+      box-shadow:
+        inset 0 0 0 4px rgba(23, 111, 118, 0.10),
+        0 10px 22px rgba(23, 111, 118, 0.12);
+      flex: 0 0 auto;
+    }
+
+    .brand-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .brand-name {
+      margin: 0;
+      font-size: 72px;
+      line-height: 0.95;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: var(--brand);
+      white-space: nowrap;
+    }
+
+    .brand-tag {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.2;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #000000;
+      font-weight: 800;
+      white-space: nowrap;
     }
 
     .card-head {
@@ -69,7 +153,7 @@
       justify-content: space-between;
       align-items: flex-start;
       gap: 16px;
-      border-bottom: 1px solid #d9dde7;
+      border-bottom: 1px solid #d5e2e3;
       padding-bottom: 10px;
       margin-bottom: 10px;
     }
@@ -80,12 +164,13 @@
       margin: 0 0 6px;
       font-weight: 900;
       letter-spacing: -0.5px;
+      color: #000000;
     }
 
     .request {
       margin: 0;
       font-size: 16px;
-      color: #353f50;
+      color: #000000;
       line-height: 1.35;
       max-width: 920px;
     }
@@ -93,7 +178,7 @@
     .evidence {
       font-size: 18px;
       font-weight: 700;
-      color: #4c5568;
+      color: #000000;
       white-space: nowrap;
       padding-top: 4px;
     }
@@ -112,65 +197,144 @@
       font-weight: 800;
       line-height: 1;
       letter-spacing: 0.1px;
-      border: 1px solid rgba(0, 0, 0, 0.06);
+      border: 1px solid rgba(16, 53, 58, 0.08);
     }
 
-    .chip.pass { background: var(--chip-pass-bg); color: var(--chip-pass-text); }
-    .chip.blue { background: var(--chip-blue-bg); color: var(--chip-blue-text); }
-    .chip.purple { background: var(--chip-purple-bg); color: var(--chip-purple-text); }
-    .chip.amber { background: var(--chip-amber-bg); color: var(--chip-amber-text); }
-    .chip.sky { background: var(--chip-sky-bg); color: var(--chip-sky-text); }
+    .hint {
+      cursor: help;
+    }
+
+    .chip.pass { background: var(--chip-pass-bg); color: #000000; }
+    .chip.blue { background: var(--chip-blue-bg); color: #000000; }
+    .chip.purple { background: var(--chip-purple-bg); color: #000000; }
+    .chip.amber { background: var(--chip-amber-bg); color: #000000; }
+    .chip.sky { background: var(--chip-sky-bg); color: #000000; }
 
     .layout {
       display: grid;
-      grid-template-columns: 220px minmax(0, 1fr);
-      gap: 18px;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 20px;
       align-items: start;
     }
 
     .score-wrap {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-    }
-
-    .score-details {
-      margin: 0;
-    }
-
-    .score-details summary {
-      list-style: none;
-    }
-
-    .score-details summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .ring-toggle {
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.16s ease, box-shadow 0.16s ease;
-    }
-
-    .ring-toggle:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(43, 100, 223, 0.12);
+      gap: 10px;
+      align-items: center;
     }
 
     .ring-note {
-      margin: 8px 0 0;
+      margin: 0;
       font-size: 12px;
       font-weight: 700;
       color: var(--muted);
       text-align: center;
     }
 
-    .score-breakdown {
+    .score-sidecard {
+      width: 100%;
+      border: 1px solid #d5e2e3;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.82);
+      padding: 12px 14px;
+    }
+
+    .mini-detail {
       margin-top: 10px;
+      border: 1px solid #d8e3e4;
+      border-radius: 12px;
+      background: rgba(248, 252, 252, 0.95);
+      overflow: hidden;
+    }
+
+    .mini-summary {
+      cursor: pointer;
+      padding: 9px 10px;
+      list-style: none;
+      font-size: 12px;
+      line-height: 1.2;
+      font-weight: 900;
+      color: #000000;
+    }
+
+    .mini-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .mini-summary::after {
+      content: "Show";
+      float: right;
+      font-size: 11px;
+      font-weight: 800;
+      color: #000000;
+    }
+
+    .mini-detail[open] .mini-summary::after {
+      content: "Hide";
+    }
+
+    .mini-body {
+      padding: 0 10px 10px;
+    }
+
+    .detail-panel {
+      border: 1px solid #d5e2e3;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.74);
+      padding: 16px 18px;
+    }
+
+    .detail-group + .detail-group {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #dde7e8;
+    }
+
+    .detail-group h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.2px;
+    }
+
+    .detail-group p {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .detail-group ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .detail-group li {
+      font-size: 13px;
+      line-height: 1.45;
+      margin: 2px 0;
+      color: #000000;
+    }
+
+    .score-explainer {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid #d3d8e4;
+      background: #f8faff;
+      color: #000000;
+      font-size: 13px;
+      line-height: 1.4;
+      font-weight: 700;
+    }
+
+    .score-breakdown {
+      margin-top: 0;
       padding: 12px 14px;
       border-radius: 18px;
-      border: 1px solid #d3d8e4;
-      background: #eef3ff;
+      border: 1px solid #c7d8da;
+      background: linear-gradient(180deg, #eef7f7 0%, #e6f1f1 100%);
     }
 
     .score-breakdown h3 {
@@ -188,21 +352,21 @@
     .score-breakdown li {
       font-size: 13px;
       line-height: 1.45;
-      color: #253042;
+      color: #000000;
     }
 
     .score-breakdown .breakdown-note {
       margin: 0 0 8px;
       font-size: 12px;
       font-weight: 700;
-      color: var(--muted);
+      color: #000000;
     }
 
     .pillar-detail {
       margin: 6px 0;
-      border: 1px solid #d4daea;
+      border: 1px solid #c8dadd;
       border-radius: 12px;
-      background: #f8faff;
+      background: #fbfdfd;
       overflow: hidden;
     }
 
@@ -223,7 +387,7 @@
       float: right;
       font-size: 11px;
       font-weight: 700;
-      color: var(--muted);
+      color: #000000;
     }
 
     .pillar-detail[open] .pillar-summary::after {
@@ -238,7 +402,7 @@
     .pillar-meta li {
       font-size: 12px;
       line-height: 1.45;
-      color: #314057;
+      color: #000000;
     }
 
     .ring {
@@ -250,7 +414,10 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #f9faff;
+      background:
+        radial-gradient(circle at 50% 35%, rgba(23, 111, 118, 0.08) 0%, rgba(23, 111, 118, 0) 58%),
+        #ffffff;
+      box-shadow: inset 0 0 0 6px rgba(23, 111, 118, 0.06);
     }
 
     .ring .num {
@@ -259,18 +426,20 @@
       line-height: 1;
       margin: 0;
       letter-spacing: -1px;
+      color: #000000;
     }
 
     .ring .label {
       margin: 8px 0 0;
       font-size: 18px;
-      color: #4a5568;
-      font-weight: 600;
+      color: #000000;
+      font-weight: 800;
+      text-align: center;
     }
 
     .tier-box {
-      background: #eef0f5;
-      border: 1px solid #d3d8e4;
+      background: linear-gradient(180deg, #eef6f7 0%, #e7eff0 100%);
+      border: 1px solid #c8d7d9;
       border-radius: 18px;
       padding: 12px 14px;
       min-height: 170px;
@@ -278,7 +447,7 @@
 
     .tier-label {
       font-size: 14px;
-      color: #6a7283;
+      color: #000000;
       margin: 0 0 4px;
       font-weight: 700;
     }
@@ -292,7 +461,7 @@
 
     .minor-label {
       font-size: 13px;
-      color: #6a7283;
+      color: #000000;
       margin: 0 0 3px;
       font-weight: 700;
     }
@@ -305,35 +474,124 @@
 
     .review-note {
       font-size: 15px;
-      color: #991b1b;
+      color: #7a1f1f;
       font-weight: 900;
       margin: 4px 0 0;
       padding: 10px 12px;
       border-radius: 12px;
-      background: #fee2e2;
-      border: 1px solid #fca5a5;
+      background: #f9e6e4;
+      border: 1px solid #eab6b0;
       line-height: 1.35;
     }
 
-    .sections h3 {
-      margin: 0 0 4px;
-      font-size: 22px;
-      letter-spacing: -0.3px;
+    .review-note.pass {
+      color: #115e3b;
+      background: #e4f5ea;
+      border-color: #afd6bf;
+    }
+
+    .review-note.review {
+      color: #7a4b00;
+      background: #f8eed1;
+      border-color: #e7d39b;
+    }
+
+    .gate-alert {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #fff3f1;
+      border: 1px solid #efb8b2;
+    }
+
+    .gate-alert-title {
+      margin: 0 0 8px;
+      font-size: 12px;
+      line-height: 1.2;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       font-weight: 900;
+      color: #8b1e1e;
     }
 
-    .sections { display: grid; gap: 10px; }
-
-    .sections ul {
-      margin: 0;
-      padding-left: 18px;
+    .gate-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
     }
 
-    .sections li {
-      font-size: 14px;
+    .gate-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f7d9d5;
+      border: 1px solid #e7aaa2;
+      color: #7a1f1f;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .gate-detail {
+      margin-top: 8px;
+      border: 1px solid #efb8b2;
+      border-radius: 12px;
+      background: #fff9f8;
+      overflow: hidden;
+    }
+
+    .gate-summary {
+      cursor: pointer;
+      padding: 9px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      list-style: none;
+      color: #7a1f1f;
+    }
+
+    .gate-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .gate-summary::after {
+      content: "Show rule";
+      float: right;
+      font-size: 11px;
+      font-weight: 800;
+      color: #8b1e1e;
+    }
+
+    .gate-detail[open] .gate-summary::after {
+      content: "Hide rule";
+    }
+
+    .gate-body {
+      padding: 0 12px 12px;
+    }
+
+    .gate-body p {
+      margin: 0 0 8px;
+      font-size: 12px;
       line-height: 1.45;
-      margin: 1px 0;
-      color: #253042;
+      color: #000000;
+      font-weight: 700;
+    }
+
+    .gate-code {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fff1ef;
+      border: 1px solid #efc9c4;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #000000;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
+      font-weight: 700;
     }
 
     .actions {
@@ -369,11 +627,15 @@
       margin: 0;
       font-size: 12px;
       line-height: 1.35;
-      color: #5b6475;
+      color: #000000;
       max-width: 470px;
     }
 
     @media (max-width: 1280px) {
+      .brand-logo { width: min(220px, 100%); }
+      .brand-mark { width: 78px; height: 78px; border-radius: 22px; }
+      .brand-name { font-size: 56px; }
+      .brand-tag { font-size: 12px; }
       .title { font-size: 34px; }
       .subtitle { font-size: 15px; }
       .card-head h2 { font-size: 30px; }
@@ -387,8 +649,8 @@
       .tier-label, .minor-label { font-size: 13px; }
       .tier-value, .minor-value { font-size: 20px; }
       .review-note { font-size: 14px; }
-      .sections h3 { font-size: 20px; }
-      .sections li { font-size: 13px; }
+      .detail-group h3 { font-size: 17px; }
+      .detail-group li { font-size: 12px; }
       .btn { font-size: 12px; min-width: 116px; }
       .footnote { font-size: 11px; }
     }
@@ -396,6 +658,11 @@
     @media (max-width: 930px) {
       body { padding: 12px; }
       .trust-card { border-radius: 24px; padding: 16px; }
+      .brand-bar { gap: 12px; margin-bottom: 12px; }
+      .brand-logo { width: min(160px, 100%); }
+      .brand-mark { width: 54px; height: 54px; border-radius: 16px; }
+      .brand-name { font-size: 36px; letter-spacing: 0.05em; }
+      .brand-tag { font-size: 11px; letter-spacing: 0.1em; }
       .title { font-size: 32px; }
       .subtitle { font-size: 15px; }
       .card-head { flex-direction: column; gap: 8px; }
@@ -404,16 +671,17 @@
       .evidence { font-size: 16px; }
       .chip { font-size: 13px; }
       .layout { grid-template-columns: 1fr; gap: 16px; }
-      .score-wrap { flex-direction: row; flex-wrap: wrap; }
+      .score-wrap { flex-direction: row; flex-wrap: wrap; align-items: stretch; }
       .ring { width: 160px; height: 160px; }
       .ring .num { font-size: 52px; }
       .ring .label { font-size: 17px; }
-      .tier-box { flex: 1; min-width: 220px; min-height: unset; }
+      .score-sidecard { flex: 1; min-width: 220px; }
       .tier-label, .minor-label { font-size: 13px; }
       .tier-value, .minor-value { font-size: 23px; }
       .review-note { font-size: 14px; }
-      .sections h3 { font-size: 24px; }
-      .sections li { font-size: 15px; }
+      .detail-panel { border-radius: 22px; }
+      .detail-group h3 { font-size: 20px; }
+      .detail-group li { font-size: 14px; }
       .actions { flex-direction: column; align-items: stretch; }
       .btn-row { width: 100%; }
       .btn { flex: 1; min-width: 0; }
@@ -423,6 +691,7 @@
 </head>
 <body>
   {% set ns = namespace(failed_metrics=0) %}
+  {% set gate_ns = namespace(blocking_gates=[]) %}
   {% for m in metric_results %}
     {% if m.passed is sameas false %}
       {% set ns.failed_metrics = ns.failed_metrics + 1 %}
@@ -432,141 +701,191 @@
   {% set display_risk_tier = deployment_risk_tier or risk_tier %}
   {% set pedigree = display_risk_tier | upper %}
   {% if overall_status == "pass" %}
-    {% set policy_text = "Policy PASS" %}
+    {% set policy_text = "Gates Passed" %}
   {% elif overall_status == "fail" %}
-    {% set policy_text = "Policy FAIL" %}
+    {% set policy_text = "Gates Blocked" %}
   {% else %}
-    {% set policy_text = "Policy REVIEW" %}
+    {% set policy_text = "Review Required" %}
   {% endif %}
+  {% for gate, status in stage_gate_status.items() %}
+    {% if status == "fail" %}
+      {% set gate_ns.blocking_gates = gate_ns.blocking_gates + [gate | replace("_", " ") | title] %}
+    {% endif %}
+  {% endfor %}
 
   <div class="frame">
-    <h1 class="title">Trust Card (User-Facing)</h1>
-    <p class="subtitle">Compact, evidence-backed trust summary returned with every AI output</p>
-
+    <div class="brand-bar">
+      <div class="brand-lockup">
+        {% if brand_logo_path %}
+        <img class="brand-logo" src="{{ brand_logo_path }}" alt="Kentro logo" />
+        {% else %}
+        <div style="display:flex; align-items:center; gap:18px;">
+          <div class="brand-mark" aria-hidden="true"></div>
+          <div class="brand-copy">
+            <p class="brand-name">KENTRO</p>
+          </div>
+        </div>
+        {% endif %}
+        <p class="brand-tag">Trusted AI Readiness Review</p>
+      </div>
+    </div>
     <section class="trust-card">
       <div class="card-head">
         <div>
-          <h2>Trust Card</h2>
+          <h2 class="hint" title="Trust score is the baseline confidence score for this answer. It summarizes the underlying trust inputs for this prompt and response.">Trust Score</h2>
           <p class="request"><strong>Request:</strong> "{{ executive_summary }}"</p>
         </div>
         <p class="evidence">Evidence Pack: {{ run_id }}</p>
       </div>
 
       <div class="chips">
-        <span class="chip pass">{{ policy_text }}</span>
-        <span class="chip blue">{{ artifact_signal.evidence_label }}</span>
-        <span class="chip purple">Pedigree {{ pedigree }}</span>
-        <span class="chip amber">{{ artifact_signal.trace_label }}</span>
-        <span class="chip sky">{{ artifact_signal.security_label }}</span>
+        <span class="chip pass hint" title="This is the governance gate outcome. It tells you whether the required checks passed, are blocked, or still need review.">{{ policy_text }}</span>
+        <span class="chip blue hint" title="This shows how complete the evidence pack is compared with the list of required artifacts for this run.">{{ artifact_signal.evidence_label }}</span>
+        <span class="chip purple hint" title="Configured risk is the declared risk level for this use case. It is set in configuration and does not change based on the score.">Configured Risk {{ pedigree }}</span>
+        <span class="chip amber hint" title="Traceability shows whether this run includes system context and telemetry fields that let you trace the result back to a specific governed system.">{{ artifact_signal.trace_label }}</span>
+        <span class="chip sky hint" title="Blocker findings are the red-team findings severe enough to stop release at the current threshold, which means high and critical in this demo.">{{ artifact_signal.security_label }}</span>
       </div>
 
       <div class="layout">
         <div class="score-wrap">
-          <details class="score-details">
-            <summary>
-              <div class="ring ring-toggle">
-                <p class="num">{{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }}</p>
-                <p class="label">{{ card_score.label }}</p>
+          <div class="ring">
+            <p class="num">{{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }}</p>
+            <p class="label">{{ card_score.label }}</p>
+          </div>
+          <p class="ring-note hint" title="The trust score is built from the baseline trust inputs shown in the panel to the right.">This score reflects confidence in this answer.</p>
+          <div class="score-sidecard">
+            <details class="mini-detail">
+              <summary class="mini-summary">Context</summary>
+              <div class="mini-body">
+                <p class="tier-label hint" title="Deployment risk is the declared risk category for the system or use case. It is chosen in configuration and represents the intended operating context.">Deployment Risk</p>
+                <p class="tier-value">{{ display_risk_tier | upper }}</p>
+
+                <p class="minor-label hint" title="Control tier is derived from the worst failed control severity. Tier 1 is best, Tier 3 is worst.">Control Tier</p>
+                <p class="minor-value">{{ risk_tier }}</p>
               </div>
-              <p class="ring-note">Click for pillar breakdown</p>
-            </summary>
-            <div class="score-breakdown">
-              <h3>Pillar Breakdown</h3>
-              <p class="breakdown-note">
-                Underlying control score: {{ card_score.control_score_pct if card_score.control_score_pct is not none else "N/A" }}.
-                Click each pillar to see the formula, weighting, and control-score contribution.
-              </p>
-              <div>
-                {% if pillar_breakdowns %}
-                {% for pillar_name, breakdown in pillar_breakdowns.items() %}
-                <details class="pillar-detail">
-                  <summary class="pillar-summary">{{ pillar_name | title }}: {{ breakdown.pillar_score }}</summary>
-                  <ul class="pillar-meta">
-                    <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
-                    <li>Control pass rate: {{ breakdown.control_pass_rate }}</li>
-                    {% if breakdown.redteam_pass_rate is defined %}
-                    <li>Red-team pass rate: {{ breakdown.redteam_pass_rate }}</li>
+            </details>
+
+            <details class="mini-detail">
+              <summary class="mini-summary">Governance</summary>
+              <div class="mini-body">
+                <p class="minor-label hint" title="Decision status is the final governance outcome for this run: pass, needs review, or fail. It is separate from the trust score.">Decision Status</p>
+                <p class="minor-value">{{ overall_status | replace("_", " ") | title }}</p>
+
+                <p class="review-note{% if overall_status == "pass" %} pass{% elif overall_status == "needs_review" %} review{% endif %}">{{ card_score.status_note }}</p>
+                {% if gate_ns.blocking_gates %}
+                <div class="gate-alert">
+                  <p class="gate-alert-title hint" title="Blocking gates are the specific stage checks that failed and caused the release to be blocked.">Blocking Gates</p>
+                  <div class="gate-list">
+                    {% for gate_name in gate_ns.blocking_gates %}
+                    <span class="gate-chip">{{ gate_name }}</span>
+                    {% endfor %}
+                  </div>
+                  {% for gate, status in stage_gate_status.items() %}
+                    {% if status == "fail" %}
+                    <details class="gate-detail">
+                      <summary class="gate-summary">{{ gate | replace("_", " ") | title }}</summary>
+                      <div class="gate-body">
+                        {% if gate == "evaluation" %}
+                        <p>The evaluation gate fails when one or more configured metrics do not meet their thresholds.</p>
+                        <pre class="gate-code">failing_metrics = [m for m in metric_results if m.passed is False]
+evaluation = "fail" if failing_metrics else "pass"</pre>
+                        {% elif gate == "redteam" %}
+                        <p>The red-team gate fails when blocker-level findings are present for this risk tier, or when red-team evidence is required but missing.</p>
+                        <pre class="gate-code">high_findings = redteam_summary["high"] + redteam_summary["critical"]
+redteam = "needs_review" if high_findings else "pass"
+if require_redteam and not findings:
+    redteam = "fail"
+if block_on_high_severity and high_findings:
+    redteam = "fail"</pre>
+                        {% elif gate == "documentation" %}
+                        <p>The documentation gate fails review when the evidence pack is incomplete.</p>
+                        <pre class="gate-code">documentation = "pass" if evidence_completeness &gt;= 90 else "needs_review"</pre>
+                        {% elif gate == "monitoring" %}
+                        <p>The monitoring gate reflects whether required monitoring evidence is available for the run.</p>
+                        <pre class="gate-code">monitoring = "pass"</pre>
+                        {% else %}
+                        <p>This gate is controlled by the stage-gate policy for the current risk tier.</p>
+                        <pre class="gate-code">{{ gate }} = "{{ status }}"</pre>
+                        {% endif %}
+                      </div>
+                    </details>
                     {% endif %}
-                    <li>Formula: {{ breakdown.formula }}</li>
-                    <li>Pillar score: {{ breakdown.pillar_score }}</li>
-                    <li>Control score weight: {{ breakdown.trust_weight }}</li>
-                    <li>Weighted contribution to control score: {{ breakdown.trust_contribution }}</li>
-                  </ul>
-                </details>
-                {% endfor %}
-                {% else %}
-                <ul>
-                  <li>Pillar scores are not available for this run.</li>
-                </ul>
+                  {% endfor %}
+                </div>
                 {% endif %}
               </div>
-            </div>
-          </details>
-
-          <div class="tier-box">
-            <p class="tier-label">Risk Tier</p>
-            <p class="tier-value">{{ display_risk_tier | upper }}</p>
-
-            <p class="minor-label">Decision Tier</p>
-            <p class="minor-value">{{ risk_tier }}</p>
-
-            <p class="minor-label">Review Status</p>
-            <p class="minor-value">{{ overall_status | replace("_", " ") | title }}</p>
-
-            <p class="review-note">{{ card_score.status_note }}</p>
+            </details>
           </div>
         </div>
 
-        <div class="sections">
-          <div>
-            <h3>Evaluation Summary</h3>
+        <div class="detail-panel">
+          <div class="detail-group">
+            <h3>Why This Score</h3>
             <ul>
-              <li>Evaluation checks: {{ metric_summary.passed }} of {{ metric_summary.total }} passed{% if metric_summary.failed %}; {{ metric_summary.failed }} blocking issue{% if metric_summary.failed != 1 %}s{% endif %} remain{% endif %}.</li>
-              <li>Metric pass rate: {{ "%.0f"|format((metric_summary.pass_rate * 100)) if metric_summary.pass_rate is not none else "N/A" }}%.</li>
-              <li>Fairness checks included: {{ "Yes" if metric_summary.fairness_metrics else "No" }}.</li>
-              <li>Reasoning evidence available: {{ "Yes" if artifact_presence.reasoning_report else "No" }}.</li>
+              <li>Baseline trust: {{ card_score.control_score_pct if card_score.control_score_pct is not none else "N/A" }} from the four trust pillars.</li>
+              <li>Displayed trust score: {{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }} after modest reductions for failed checks or serious findings.</li>
+              <li>Security {{ "%.0f"|format(pillar_scores.security * 100) if pillar_scores else "N/A" }}%, Reliability {{ "%.0f"|format(pillar_scores.reliability * 100) if pillar_scores else "N/A" }}%, Transparency {{ "%.0f"|format(pillar_scores.transparency * 100) if pillar_scores else "N/A" }}%, Governance {{ "%.0f"|format(pillar_scores.governance * 100) if pillar_scores else "N/A" }}%.</li>
+              <li>Evidence completeness: {{ "%.0f"|format(evidence_completeness) }}%.</li>
+              <li>Governance blockers are still shown separately and can still change the final decision status.</li>
             </ul>
           </div>
 
-          <div>
-            <h3>Governance Trace</h3>
+          <div class="detail-group">
+            <h3>Traceability</h3>
             <ul>
-              <li>Run ID: {{ run_id }} | Project: {{ project_name }}</li>
-              <li>Governance tier: {{ risk_tier }} | Deployment tier: {{ display_risk_tier | upper }}.</li>
-              <li>Stage gates: {% for gate, status in stage_gate_status.items() %}{{ gate | replace("_", " ") | title }}={{ status | upper }}{% if not loop.last %}; {% endif %}{% endfor %}</li>
-              <li>Evidence package complete: {{ "Yes" if evidence_completeness >= 90 else "No" }} ({{ "%.0f"|format(evidence_completeness) }}%).</li>
+              <li>Run ID: {{ run_id }}</li>
+              <li>System: {{ system_context.system_id if system_context else "n/a" }} | Environment: {{ system_context.environment if system_context else "n/a" }}</li>
+              <li>System hash: {{ system_context.system_hash[:12] ~ "..." if system_context and system_context.system_hash else "n/a" }}</li>
+              <li>{{ artifact_signal.trace_label }} | {{ artifact_signal.evidence_label }}</li>
             </ul>
           </div>
 
-          <div>
-            <h3>Security Findings</h3>
+          <div class="detail-group">
+            <h3>Security Context</h3>
             <ul>
               <li>Blocking threshold: {{ severity_threshold | upper }}.</li>
-              <li>Red-team findings: {{ redteam_summary.high + redteam_summary.critical }} high-severity blocker{% if (redteam_summary.high + redteam_summary.critical) != 1 %}s{% endif %}, {{ redteam_summary.medium }} medium, {{ redteam_summary.low }} low.</li>
-              <li>Release decision: {{ go_no_go | upper }} based on stage-gate outcomes.</li>
+              <li>Blocker findings: {{ redteam_summary.high + redteam_summary.critical }} (High: {{ redteam_summary.high }}, Critical: {{ redteam_summary.critical }}).</li>
+              <li>Passed or non-blocking findings: {{ redteam_summary.medium + redteam_summary.low }} (Medium: {{ redteam_summary.medium }}, Low: {{ redteam_summary.low }}).</li>
+              <li>Evaluation checks passed: {{ metric_summary.passed }} of {{ metric_summary.total }}.</li>
             </ul>
           </div>
 
-          <div>
-            <h3>Actions Required</h3>
-            <ul>
-              {% for action in required_actions %}
-              <li>{{ action }}</li>
+          <div class="detail-group">
+            <h3>Baseline Trust Inputs</h3>
+            <p class="breakdown-note">Expand a pillar to see the formula, weighting, and contribution to the trust score.</p>
+            <div>
+              {% if pillar_breakdowns %}
+              {% for pillar_name, breakdown in pillar_breakdowns.items() %}
+              <details class="pillar-detail">
+                <summary class="pillar-summary">{{ pillar_name | title }}: {{ "%.0f"|format(breakdown.pillar_score * 100) }}%</summary>
+                <ul class="pillar-meta">
+                  <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
+                  <li>Control pass rate: {{ "%.0f"|format(breakdown.control_pass_rate * 100) if breakdown.control_pass_rate is not none else "N/A" }}%</li>
+                  {% if breakdown.redteam_pass_rate is defined %}
+                  <li>Red-team pass rate: {{ "%.0f"|format(breakdown.redteam_pass_rate * 100) }}%</li>
+                  {% endif %}
+                  <li>Formula: {{ breakdown.formula }}</li>
+                  <li>Pillar score: {{ "%.0f"|format(breakdown.pillar_score * 100) }}%</li>
+                  <li>Trust score weight: {{ "%.0f"|format(breakdown.trust_weight * 100) }}%</li>
+                  <li>Weighted contribution to trust score: {{ "%.0f"|format(breakdown.trust_contribution * 100) }} points</li>
+                </ul>
+              </details>
               {% endfor %}
-              <li>Documentation completeness: {{ "%.0f"|format(evidence_completeness) }}% of required outputs.</li>
-            </ul>
+              {% else %}
+              <ul>
+                <li>Pillar scores are not available for this run.</li>
+              </ul>
+              {% endif %}
+            </div>
           </div>
 
-          <div>
-            <h3>Control Summary</h3>
+          <div class="detail-group">
+            <h3>Governance Flags</h3>
             <ul>
-              {% if pillar_scores %}
-              <li>Underlying control score: {{ card_score.control_score_pct if card_score.control_score_pct is not none else "N/A" }}.</li>
-              <li>Security controls: {{ "%.0f"|format(pillar_scores.security * 100) }}%.</li>
-              <li>Reliability, transparency, and governance controls: {{ "%.0f"|format(pillar_scores.reliability * 100) }}%, {{ "%.0f"|format(pillar_scores.transparency * 100) }}%, and {{ "%.0f"|format(pillar_scores.governance * 100) }}%.</li>
-              {% else %}
-              <li>Not available for this run.</li>
-              {% endif %}
+              <li>Decision status: {{ overall_status | replace("_", " ") | title }}</li>
+              <li>Release decision: {{ go_no_go | upper }}</li>
+              <li>Stage gates: {% for gate, status in stage_gate_status.items() %}{{ gate | replace("_", " ") | title }}={{ status | upper }}{% if not loop.last %}; {% endif %}{% endfor %}</li>
+              <li>{{ card_score.status_note }}</li>
             </ul>
           </div>
         </div>

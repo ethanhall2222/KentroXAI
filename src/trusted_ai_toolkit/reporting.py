@@ -143,13 +143,31 @@ def _metric_summary(metric_results: list[MetricResult]) -> dict[str, Any]:
 def _artifact_signal(scorecard: Scorecard) -> dict[str, str]:
     """Compute compact chip labels for live scorecard signals."""
 
+    blocking_findings = (
+        int(scorecard.redteam_summary.get("high", 0)) + int(scorecard.redteam_summary.get("critical", 0))
+        if scorecard.redteam_summary
+        else 0
+    )
     return {
-        "evidence_label": f"Evidence {round(scorecard.evidence_completeness, 0):.0f}%",
-        "trace_label": "System Trace On" if scorecard.system_context else "System Trace Off",
-        "security_label": f"Critical Fails {str(scorecard.redteam_summary.get('critical_fail_count', 0))}"
-        if "critical_fail_count" in scorecard.redteam_summary
-        else "Critical Fails n/a",
+        "evidence_label": f"Evidence Complete {round(scorecard.evidence_completeness, 0):.0f}%",
+        "trace_label": "Traceability On" if scorecard.system_context else "Traceability Off",
+        "security_label": f"Blocker Findings {blocking_findings}",
     }
+
+
+def _resolve_brand_logo() -> str | None:
+    """Return an absolute path to a preferred Kentro logo asset if present."""
+
+    candidate_names = [
+        "kentro-logo-full-color-rgb-900px-w-72ppi.png",
+        "Kentro_Teal__1_Logo.jpg",
+    ]
+    assets_dir = Path.cwd() / "assets"
+    for name in candidate_names:
+        path = assets_dir / name
+        if path.exists():
+            return str(path.resolve())
+    return None
 
 
 def _card_score_summary(
@@ -160,33 +178,23 @@ def _card_score_summary(
     overall_status: str,
     stage_gate_status: dict[str, str],
 ) -> dict[str, Any]:
-    """Compute a UI-facing score that is aligned with release readiness."""
+    """Compute the UI-facing trust score for the current answer."""
 
     base = float(control_score_pct) if control_score_pct is not None else 70.0
     penalty = 0.0
-    penalty += failing_metrics_count * 12.0
-    penalty += severity_counts.get("medium", 0) * 6.0
-    penalty += severity_counts.get("high", 0) * 18.0
-    penalty += severity_counts.get("critical", 0) * 25.0
-    penalty += max(0.0, 90.0 - evidence_completeness) * 0.5
+    penalty += failing_metrics_count * 6.0
+    penalty += severity_counts.get("medium", 0) * 2.0
+    penalty += severity_counts.get("high", 0) * 8.0
+    penalty += severity_counts.get("critical", 0) * 12.0
+    penalty += max(0.0, 90.0 - evidence_completeness) * 0.15
 
-    if stage_gate_status.get("redteam") == "fail":
-        penalty += 10.0
-    if stage_gate_status.get("evaluation") == "fail":
-        penalty += 10.0
-    if stage_gate_status.get("documentation") == "needs_review":
-        penalty += 5.0
-
-    display_score = max(0.0, min(100.0, round(base - penalty, 0)))
-    if overall_status == "fail":
-        display_score = min(display_score, 59.0)
-    elif overall_status == "needs_review":
-        display_score = min(display_score, 79.0)
+    display_score = base - penalty
+    display_score = max(0.0, min(100.0, round(display_score, 0)))
 
     status_note = {
-        "pass": "All stage gates passed. Ready for governed release.",
-        "needs_review": "Blocking review items remain. Human sign-off is still required.",
-        "fail": "One or more blocking gates failed. Release is currently blocked.",
+        "pass": "This answer cleared the current governance checks.",
+        "needs_review": "This answer is available, but governance review items remain.",
+        "fail": "This answer has governance blockers. Review the failed gates and findings.",
     }[overall_status]
 
     return {
@@ -329,6 +337,9 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     context["stage_gate_status"] = stage_gate_status
     context["evidence_completeness"] = evidence_completeness
     context["required_outputs"] = required_outputs
+    context["raw_trust_score_pct"] = context["trust_score_pct"]
+    context["release_readiness_score_pct"] = context["card_score"]["display_score_pct"]
+    context["brand_logo_path"] = _resolve_brand_logo()
     context["generated_files"] = {
         "scorecard_md": str(store.path_for("scorecard.md")),
         "scorecard_html": str(store.path_for("scorecard.html")),

@@ -1,5 +1,6 @@
 # Generated run outputs
 artifacts/
+demo_outputs/
 
 # Python caches
 __pycache__/
