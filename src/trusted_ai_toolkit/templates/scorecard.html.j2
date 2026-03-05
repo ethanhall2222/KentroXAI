@@ -711,11 +711,11 @@
       </div>
 
       <div class="chips">
-        <span class="chip pass hint" title="This is the governance gate outcome. It tells you whether the required checks passed, are blocked, or still need review.">{{ policy_text }}</span>
-        <span class="chip blue hint" title="This shows how complete the evidence pack is compared with the list of required artifacts for this run.">{{ artifact_signal.evidence_label }}</span>
-        <span class="chip purple hint" title="Configured risk is the declared risk level for this use case. It is set in configuration and does not change based on the score.">Configured Risk {{ pedigree }}</span>
-        <span class="chip amber hint" title="Traceability shows whether this run includes system context and telemetry fields that let you trace the result back to a specific governed system.">{{ artifact_signal.trace_label }}</span>
-        <span class="chip sky hint" title="Blocker findings are the red-team findings severe enough to stop release at the current threshold, which means high and critical in this demo.">{{ artifact_signal.security_label }}</span>
+        <span class="chip pass hint" title="This is the overall review outcome for the required governance checks.">{{ policy_text }}</span>
+        <span class="chip blue hint" title="This shows how much of the required evidence was produced for this run.">{{ artifact_signal.evidence_label }}</span>
+        <span class="chip purple hint" title="This is the preset risk level for the use case. It comes from configuration, not from the trust score.">Configured Risk {{ pedigree }}</span>
+        <span class="chip amber hint" title="This shows whether the run includes enough metadata to trace the result back to a specific system and run context.">{{ artifact_signal.trace_label }}</span>
+        <span class="chip sky hint" title="This is the count of serious red-team findings for this run. In this demo, that means high and critical findings.">{{ artifact_signal.security_label }}</span>
       </div>
 
       <div class="layout">
@@ -724,24 +724,24 @@
             <p class="num">{{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }}</p>
             <p class="label">{{ card_score.label }}</p>
           </div>
-          <p class="ring-note hint" title="The trust score is built from the baseline trust inputs shown in the panel to the right.">This score reflects confidence in this answer.</p>
+          <p class="ring-note hint" title="This score summarizes how trustworthy this answer appears based on the checks shown in the card.">This score reflects confidence in this answer.</p>
           <div class="score-sidecard">
             <div class="mini-section">
-              <p class="tier-label hint" title="Deployment risk is the declared risk category for the system or use case. It is chosen in configuration and represents the intended operating context.">Deployment Risk</p>
+              <p class="tier-label hint" title="This is the declared risk level for the system or use case. It describes the intended operating context.">Deployment Risk</p>
               <p class="tier-value">{{ display_risk_tier | title }}</p>
 
-              <p class="minor-label hint" title="Control tier is derived from the worst failed control severity. Tier 1 is best, Tier 3 is worst.">Control Tier</p>
+              <p class="minor-label hint" title="This tier summarizes the control posture. Tier 1 is strongest, and higher tiers indicate more serious control failures.">Control Tier</p>
               <p class="minor-value">{{ risk_tier }}</p>
             </div>
 
             <div class="mini-section">
-              <p class="minor-label hint" title="Decision status is the final governance outcome for this run: pass, needs review, or fail. It is separate from the trust score.">Decision Status</p>
+              <p class="minor-label hint" title="This is the final governance review result for the run. It is separate from the trust score.">Decision Status</p>
               <p class="minor-value">{{ overall_status | replace("_", " ") | title }}</p>
 
               <p class="review-note{% if overall_status == "pass" %} pass{% elif overall_status == "needs_review" %} review{% endif %}">{{ card_score.status_note }}</p>
               {% if gate_ns.blocking_gates %}
               <div class="gate-alert">
-                <p class="gate-alert-title hint" title="Blocking gates are the specific stage checks that failed and caused the release to be blocked.">Blocking Gates</p>
+                <p class="gate-alert-title hint" title="These are the specific governance checks that failed and caused the review to be blocked.">Blocking Gates</p>
                 <div class="gate-list">
                   {% for gate_name in gate_ns.blocking_gates %}
                   <span class="gate-chip">{{ gate_name }}</span>
@@ -754,39 +754,40 @@
                     <div class="gate-body">
                       {% if gate == "evaluation" %}
                       <p>The evaluation gate fails when one or more configured metrics do not meet their thresholds.</p>
-                      <pre class="gate-code">failing_metric_count = {{ metric_summary.failed }}
-evaluation = "fail" if failing_metric_count &gt; 0 else "pass"
+                      <pre class="gate-code">Evaluation failed because {{ metric_summary.failed }} required metric{% if metric_summary.failed != 1 %}s{% endif %} missed {% if metric_summary.failed == 1 %}its{% else %}their{% endif %} threshold{% if metric_summary.failed != 1 %}s{% endif %}.
+{% for metric in metric_results %}
+{% if metric.passed is sameas false %}
+- {{ metric.metric_id }}: {{ "%.3f"|format(metric.value) }} (required: {{ "%.3f"|format(metric.threshold) }})
+{% endif %}
+{% endfor %}
 
-{{ metric_summary.failed }} &gt; 0 -> {{ status | upper }}</pre>
+Rule: any failed required metric causes the evaluation gate to fail.</pre>
                       {% elif gate == "redteam" %}
                       <p>The red-team gate fails when blocker-level findings are present for this risk tier, or when red-team evidence is required but missing.</p>
-                      <pre class="gate-code">high_findings = redteam_summary["high"] + redteam_summary["critical"]
-require_redteam = {{ "true" if redteam_gate_rules.require_redteam else "false" }}
-block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity else "false" }}
-total_findings = {{ redteam_summary.total_findings if redteam_summary.total_findings is defined else (redteam_summary.low + redteam_summary.medium + redteam_summary.high + redteam_summary.critical) }}
+                      <pre class="gate-code">Red-team failed because {{ redteam_summary.high + redteam_summary.critical }} blocker finding{% if (redteam_summary.high + redteam_summary.critical) != 1 %}s{% endif %} were found.
 
-redteam = "needs_review" if high_findings else "pass"
-if require_redteam and total_findings == 0:
-    redteam = "fail"
-if block_on_high_severity and high_findings &gt; 0:
-    redteam = "fail"
+Severity breakdown:
+- High: {{ redteam_summary.high }}
+- Critical: {{ redteam_summary.critical }}
+- Medium: {{ redteam_summary.medium }}
+- Low: {{ redteam_summary.low }}
 
-high_findings = {{ redteam_summary.high }} + {{ redteam_summary.critical }} = {{ redteam_summary.high + redteam_summary.critical }}
-require_redteam = {{ "true" if redteam_gate_rules.require_redteam else "false" }}, total_findings = {{ redteam_summary.total_findings if redteam_summary.total_findings is defined else (redteam_summary.low + redteam_summary.medium + redteam_summary.high + redteam_summary.critical) }}
-block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity else "false" }}
+Policy for this risk level:
+- Red-team evidence required: {{ "Yes" if redteam_gate_rules.require_redteam else "No" }}
+- High-severity findings block review: {{ "Yes" if redteam_gate_rules.block_on_high_severity else "No" }}
 
-{{ "true" if redteam_gate_rules.block_on_high_severity else "false" }} and {{ redteam_summary.high + redteam_summary.critical }} &gt; 0 -> {{ status | upper }}</pre>
+Rule: if required red-team evidence is missing, or any blocker finding is present, the red-team gate fails.</pre>
                       {% elif gate == "documentation" %}
                       <p>The documentation gate fails review when the evidence pack is incomplete.</p>
-                      <pre class="gate-code">documentation = "pass" if evidence_completeness &gt;= 90 else "needs_review"
+                      <pre class="gate-code">Documentation needs review because the evidence pack is {{ "%.0f"|format(evidence_completeness) }}% complete.
 
-{{ "%.0f"|format(evidence_completeness) }} &gt;= 90 -> {{ status | upper }}</pre>
+Rule: the evidence pack must be at least 90% complete to pass this gate.</pre>
                       {% elif gate == "monitoring" %}
                       <p>The monitoring gate reflects whether required monitoring evidence is available for the run.</p>
-                      <pre class="gate-code">monitoring = "pass"</pre>
+                      <pre class="gate-code">Monitoring passed because the required monitoring artifact was present for this run.</pre>
                       {% else %}
                       <p>This gate is controlled by the stage-gate policy for the current risk tier.</p>
-                      <pre class="gate-code">{{ gate }} = "{{ status }}"</pre>
+                      <pre class="gate-code">{{ gate | replace("_", " ") | title }} is controlled by the governance policy for this risk tier and is currently {{ status | upper }}.</pre>
                       {% endif %}
                     </div>
                   </details>

@@ -36,17 +36,17 @@ def metric_fairness_demographic_parity_diff(context: dict) -> MetricResult:
 
     # Deterministic synthetic cohorts for offline baseline checks.
     # TODO: replace with actual cohort labels from evaluation dataset.
-    privileged_labels = [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
-    unprivileged_labels = [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
-    value = round(statistical_parity_difference(unprivileged_labels, privileged_labels), 3)
+    reference_group_labels = [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
+    comparison_group_labels = [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
+    value = round(statistical_parity_difference(comparison_group_labels, reference_group_labels), 3)
     return MetricResult(
         metric_id="fairness_demographic_parity_diff",
         value=value,
         details={
             "sensitive_features": context.get("sensitive_features", []),
-            "privileged_selection_rate": round(sum(privileged_labels) / len(privileged_labels), 3),
-            "unprivileged_selection_rate": round(sum(unprivileged_labels) / len(unprivileged_labels), 3),
-            "formula": "Pr(Y=1|unprivileged)-Pr(Y=1|privileged)",
+            "reference_group_selection_rate": round(sum(reference_group_labels) / len(reference_group_labels), 3),
+            "comparison_group_selection_rate": round(sum(comparison_group_labels) / len(comparison_group_labels), 3),
+            "formula": "Pr(Y=1|comparison_group)-Pr(Y=1|reference_group)",
             "reference": "https://github.com/Trusted-AI/AIF360",
         },
     )
@@ -61,14 +61,14 @@ def metric_accuracy_stub(context: dict) -> MetricResult:
 def metric_fairness_disparate_impact_ratio(context: dict) -> MetricResult:
     """AIF360-inspired disparate impact ratio fairness metric."""
 
-    privileged_labels = [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
-    unprivileged_labels = [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
-    value = round(disparate_impact_ratio(unprivileged_labels, privileged_labels), 3)
+    reference_group_labels = [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
+    comparison_group_labels = [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
+    value = round(disparate_impact_ratio(comparison_group_labels, reference_group_labels), 3)
     return MetricResult(
         metric_id="fairness_disparate_impact_ratio",
         value=value,
         details={
-            "formula": "Pr(Y=1|unprivileged)/Pr(Y=1|privileged)",
+            "formula": "Pr(Y=1|comparison_group)/Pr(Y=1|reference_group)",
             "reference": "https://github.com/Trusted-AI/AIF360",
             "policy_baseline": ">= 0.8 (80% rule heuristic)",
         },
@@ -78,19 +78,21 @@ def metric_fairness_disparate_impact_ratio(context: dict) -> MetricResult:
 def metric_fairness_equal_opportunity_difference(context: dict) -> MetricResult:
     """AIF360-inspired equal opportunity difference fairness metric."""
 
-    privileged_true = [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
-    privileged_pred = [1, 1, 1, 0, 1, 0, 1, 0, 0, 1]
-    unprivileged_true = [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
-    unprivileged_pred = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1]
+    reference_group_true = [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
+    reference_group_pred = [1, 1, 1, 0, 1, 0, 1, 0, 0, 1]
+    comparison_group_true = [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
+    comparison_group_pred = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1]
     value = round(
-        equal_opportunity_difference(unprivileged_true, unprivileged_pred, privileged_true, privileged_pred),
+        equal_opportunity_difference(
+            comparison_group_true, comparison_group_pred, reference_group_true, reference_group_pred
+        ),
         3,
     )
     return MetricResult(
         metric_id="fairness_equal_opportunity_difference",
         value=value,
         details={
-            "formula": "TPR(unprivileged)-TPR(privileged)",
+            "formula": "TPR(comparison_group)-TPR(reference_group)",
             "reference": "https://github.com/Trusted-AI/AIF360",
         },
     )
@@ -99,19 +101,21 @@ def metric_fairness_equal_opportunity_difference(context: dict) -> MetricResult:
 def metric_fairness_average_odds_difference(context: dict) -> MetricResult:
     """AIF360-inspired average odds difference fairness metric."""
 
-    privileged_true = [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
-    privileged_pred = [1, 1, 1, 0, 1, 0, 1, 0, 0, 1]
-    unprivileged_true = [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
-    unprivileged_pred = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1]
+    reference_group_true = [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
+    reference_group_pred = [1, 1, 1, 0, 1, 0, 1, 0, 0, 1]
+    comparison_group_true = [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
+    comparison_group_pred = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1]
     value = round(
-        average_odds_difference(unprivileged_true, unprivileged_pred, privileged_true, privileged_pred),
+        average_odds_difference(
+            comparison_group_true, comparison_group_pred, reference_group_true, reference_group_pred
+        ),
         3,
     )
     return MetricResult(
         metric_id="fairness_average_odds_difference",
         value=value,
         details={
-            "formula": "0.5*((FPR_u-FPR_p)+(TPR_u-TPR_p))",
+            "formula": "0.5 * ((FPR(comparison_group)-FPR(reference_group)) + (TPR(comparison_group)-TPR(reference_group)))",
             "reference": "https://github.com/Trusted-AI/AIF360",
         },
     )
