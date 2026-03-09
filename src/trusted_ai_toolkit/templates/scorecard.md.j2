@@ -1,11 +1,11 @@
-# Trusted AI Scorecard
+# Release Readiness Scorecard
 
 {% set display_risk_tier = deployment_risk_tier or risk_tier %}
 
 **Project:** {{ project_name }}  
 **Run ID:** {{ run_id }}  
-**Risk Tier:** {{ display_risk_tier | title }}  
-**Decision Tier:** {{ risk_tier }}  
+**Deployment Risk:** {{ display_risk_tier | title }}  
+**Control-Derived Tier:** {{ risk_tier }}  
 **Overall Status:** {{ overall_status | replace("_", " ") | title }}  
 **Go/No-Go:** {{ go_no_go | upper }}
 
@@ -28,10 +28,12 @@
 ## Pillar Scores
 
 {% if pillar_scores %}
-- Security: {{ pillar_scores.security }}
-- Reliability: {{ pillar_scores.reliability }}
-- Transparency: {{ pillar_scores.transparency }}
-- Governance: {{ pillar_scores.governance }}
+- Raw trust score (pre-penalty): {{ raw_trust_score_pct }}%
+- Release readiness (after penalties): {{ release_readiness_score_pct }}%
+- Security: {{ "%.0f"|format(pillar_scores.security * 100) }}%
+- Reliability: {{ "%.0f"|format(pillar_scores.reliability * 100) }}%
+- Transparency: {{ "%.0f"|format(pillar_scores.transparency * 100) }}%
+- Governance: {{ "%.0f"|format(pillar_scores.governance * 100) }}%
 {% else %}
 - Not available
 {% endif %}
