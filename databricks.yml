@@ -1,0 +1,64 @@
+bundle:
+  name: trusted-ai-toolkit
+
+artifacts:
+  default:
+    type: whl
+    build: python -m build --wheel
+    path: .
+
+include:
+  - resources/*.yml
+
+variables:
+  workspace_host:
+    description: Databricks workspace URL, such as https://adb-1234567890123456.7.azuredatabricks.net
+  existing_cluster_id:
+    description: Existing all-purpose or job cluster ID to run the toolkit on
+  catalog:
+    description: Unity Catalog catalog that owns the deployment volume
+  schema:
+    description: Unity Catalog schema that owns the deployment volume
+  volume:
+    description: Unity Catalog volume used for configs, contexts, and artifacts
+    default: trusted_ai_toolkit
+  config_path:
+    description: Path to the toolkit YAML config inside a Unity Catalog volume
+  context_file:
+    description: Optional path to a context JSON payload inside a Unity Catalog volume
+    default: ""
+  prompt:
+    description: Prompt text for the toolkit run
+    default: Summarize governance controls
+  output_dir:
+    description: Output artifact directory inside a Unity Catalog volume
+  job_mode:
+    description: Toolkit job mode
+    default: prompt
+  provider:
+    description: Optional adapter provider override for simulate mode
+    default: ""
+  endpoint:
+    description: Optional adapter endpoint override for simulate mode
+    default: ""
+  model:
+    description: Optional adapter model override for simulate mode
+    default: ""
+  api_key_env:
+    description: Environment variable name that stores the provider API key
+    default: OPENAI_API_KEY
+  request_format:
+    description: Optional request-format override for simulate mode
+    default: ""
+  openai_api_key_secret_scope:
+    description: Databricks secret scope that stores the provider API key
+    default: ai-secrets
+  openai_api_key_secret_key:
+    description: Secret key name for the provider API key
+    default: openai-api-key
+
+targets:
+  dev:
+    default: true
+    workspace:
+      host: ${var.workspace_host}

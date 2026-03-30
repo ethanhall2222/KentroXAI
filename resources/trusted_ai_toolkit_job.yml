@@ -1,0 +1,25 @@
+resources:
+  jobs:
+    trusted_ai_toolkit_job:
+      name: trusted-ai-toolkit
+      tasks:
+        - task_key: trusted_ai_toolkit
+          existing_cluster_id: ${var.existing_cluster_id}
+          python_wheel_task:
+            package_name: trusted_ai_toolkit
+            entry_point: tat-databricks-job
+            named_parameters:
+              config: ${var.config_path}
+              prompt: ${var.prompt}
+              context_file: ${var.context_file}
+              mode: ${var.job_mode}
+              provider: ${var.provider}
+              endpoint: ${var.endpoint}
+              model: ${var.model}
+              api_key_env: ${var.api_key_env}
+              request_format: ${var.request_format}
+          libraries:
+            - whl: ./dist/*.whl
+          spark_env_vars:
+            TAT_OUTPUT_DIR: ${var.output_dir}
+            OPENAI_API_KEY: "{{secrets/${var.openai_api_key_secret_scope}/${var.openai_api_key_secret_key}}}"
