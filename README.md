@@ -60,6 +60,15 @@ This repo now includes a Databricks-ready wheel entrypoint and sample Asset Bund
 
 The recommended deployment model is a Python wheel task that reads config and context files from a Unity Catalog volume and writes evidence-pack artifacts back to that volume.
 
+## Companion Apps
+
+This repo can also host adjacent product surfaces without replacing the Python governance engine.
+
+- `apps/kentro-chat/` contains a local React + Express chat scaffold.
+- The chat backend exposes `/api/chat`.
+- The backend can optionally call `tat run prompt` after each response so chat interactions still flow into Kentro governance artifacts.
+- See `apps/kentro-chat/README.md` for local run instructions and hook configuration.
+
 
 ## Core Commands
 
