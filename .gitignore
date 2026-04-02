@@ -9,6 +9,9 @@ __pycache__/
 
 # Build/package metadata
 *.egg-info/
+node_modules/
+dist/
+coverage/
 
 # macOS/Office temp files
 .DS_Store

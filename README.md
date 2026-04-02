@@ -50,6 +50,25 @@ tat demo
 
 `tat demo` runs the full end-to-end toolkit workflow in one command: it initializes `config.yaml` if needed, executes evaluation, red-team, explainability, reporting, monitoring, documentation, and incident checks, then prints the generated scorecard path. Use `tat demo --open-scorecard` to open the HTML scorecard automatically.
 
+## Databricks
+
+This repo now includes a Databricks-ready wheel entrypoint and sample Asset Bundle configuration:
+
+- [Databricks integration guide](docs/databricks_integration.md)
+- `databricks.yml`
+- `resources/trusted_ai_toolkit_job.yml`
+
+The recommended deployment model is a Python wheel task that reads config and context files from a Unity Catalog volume and writes evidence-pack artifacts back to that volume.
+
+## Companion Apps
+
+This repo can also host adjacent product surfaces without replacing the Python governance engine.
+
+- `apps/kentro-chat/` contains a local React + Express chat scaffold.
+- The chat backend exposes `/api/chat`.
+- The backend can optionally call `tat run prompt` after each response so chat interactions still flow into Kentro governance artifacts.
+- See `apps/kentro-chat/README.md` for local run instructions and hook configuration.
+
 
 ## Core Commands
 

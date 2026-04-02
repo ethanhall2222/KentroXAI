@@ -18,11 +18,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "build>=1.2.0",
   "pytest>=8.0.0",
 ]
 
 [project.scripts]
 tat = "trusted_ai_toolkit.cli:main"
+tat-databricks-job = "trusted_ai_toolkit.jobs:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
