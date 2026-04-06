@@ -606,37 +606,17 @@ export default function App() {
           ))}
         </section>
 
-        <section className="workspace-topline">
-          <div className="workspace-title-block">
-            <span className="section-kicker">Operator thread</span>
-            <h3>Governance execution surface</h3>
-            <p>
-              {currentSession.archived
-                ? "This chat is archived. Restore it from the sidebar before sending new messages."
-                : "Use the thread for concise governance questions, release checks, and policy summaries."}
-            </p>
-          </div>
-
-          <div className="summary-grid">
-            <InfoCard
-              title="Session posture"
-              value={currentSession.sessionPosture}
-              detail="Operators can keep responses local or route them into governance artifact generation."
-            />
-            <InfoCard
-              title="Last governance run"
-              value={currentSession.lastArtifactRunId ? `Run ${currentSession.lastArtifactRunId}` : "No artifact run yet"}
-              detail={currentSession.lastArtifactPath || "Generated outputs will appear here when the governance hook completes."}
-            />
-          </div>
-        </section>
-
         <section className="chat-surface">
           <div className="chat-surface-frame">
             <div className="chat-toolbar">
               <div className="chat-toolbar-copy">
                 <span className="section-kicker">Conversation</span>
                 <strong>Operator conversation</strong>
+                <span className="chat-toolbar-subcopy">
+                  {currentSession.archived
+                    ? "Archived chat. Restore it from the sidebar to continue."
+                    : "Use this thread for policy summaries, release checks, and governance follow-up."}
+                </span>
               </div>
               <div className="chat-toolbar-actions">
                 <span className="chat-toolbar-note">{currentSession.messages.length} messages in thread</span>
@@ -896,16 +876,6 @@ function StatCard({ icon, label, value }) {
         <strong>{value}</strong>
       </div>
     </div>
-  );
-}
-
-function InfoCard({ title, value, detail }) {
-  return (
-    <article className="info-card">
-      <span className="section-kicker">{title}</span>
-      <strong>{value}</strong>
-      <p>{detail}</p>
-    </article>
   );
 }
 
