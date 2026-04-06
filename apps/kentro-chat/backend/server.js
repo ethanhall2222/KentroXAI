@@ -2,6 +2,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,13 +12,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 
-const PORT = Number.parseInt(process.env.PORT ?? "5050", 10);
+const PORT = Number.parseInt(process.env.PORT ?? process.env.DATABRICKS_APP_PORT ?? "5050", 10);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
 const CHAT_MODEL = process.env.KENTRO_CHAT_MODEL ?? "local-scaffold";
 const repoRoot = path.resolve(__dirname, "../../..");
 const defaultConfigPath = path.resolve(__dirname, "../../../config.yaml");
+const frontendDistDir = path.resolve(__dirname, "../frontend/dist");
+const frontendIndexPath = path.join(frontendDistDir, "index.html");
+const servingBundledFrontend = fs.existsSync(frontendIndexPath);
 
-app.use(cors({ origin: FRONTEND_ORIGIN }));
+app.use(cors({ origin: servingBundledFrontend ? true : FRONTEND_ORIGIN }));
 app.use(express.json({ limit: "1mb" }));
 
 app.get("/api/health", (_req, res) => {
@@ -50,8 +54,23 @@ app.post("/api/chat", async (req, res) => {
   });
 });
 
+if (servingBundledFrontend) {
+  app.use(express.static(frontendDistDir));
+
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api/")) {
+      next();
+      return;
+    }
+
+    res.sendFile(frontendIndexPath);
+  });
+}
+
 app.listen(PORT, () => {
-  console.log(`Kentro chat backend listening on http://localhost:${PORT}`);
+  console.log(
+    `Kentro chat backend listening on http://localhost:${PORT}${servingBundledFrontend ? " and serving frontend bundle" : ""}`,
+  );
 });
 
 function buildScaffoldReply(message, history) {
