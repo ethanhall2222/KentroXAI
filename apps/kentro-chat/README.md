@@ -25,10 +25,32 @@ That starts:
 
 The Vite dev server proxies `/api/*` calls to the Express backend.
 
+## Databricks Apps Deploy
+
+To deploy this as a Databricks App, point the app source at:
+
+```text
+apps/kentro-chat
+```
+
+This folder is now packaged as a single deployable Node app:
+
+- `npm run build` builds the React frontend into `frontend/dist`
+- `npm run start` starts Express
+- Express serves both `/api/*` and the built frontend bundle
+- the server automatically listens on `DATABRICKS_APP_PORT` when running inside Databricks Apps
+
+Required setup notes:
+
+- Do not point Databricks at the broader repo root unless you add separate root-level app packaging.
+- If you deploy from a workspace folder, make sure the selected folder is `apps/kentro-chat` itself.
+- If you want the governance hook enabled in Databricks, add the same env vars from `backend/.env.example` in the Databricks app Environment tab.
+
 ## Project Layout
 
 ```text
 apps/kentro-chat/
+  app.yaml
   backend/
   frontend/
   package.json
