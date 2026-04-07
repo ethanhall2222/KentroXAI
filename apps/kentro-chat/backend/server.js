@@ -1,6 +1,7 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import OpenAI from "openai";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -14,7 +15,7 @@ const app = express();
 
 const PORT = Number.parseInt(process.env.PORT ?? process.env.DATABRICKS_APP_PORT ?? "5050", 10);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
-const CHAT_MODEL = process.env.KENTRO_CHAT_MODEL ?? "local-scaffold";
+const CHAT_MODEL = process.env.KENTRO_CHAT_MODEL ?? "gpt-4.1-mini";
 const repoRoot = path.resolve(__dirname, "../../..");
 const defaultConfigPath = path.resolve(__dirname, "../../../config.yaml");
 const frontendDistDir = path.resolve(__dirname, "../frontend/dist");
@@ -25,14 +26,35 @@ app.use(cors({ origin: servingBundledFrontend ? true : FRONTEND_ORIGIN }));
 app.use(express.json({ limit: "1mb" }));
 
 app.get("/api/health", (_req, res) => {
+  const liveModelReady = hasLiveModelAccess();
+
   res.json({
     ok: true,
     service: "kentro-chat-backend",
     repoRoot,
-    model: CHAT_MODEL,
+    model: liveModelReady ? CHAT_MODEL : "local-scaffold",
+    liveModelReady,
     governanceHookEnabled: isGovernanceHookEnabled(),
     sessionMode: isGovernanceHookEnabled() ? "governance-enabled" : "local-chat",
   });
+});
+
+app.get("/api/scorecard", (req, res) => {
+  const artifactPath = typeof req.query.artifactPath === "string" ? req.query.artifactPath : "";
+
+  if (!artifactPath) {
+    res.status(400).json({ error: "An `artifactPath` query value is required." });
+    return;
+  }
+
+  try {
+    const scorecardHtmlPath = resolveScorecardHtmlPath(artifactPath);
+    res.sendFile(scorecardHtmlPath);
+  } catch (error) {
+    res.status(404).json({
+      error: error instanceof Error ? error.message : "Unable to locate scorecard output.",
+    });
+  }
 });
 
 app.post("/api/chat", async (req, res) => {
@@ -44,14 +66,22 @@ app.post("/api/chat", async (req, res) => {
     return;
   }
 
-  const reply = buildScaffoldReply(message, history);
-  const governance = await maybeRunGovernanceHook({ message, reply });
+  try {
+    const completion = await generateReply(message, history);
+    const governance = await maybeRunGovernanceHook({ message, reply: completion.reply });
 
-  res.json({
-    reply,
-    model: CHAT_MODEL,
-    governance,
-  });
+    res.json({
+      reply: completion.reply,
+      model: completion.model,
+      governance,
+    });
+  } catch (error) {
+    console.error("Chat request failed:", error);
+
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "OpenAI request failed",
+    });
+  }
 });
 
 if (servingBundledFrontend) {
@@ -73,13 +103,48 @@ app.listen(PORT, () => {
   );
 });
 
+async function generateReply(message, history) {
+  const apiKey = process.env.OPENAI_API_KEY || process.env.openai_secret;
+
+  if (!apiKey) {
+    return {
+      reply: buildScaffoldReply(message, history),
+      model: "local-scaffold",
+    };
+  }
+
+  const openai = new OpenAI({ apiKey });
+  const input = [
+    ...history
+      .filter((entry) => entry && typeof entry.role === "string" && typeof entry.content === "string")
+      .map((entry) => ({
+        role: entry.role,
+        content: entry.content,
+      })),
+    {
+      role: "user",
+      content: message,
+    },
+  ];
+
+  const response = await openai.responses.create({
+    model: CHAT_MODEL,
+    input,
+  });
+
+  return {
+    reply: response.output_text || "No reply returned from OpenAI.",
+    model: CHAT_MODEL,
+  };
+}
+
 function buildScaffoldReply(message, history) {
   const normalized = message.replace(/\s+/g, " ").trim();
   const priorTurns = history.filter((entry) => entry && typeof entry.content === "string").length;
 
   const responseParts = [
     "This is the Kentro chat scaffold speaking through the local Express API.",
-    `I received: \"${normalized}\"`,
+    `I received: "${normalized}"`,
     priorTurns > 0
       ? `I can also see ${priorTurns} earlier message${priorTurns === 1 ? "" : "s"} in the conversation context.`
       : "This looks like the first turn in the current conversation.",
@@ -87,6 +152,10 @@ function buildScaffoldReply(message, history) {
   ];
 
   return responseParts.join(" ");
+}
+
+function hasLiveModelAccess() {
+  return Boolean(process.env.OPENAI_API_KEY || process.env.openai_secret);
 }
 
 function isGovernanceHookEnabled() {
@@ -127,6 +196,7 @@ async function maybeRunGovernanceHook({ message, reply }) {
   try {
     const result = await runCommand(cliBin, commandArgs, repoRoot);
     const artifactPath = extractArtifactPath(result.stdout);
+    const scorecard = buildScorecardPayload(artifactPath);
     return {
       enabled: true,
       attempted: true,
@@ -135,6 +205,7 @@ async function maybeRunGovernanceHook({ message, reply }) {
       command: [cliBin, ...commandArgs].join(" "),
       artifactPath,
       artifactRunId: artifactPath ? path.basename(artifactPath) : "",
+      scorecard,
       stdout: result.stdout.trim(),
       stderr: result.stderr.trim(),
     };
@@ -146,6 +217,99 @@ async function maybeRunGovernanceHook({ message, reply }) {
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function buildScorecardPayload(artifactPath) {
+  if (!artifactPath) {
+    return null;
+  }
+
+  const resolvedRunDir = resolveFromBackend(artifactPath);
+  const scorecardJsonPath = path.join(resolvedRunDir, "scorecard.json");
+  const scorecardHtmlPath = path.join(resolvedRunDir, "scorecard.html");
+
+  if (!fs.existsSync(scorecardJsonPath) && !fs.existsSync(scorecardHtmlPath)) {
+    return null;
+  }
+
+  let raw = null;
+  if (fs.existsSync(scorecardJsonPath)) {
+    try {
+      raw = JSON.parse(fs.readFileSync(scorecardJsonPath, "utf8"));
+    } catch (error) {
+      console.error("Unable to parse scorecard.json:", error);
+    }
+  }
+
+  return {
+    artifactPath: resolvedRunDir,
+    htmlPath: fs.existsSync(scorecardHtmlPath) ? scorecardHtmlPath : "",
+    htmlUrl: fs.existsSync(scorecardHtmlPath)
+      ? `/api/scorecard?artifactPath=${encodeURIComponent(resolvedRunDir)}`
+      : "",
+    jsonPath: fs.existsSync(scorecardJsonPath) ? scorecardJsonPath : "",
+    runId: raw?.run_id ?? path.basename(resolvedRunDir),
+    overallStatus: raw?.overall_status ?? "",
+    goNoGo: raw?.go_no_go ?? "",
+    trustScore: selectOverallTrustScore(raw),
+    scoreSource: selectTrustScoreSource(raw),
+    answerTrustScore: normalizeScore(raw?.answer_trust_score),
+    governanceScore: normalizeScore(raw?.governance_score),
+    empiricalScore: normalizeScore(raw?.empirical_score),
+    evidenceCompleteness: normalizeScore(raw?.evidence_completeness, { scale: "raw" }),
+  };
+}
+
+function resolveScorecardHtmlPath(artifactPath) {
+  const resolvedArtifactPath = resolveFromBackend(artifactPath);
+  const stat = fs.statSync(resolvedArtifactPath);
+  const htmlPath = stat.isDirectory() ? path.join(resolvedArtifactPath, "scorecard.html") : resolvedArtifactPath;
+
+  if (path.basename(htmlPath) !== "scorecard.html" || !fs.existsSync(htmlPath)) {
+    throw new Error("Scorecard output is unavailable for this run.");
+  }
+
+  return htmlPath;
+}
+
+function selectOverallTrustScore(scorecard) {
+  return (
+    normalizeScore(scorecard?.answer_trust_score) ??
+    normalizeScore(scorecard?.governance_score) ??
+    normalizeScore(scorecard?.empirical_score)
+  );
+}
+
+function selectTrustScoreSource(scorecard) {
+  if (typeof scorecard?.answer_trust_score === "number") {
+    return "Answer trust";
+  }
+
+  if (typeof scorecard?.governance_score === "number") {
+    return "Governance score";
+  }
+
+  if (typeof scorecard?.empirical_score === "number") {
+    return "Empirical score";
+  }
+
+  return "";
+}
+
+function normalizeScore(value, options = {}) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return null;
+  }
+
+  if (options.scale === "raw") {
+    return Math.round(value * 10) / 10;
+  }
+
+  if (value <= 1) {
+    return Math.round(value * 100);
+  }
+
+  return Math.round(value);
 }
 
 function resolveFromBackend(targetPath) {
