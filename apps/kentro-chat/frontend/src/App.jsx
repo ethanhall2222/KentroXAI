@@ -57,6 +57,7 @@ export default function App() {
           ? "danger"
           : "success"
     : "neutral";
+  const trustSummary = trustSummaryForSession(currentSession);
 
   useEffect(() => {
     if (!currentSession && sessions.length > 0) {
@@ -94,9 +95,13 @@ export default function App() {
           governanceState: payload.governanceHookEnabled ? "Hook armed" : "Hook idle",
           sessionPosture:
             payload.sessionMode === "governance-enabled" ? "Governance-ready mode" : "Local chat mode",
-          statusText: payload.governanceHookEnabled
-            ? "Backend ready. Governance handoff is armed for this session."
-            : "Backend ready for local chat.",
+          statusText: payload.liveModelReady
+            ? payload.governanceHookEnabled
+              ? "Backend ready. Live model connected and governance handoff is armed."
+              : "Backend ready. Live model connected for operator chat."
+            : payload.governanceHookEnabled
+              ? "Backend ready. Governance handoff is armed for this session."
+              : "Backend ready for local chat.",
         }));
       } catch (error) {
         if (cancelled) {
@@ -178,22 +183,37 @@ export default function App() {
       };
 
       startTransition(() => {
+        const scorecard = payload.governance?.scorecard ?? null;
         updateCurrentSession((session) => ({
           ...session,
           messages: [...session.messages, assistantMessage],
-          statusText: statusFromGovernance(payload.governance),
+          statusText: statusFromGovernance(payload.governance, payload.model),
           modelName: payload.model ?? "local-scaffold",
           lastModelUsed: payload.model ?? "local-scaffold",
           governanceState: governanceLabel(payload.governance),
           sessionPosture: sessionPostureLabel(payload.governance),
           lastArtifactPath: payload.governance?.artifactPath ?? "",
           lastArtifactRunId: payload.governance?.artifactRunId ?? "",
+          lastScorecardUrl: scorecard?.htmlUrl ?? "",
+          lastScorecardHtmlPath: scorecard?.htmlPath ?? "",
+          lastScorecardJsonPath: scorecard?.jsonPath ?? "",
+          lastTrustScore: scorecard?.trustScore ?? null,
+          lastTrustScoreSource: scorecard?.scoreSource ?? "",
+          lastOverallStatus: scorecard?.overallStatus ?? "",
+          lastGoNoGo: scorecard?.goNoGo ?? "",
+          lastEvidenceCompleteness: scorecard?.evidenceCompleteness ?? null,
           updatedAt: Date.now(),
         }));
       });
 
       if (payload.governance?.success) {
-        pushToast(`Artifacts generated${payload.governance?.artifactRunId ? ` · ${payload.governance.artifactRunId}` : ""}`);
+        const trustSuffix =
+          payload.governance?.scorecard?.trustScore !== null && payload.governance?.scorecard?.trustScore !== undefined
+            ? ` · Trust ${formatTrustScoreValue(payload.governance.scorecard.trustScore)}`
+            : "";
+        pushToast(
+          `Artifacts generated${payload.governance?.artifactRunId ? ` · ${payload.governance.artifactRunId}` : ""}${trustSuffix}`,
+        );
       }
     } catch (error) {
       startTransition(() => {
@@ -412,6 +432,12 @@ export default function App() {
 
   const primaryStats = [
     { label: "Current model", value: currentSession.modelName, icon: "spark" },
+    {
+      label: "Overall trust score",
+      value: trustSummary.displayValue,
+      icon: "gauge",
+      meta: trustSummary.subLabel,
+    },
     { label: "Governance", value: currentSession.governanceState, icon: "shield" },
     { label: "Messages", value: String(currentSession.messages.length), icon: "chat" },
   ];
@@ -593,6 +619,35 @@ export default function App() {
             <StatusBadge tone={statusTone}>
               {currentSession.archived ? "Archived" : pending ? "Running" : "Ready"}
             </StatusBadge>
+            <div className="trust-summary-card">
+              <span className="section-kicker">Overall trust score</span>
+              <div className="trust-summary-main">
+                <strong>{trustSummary.displayValue}</strong>
+                <span className={`trust-summary-tone trust-summary-tone-${trustSummary.tone}`}>
+                  {trustSummary.statusLabel}
+                </span>
+              </div>
+              <div className="trust-summary-meta">
+                <span>{trustSummary.subLabel}</span>
+                <span>{trustSummary.helperText}</span>
+              </div>
+              {currentSession.lastScorecardUrl ? (
+                <a
+                  className="scorecard-link"
+                  href={currentSession.lastScorecardUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Icon name="external" />
+                  <span>Open scorecard</span>
+                </a>
+              ) : (
+                <button type="button" className="scorecard-link scorecard-link-disabled" disabled>
+                  <Icon name="external" />
+                  <span>Run governance to view scorecard</span>
+                </button>
+              )}
+            </div>
             <div className="header-meta">
               <span>Model: {currentSession.modelName}</span>
               <span>{currentSession.archived ? "Read-only thread" : "Live operator workspace"}</span>
@@ -699,7 +754,9 @@ export default function App() {
                 <p>
                   {currentSession.archived
                     ? "Restore the chat to continue the conversation."
-                    : "Replies come from the local Express scaffold until a live model is connected."}
+                    : currentSession.modelName === "local-scaffold"
+                      ? "Replies fall back to the local scaffold until a live model key is available."
+                      : "Replies are coming from the live model. Enable governance to generate scorecards and artifacts."}
                 </p>
                 <button type="submit" className="send-button" disabled={currentSession.archived || pending || !draft.trim()}>
                   <span>{pending ? "Sending..." : "Send message"}</span>
@@ -779,6 +836,9 @@ function SessionCard({
           <div className="history-badges">
             <span className="history-badge">{session.lastModelUsed || session.modelName}</span>
             <span className="history-badge">{session.governanceState}</span>
+            {session.lastTrustScore !== null && session.lastTrustScore !== undefined ? (
+              <span className="history-badge">Trust {formatTrustScoreValue(session.lastTrustScore)}</span>
+            ) : null}
             {session.lastArtifactRunId ? (
               <span className="history-badge">Run {session.lastArtifactRunId}</span>
             ) : null}
@@ -797,6 +857,9 @@ function SessionCard({
           <div className="history-badges">
             <span className="history-badge">{session.lastModelUsed || session.modelName}</span>
             <span className="history-badge">{session.governanceState}</span>
+            {session.lastTrustScore !== null && session.lastTrustScore !== undefined ? (
+              <span className="history-badge">Trust {formatTrustScoreValue(session.lastTrustScore)}</span>
+            ) : null}
             {session.lastArtifactRunId ? (
               <span className="history-badge">Run {session.lastArtifactRunId}</span>
             ) : session.lastArtifactPath ? (
@@ -865,7 +928,7 @@ function SessionCard({
   );
 }
 
-function StatCard({ icon, label, value }) {
+function StatCard({ icon, label, value, meta = "" }) {
   return (
     <div className="stat-card">
       <div className="stat-card-icon">
@@ -874,6 +937,7 @@ function StatCard({ icon, label, value }) {
       <div>
         <span className="stat-card-label">{label}</span>
         <strong>{value}</strong>
+        {meta ? <span className="stat-card-meta">{meta}</span> : null}
       </div>
     </div>
   );
@@ -961,6 +1025,21 @@ function Icon({ name }) {
           <path d="M10 10a3.333 3.333 0 1 0 0-6.667A3.333 3.333 0 0 0 10 10Zm-5 6.667c.689-2.153 2.809-3.75 5-3.75s4.311 1.597 5 3.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       );
+    case "gauge":
+      return (
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M4.167 13.333a5.833 5.833 0 1 1 11.666 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="m10 10 2.917-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="10" cy="10" r="1" fill="currentColor" />
+        </svg>
+      );
+    case "external":
+      return (
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M11.667 4.167h4.166v4.166M8.333 11.667l7.5-7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M15 10.833v3.334A.833.833 0 0 1 14.167 15H5.833A.833.833 0 0 1 5 14.167V5.833A.833.833 0 0 1 5.833 5H9.167" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
     case "spark":
     default:
       return (
@@ -989,6 +1068,14 @@ function loadSessions() {
       archived: Boolean(session.archived),
       lastArtifactPath: session.lastArtifactPath ?? "",
       lastArtifactRunId: session.lastArtifactRunId ?? "",
+      lastScorecardUrl: session.lastScorecardUrl ?? "",
+      lastScorecardHtmlPath: session.lastScorecardHtmlPath ?? "",
+      lastScorecardJsonPath: session.lastScorecardJsonPath ?? "",
+      lastTrustScore: session.lastTrustScore ?? null,
+      lastTrustScoreSource: session.lastTrustScoreSource ?? "",
+      lastOverallStatus: session.lastOverallStatus ?? "",
+      lastGoNoGo: session.lastGoNoGo ?? "",
+      lastEvidenceCompleteness: session.lastEvidenceCompleteness ?? null,
       lastModelUsed: session.lastModelUsed ?? session.modelName ?? "local-scaffold",
     }));
   } catch {
@@ -1009,6 +1096,14 @@ function createSession(overrides = {}) {
     archived: false,
     lastArtifactPath: "",
     lastArtifactRunId: "",
+    lastScorecardUrl: "",
+    lastScorecardHtmlPath: "",
+    lastScorecardJsonPath: "",
+    lastTrustScore: null,
+    lastTrustScoreSource: "",
+    lastOverallStatus: "",
+    lastGoNoGo: "",
+    lastEvidenceCompleteness: null,
     updatedAt: Date.now(),
     ...overrides,
   };
@@ -1022,7 +1117,7 @@ function createStarterMessages() {
       content:
         "Kentro Chat is ready. Ask for a policy summary, a governance checkpoint, or a release-readiness explanation.",
       meta: {
-        label: "Scaffold",
+        label: "Kentro",
         timestamp: timeLabel(),
       },
     },
@@ -1049,7 +1144,10 @@ function buildGovernanceMeta(governance) {
   if (governance.success) {
     return {
       label: "Assistant",
-      timestamp: `${timeLabel()} · Artifacts generated`,
+      timestamp:
+        governance.scorecard?.trustScore !== null && governance.scorecard?.trustScore !== undefined
+          ? `${timeLabel()} · Artifacts generated · Trust ${formatTrustScoreValue(governance.scorecard.trustScore)}`
+          : `${timeLabel()} · Artifacts generated`,
     };
   }
 
@@ -1059,13 +1157,17 @@ function buildGovernanceMeta(governance) {
   };
 }
 
-function statusFromGovernance(governance) {
+function statusFromGovernance(governance, modelName) {
   if (!governance?.enabled) {
-    return "Reply returned locally. Governance hook is disabled.";
+    return modelName === "local-scaffold"
+      ? "Reply returned locally. Governance hook is disabled."
+      : "Reply returned from the live model. Governance hook is disabled.";
   }
 
   if (governance.success) {
-    return "Reply returned and the Kentro CLI hook completed successfully.";
+    return governance.scorecard?.trustScore !== null && governance.scorecard?.trustScore !== undefined
+      ? `Reply returned and Kentro generated a scorecard with a trust score of ${formatTrustScoreValue(governance.scorecard.trustScore)}.`
+      : "Reply returned and the Kentro CLI hook completed successfully.";
   }
 
   return "Reply returned, but the Kentro CLI hook needs attention.";
@@ -1124,6 +1226,10 @@ function matchesSearch(session, searchQuery) {
     session.governanceState,
     session.modelName,
     session.lastModelUsed,
+    session.lastTrustScore,
+    session.lastTrustScoreSource,
+    session.lastOverallStatus,
+    session.lastGoNoGo,
     session.lastArtifactRunId,
     session.lastArtifactPath,
     ...session.messages.map((message) => message.content),
@@ -1142,6 +1248,11 @@ function sessionToMarkdown(session) {
     `- Session posture: ${session.sessionPosture}`,
     `- Governance: ${session.governanceState}`,
     `- Model: ${session.lastModelUsed || session.modelName}`,
+    session.lastTrustScore !== null && session.lastTrustScore !== undefined
+      ? `- Overall trust score: ${formatTrustScoreValue(session.lastTrustScore)}`
+      : "",
+    session.lastOverallStatus ? `- Overall status: ${session.lastOverallStatus}` : "",
+    session.lastGoNoGo ? `- Go / no-go: ${session.lastGoNoGo}` : "",
     session.lastArtifactRunId ? `- Artifact run: ${session.lastArtifactRunId}` : "",
     session.lastArtifactPath ? `- Artifact path: ${session.lastArtifactPath}` : "",
     "",
@@ -1181,4 +1292,58 @@ function statusToneForGovernance(governanceState) {
   }
 
   return "neutral";
+}
+
+function trustSummaryForSession(session) {
+  if (session.lastTrustScore !== null && session.lastTrustScore !== undefined) {
+    return {
+      displayValue: formatTrustScoreValue(session.lastTrustScore),
+      subLabel: session.lastTrustScoreSource || "Latest governance scorecard",
+      statusLabel: session.lastGoNoGo ? session.lastGoNoGo.replace("-", " ") : session.lastOverallStatus || "Available",
+      helperText: session.lastOverallStatus
+        ? `Overall status: ${session.lastOverallStatus.replace("_", " ")}`
+        : "Latest score from the most recent governance run",
+      tone: trustTone(session.lastTrustScore, session.lastOverallStatus),
+    };
+  }
+
+  return {
+    displayValue: "Awaiting run",
+    subLabel: "No governance scorecard yet",
+    statusLabel: session.governanceState,
+    helperText: "Enable the governance hook to generate a scorecard and trust score.",
+    tone: "neutral",
+  };
+}
+
+function trustTone(score, overallStatus) {
+  if (overallStatus === "fail") {
+    return "danger";
+  }
+
+  if (overallStatus === "needs_review") {
+    return "warning";
+  }
+
+  if (typeof score === "number") {
+    if (score >= 80) {
+      return "success";
+    }
+
+    if (score >= 60) {
+      return "warning";
+    }
+
+    return "danger";
+  }
+
+  return "neutral";
+}
+
+function formatTrustScoreValue(score) {
+  if (typeof score !== "number" || Number.isNaN(score)) {
+    return "N/A";
+  }
+
+  return `${Math.round(score)}%`;
 }

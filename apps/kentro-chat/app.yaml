@@ -2,3 +2,8 @@ command:
   - npm
   - run
   - start
+env:
+  - name: OPENAI_API_KEY
+    valueFrom: OPENAI_API_KEY
+  - name: KENTRO_CHAT_MODEL
+    value: gpt-4.1-mini
