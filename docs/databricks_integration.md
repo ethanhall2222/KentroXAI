@@ -10,6 +10,7 @@ This repository can run on Databricks as a Python wheel job. The recommended sha
 ## What this repo now includes
 
 - a Databricks-friendly wheel entrypoint in `src/trusted_ai_toolkit/jobs.py`
+- a reusable Databricks backend helper in `src/trusted_ai_toolkit/databricks_pipeline.py`
 - a sample bundle in `databricks.yml`
 - a sample Databricks job resource in `resources/trusted_ai_toolkit_job.yml`
 - support for wheel-task keyword arguments and `TAT_*` environment variables
@@ -137,3 +138,34 @@ This executes the same governance pipeline but obtains model output from the con
 - The sample bundle uses an existing cluster to stay cloud-agnostic.
 - The toolkit still writes file-based artifacts. Databricks integration here is focused on operationalizing the current architecture, not replacing it with notebooks.
 - If you want dashboarding, the next logical step is to add a post-run task that loads `scorecard.json`, `monitoring_summary.json`, and `eval_results.json` into Delta tables.
+
+## Databricks UI / RAG backend pattern
+
+For a Databricks-hosted chat UI, the recommended split is:
+
+1. Databricks retrieval code queries the existing RAG tables and returns the exact chunks used for answer generation.
+2. OpenAI generates the answer from those chunks.
+3. `trusted_ai_toolkit.databricks_pipeline.run_databricks_answer_pipeline(...)` turns the question, answer, and chunks into Kentro artifacts and a scorecard.
+4. The UI stores a compact run summary in Delta for history and monitoring.
+
+The backend helper intentionally expects Databricks to own retrieval and generation. Kentro stays responsible for:
+
+- `prompt_run.json`
+- `eval_results.json`
+- `scorecard.json`
+- `scorecard.html`
+- benchmark updates
+
+### Suggested Delta log columns
+
+If you want the UI and backend job to preserve the live answer and source bundle, extend the run-log table with:
+
+```sql
+ALTER TABLE <catalog>.<schema>.kentroxai_governance_runs
+ADD COLUMNS (
+  answer_text STRING,
+  retrieved_chunks_json STRING
+);
+```
+
+`build_governance_run_row(...)` in `databricks_pipeline.py` returns a Delta-friendly summary row with those fields included.
