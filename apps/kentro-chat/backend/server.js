@@ -2,6 +2,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import OpenAI from "openai";
+import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -16,6 +17,14 @@ const app = express();
 const PORT = Number.parseInt(process.env.PORT ?? process.env.DATABRICKS_APP_PORT ?? "5050", 10);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
 const CHAT_MODEL = process.env.KENTRO_CHAT_MODEL ?? "gpt-4.1-mini";
+const DATABRICKS_HOST = (process.env.DATABRICKS_HOST ?? "").replace(/\/$/, "");
+const DATABRICKS_TOKEN = process.env.DATABRICKS_TOKEN ?? "";
+const DATABRICKS_JOB_ID = process.env.KENTRO_DATABRICKS_JOB_ID ?? "";
+const DATABRICKS_SQL_WAREHOUSE_ID = process.env.KENTRO_SQL_WAREHOUSE_ID ?? "";
+const GOVERNANCE_TABLE =
+  process.env.KENTRO_GOVERNANCE_TABLE ?? "wvu.ethanhall.kentroxai_governance_runs";
+const JOB_POLL_INTERVAL_MS = Number.parseInt(process.env.KENTRO_JOB_POLL_INTERVAL_MS ?? "3000", 10);
+const JOB_TIMEOUT_MS = Number.parseInt(process.env.KENTRO_JOB_TIMEOUT_MS ?? "120000", 10);
 const repoRoot = path.resolve(__dirname, "../../..");
 const defaultConfigPath = path.resolve(__dirname, "../../../config.yaml");
 const frontendDistDir = path.resolve(__dirname, "../frontend/dist");
@@ -35,7 +44,12 @@ app.get("/api/health", (_req, res) => {
     model: liveModelReady ? CHAT_MODEL : "local-scaffold",
     liveModelReady,
     governanceHookEnabled: isGovernanceHookEnabled(),
-    sessionMode: isGovernanceHookEnabled() ? "governance-enabled" : "local-chat",
+    jobBackendEnabled: isJobBackendEnabled(),
+    sessionMode: isJobBackendEnabled()
+      ? "databricks-job"
+      : isGovernanceHookEnabled()
+        ? "governance-enabled"
+        : "local-chat",
   });
 });
 
@@ -64,6 +78,24 @@ app.post("/api/chat", async (req, res) => {
   if (!message) {
     res.status(400).json({ error: "A non-empty `message` field is required." });
     return;
+  }
+
+  if (isJobBackendEnabled()) {
+    try {
+      const requestId = randomUUID();
+      const governance = await runDatabricksJobBackend({ message, requestId });
+      res.json({
+        reply: governance.answerText || "No answer returned from Databricks.",
+        model: governance.model ?? CHAT_MODEL,
+        governance,
+      });
+      return;
+    } catch (error) {
+      res.status(502).json({
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
   }
 
   try {
@@ -158,8 +190,190 @@ function hasLiveModelAccess() {
   return Boolean(process.env.OPENAI_API_KEY || process.env.openai_secret);
 }
 
+function isJobBackendEnabled() {
+  return String(process.env.KENTRO_ENABLE_DATABRICKS_JOB_BACKEND ?? "").toLowerCase() === "true";
+}
+
 function isGovernanceHookEnabled() {
   return String(process.env.KENTRO_ENABLE_GOVERNANCE_HOOK ?? "").toLowerCase() === "true";
+}
+
+function databricksHeaders() {
+  return {
+    Authorization: `Bearer ${DATABRICKS_TOKEN}`,
+    "Content-Type": "application/json",
+  };
+}
+
+function requireDatabricksBackendConfig() {
+  const missing = [];
+  if (!DATABRICKS_HOST) missing.push("DATABRICKS_HOST");
+  if (!DATABRICKS_TOKEN) missing.push("DATABRICKS_TOKEN");
+  if (!DATABRICKS_JOB_ID) missing.push("KENTRO_DATABRICKS_JOB_ID");
+  if (!DATABRICKS_SQL_WAREHOUSE_ID) missing.push("KENTRO_SQL_WAREHOUSE_ID");
+  if (missing.length > 0) {
+    throw new Error(`Databricks job backend is missing required env vars: ${missing.join(", ")}`);
+  }
+}
+
+async function databricksApi(pathname, init = {}) {
+  const response = await fetch(`${DATABRICKS_HOST}${pathname}`, {
+    ...init,
+    headers: {
+      ...databricksHeaders(),
+      ...(init.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Databricks API ${pathname} failed with ${response.status}: ${body}`);
+  }
+
+  return response.json();
+}
+
+async function submitDatabricksRun({ message, requestId }) {
+  return databricksApi("/api/2.1/jobs/run-now", {
+    method: "POST",
+    body: JSON.stringify({
+      job_id: Number.parseInt(DATABRICKS_JOB_ID, 10),
+      notebook_params: {
+        question: message,
+        request_id: requestId,
+      },
+    }),
+  });
+}
+
+async function waitForRunCompletion(runId) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < JOB_TIMEOUT_MS) {
+    const payload = await databricksApi(`/api/2.1/jobs/runs/get?run_id=${runId}`);
+    const state = payload.state ?? {};
+    const lifeCycleState = state.life_cycle_state ?? "";
+    const resultState = state.result_state ?? "";
+
+    if (lifeCycleState === "TERMINATED") {
+      if (resultState !== "SUCCESS") {
+        throw new Error(
+          `Databricks job run ${runId} finished with ${resultState || "UNKNOWN"}: ${state.state_message ?? ""}`.trim(),
+        );
+      }
+      return payload;
+    }
+
+    if (lifeCycleState === "INTERNAL_ERROR" || lifeCycleState === "SKIPPED") {
+      throw new Error(
+        `Databricks job run ${runId} failed in state ${lifeCycleState}: ${state.state_message ?? ""}`.trim(),
+      );
+    }
+
+    await sleep(JOB_POLL_INTERVAL_MS);
+  }
+
+  throw new Error(`Timed out waiting for Databricks job run ${runId}`);
+}
+
+async function fetchGovernanceRow(requestId) {
+  const statement = `
+    SELECT
+      request_id,
+      run_id,
+      created_at,
+      query_text,
+      answer_text,
+      answer_verdict,
+      answer_trust_score,
+      overall_status,
+      go_no_go,
+      top_doc_uris,
+      retrieved_chunks_json,
+      scorecard_json_path,
+      artifact_dir
+    FROM ${GOVERNANCE_TABLE}
+    WHERE request_id = '${requestId.replace(/'/g, "''")}'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+
+  const submitPayload = await databricksApi("/api/2.0/sql/statements", {
+    method: "POST",
+    body: JSON.stringify({
+      warehouse_id: DATABRICKS_SQL_WAREHOUSE_ID,
+      statement,
+      wait_timeout: "10s",
+      disposition: "INLINE",
+    }),
+  });
+
+  let payload = submitPayload;
+  while (payload.status?.state === "PENDING" || payload.status?.state === "RUNNING") {
+    await sleep(1000);
+    payload = await databricksApi(`/api/2.0/sql/statements/${payload.statement_id}`, {
+      method: "GET",
+    });
+  }
+
+  if (payload.status?.state !== "SUCCEEDED") {
+    throw new Error(`SQL statement for request_id ${requestId} did not succeed: ${payload.status?.state ?? "UNKNOWN"}`);
+  }
+
+  const schema = payload.manifest?.schema?.columns ?? [];
+  const rows = payload.result?.data_array ?? [];
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const row = {};
+  for (let idx = 0; idx < schema.length; idx += 1) {
+    row[schema[idx].name] = rows[0][idx];
+  }
+  return row;
+}
+
+async function waitForGovernanceRow(requestId) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < JOB_TIMEOUT_MS) {
+    const row = await fetchGovernanceRow(requestId);
+    if (row) {
+      return row;
+    }
+    await sleep(JOB_POLL_INTERVAL_MS);
+  }
+
+  throw new Error(`Timed out waiting for governance row for request_id ${requestId}`);
+}
+
+async function runDatabricksJobBackend({ message, requestId }) {
+  requireDatabricksBackendConfig();
+
+  const runPayload = await submitDatabricksRun({ message, requestId });
+  const runId = runPayload.run_id;
+  await waitForRunCompletion(runId);
+  const row = await waitForGovernanceRow(requestId);
+
+  return {
+    enabled: true,
+    attempted: true,
+    success: true,
+    mode: "databricks-job",
+    requestId,
+    databricksRunId: String(runId),
+    answerText: row.answer_text ?? "",
+    answerVerdict: row.answer_verdict ?? "",
+    answerTrustScore: row.answer_trust_score ?? null,
+    overallStatus: row.overall_status ?? "",
+    goNoGo: row.go_no_go ?? "",
+    topDocUris: Array.isArray(row.top_doc_uris) ? row.top_doc_uris : [],
+    retrievedChunksJson: row.retrieved_chunks_json ?? "",
+    artifactPath: row.artifact_dir ?? "",
+    artifactRunId: row.run_id ?? "",
+    scorecardJsonPath: row.scorecard_json_path ?? "",
+    model: CHAT_MODEL,
+  };
 }
 
 async function maybeRunGovernanceHook({ message, reply }) {
@@ -310,6 +524,10 @@ function normalizeScore(value, options = {}) {
   }
 
   return Math.round(value);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function resolveFromBackend(targetPath) {

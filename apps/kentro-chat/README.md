@@ -121,3 +121,36 @@ Useful alternatives:
 - If you already have retrieved context in JSON form, point `KENTRO_CONTEXT_FILE` at that file and it will be forwarded to the CLI.
 
 The chat API still returns a reply even if the governance hook fails. Hook status is included in the JSON response so the UI can surface the result without turning routine chat into a hard failure.
+
+## Databricks Job Backend (Option A)
+
+This app can also hand off each question to a Databricks Job instead of
+running the local CLI hook. In this mode the backend:
+
+1. generates a `request_id`
+2. calls `jobs/run-now` with `question` and `request_id`
+3. waits for the Databricks job to finish
+4. queries the governance Delta table by `request_id`
+5. returns the final answer plus trust-card summary to the frontend
+
+Enable it by setting these backend env vars:
+
+```bash
+KENTRO_ENABLE_DATABRICKS_JOB_BACKEND=true
+DATABRICKS_HOST=https://<your-workspace-host>
+DATABRICKS_TOKEN=<token-with-job-and-sql-access>
+KENTRO_DATABRICKS_JOB_ID=<job-id>
+KENTRO_SQL_WAREHOUSE_ID=<sql-warehouse-id>
+KENTRO_GOVERNANCE_TABLE=wvu.ethanhall.kentroxai_governance_runs
+KENTRO_JOB_POLL_INTERVAL_MS=3000
+KENTRO_JOB_TIMEOUT_MS=120000
+```
+
+The Databricks job notebook must accept these widgets:
+
+```python
+dbutils.widgets.text("question", "")
+dbutils.widgets.text("request_id", "")
+```
+
+and persist `request_id` into the governance Delta table.

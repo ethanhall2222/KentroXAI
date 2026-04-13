@@ -5,5 +5,23 @@ command:
 env:
   - name: OPENAI_API_KEY
     valueFrom: OPENAI_API_KEY
+  - name: DATABRICKS_TOKEN
+    valueFrom: DATABRICKS_TOKEN
+  - name: DATABRICKS_HOST
+    value: https://dbc-cacca974-2104.cloud.databricks.com
+  - name: KENTRO_ENABLE_DATABRICKS_JOB_BACKEND
+    value: "true"
+  - name: KENTRO_ENABLE_GOVERNANCE_HOOK
+    value: "false"
+  - name: KENTRO_DATABRICKS_JOB_ID
+    value: "<YOUR_JOB_ID>"
+  - name: KENTRO_SQL_WAREHOUSE_ID
+    value: "<YOUR_SQL_WAREHOUSE_ID>"
+  - name: KENTRO_GOVERNANCE_TABLE
+    value: wvu.ethanhall.kentroxai_governance_runs
+  - name: KENTRO_JOB_POLL_INTERVAL_MS
+    value: "3000"
+  - name: KENTRO_JOB_TIMEOUT_MS
+    value: "120000"
   - name: KENTRO_CHAT_MODEL
     value: gpt-4.1-mini
