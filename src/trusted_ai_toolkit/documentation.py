@@ -17,6 +17,45 @@ def _load_json_if_exists(path: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _build_dynamic_model_context(config: ToolkitConfig, prompt_bundle: dict[str, Any]) -> dict[str, Any]:
+    base = config.model.model_dump() if config.model else {}
+    system_context = prompt_bundle.get("system_context", {})
+    invocation = prompt_bundle.get("model_invocation", {})
+
+    if isinstance(system_context, dict):
+        base.setdefault("model_name", system_context.get("model_name"))
+        base.setdefault("owner", system_context.get("owner"))
+        base.setdefault("version", system_context.get("model_version") or system_context.get("version"))
+        base.setdefault("task", system_context.get("task"))
+        base.setdefault("intended_use", system_context.get("intended_use") or system_context.get("endpoint_name"))
+        base.setdefault("limitations", system_context.get("limitations"))
+    if isinstance(invocation, dict):
+        base["model_name"] = invocation.get("model", base.get("model_name"))
+    return base
+
+
+def _build_dynamic_data_context(config: ToolkitConfig, prompt_bundle: dict[str, Any]) -> dict[str, Any]:
+    base = config.data.model_dump() if config.data else {}
+    runtime_metadata = prompt_bundle.get("runtime_metadata", {})
+    if not isinstance(runtime_metadata, dict):
+        return base
+
+    dataset_names = runtime_metadata.get("dataset_names", [])
+    owners = runtime_metadata.get("owners", [])
+    classifications = runtime_metadata.get("classifications", [])
+    source_types = runtime_metadata.get("source_types", [])
+
+    if dataset_names and not base.get("dataset_name"):
+        base["dataset_name"] = ", ".join(str(item) for item in dataset_names)
+    if source_types and not base.get("source"):
+        base["source"] = ", ".join(str(item) for item in source_types)
+    if owners:
+        base["intended_use"] = f"Retrieved from runtime-governed sources owned by {', '.join(str(item) for item in owners)}."
+    if classifications:
+        base["limitations"] = f"Runtime classifications observed: {', '.join(str(item) for item in classifications)}."
+    return base
+
+
 def build_documentation_artifacts(config: ToolkitConfig, store: ArtifactStore) -> list[Path]:
     """Generate governance card artifacts and artifact manifest outputs."""
 
@@ -30,7 +69,7 @@ def build_documentation_artifacts(config: ToolkitConfig, store: ArtifactStore) -
             {
                 "project_name": config.project_name,
                 "risk_tier": config.risk_tier,
-                "model": config.model.model_dump() if config.model else {},
+                "model": _build_dynamic_model_context(config, prompt_bundle),
                 "prompt": prompt_bundle.get("prompt", "N/A"),
             },
         )
@@ -40,7 +79,7 @@ def build_documentation_artifacts(config: ToolkitConfig, store: ArtifactStore) -
             "data_card.md.j2",
             "data_card.md",
             {
-                "data": config.data.model_dump() if config.data else {},
+                "data": _build_dynamic_data_context(config, prompt_bundle),
                 "project_name": config.project_name,
             },
         )
@@ -50,7 +89,7 @@ def build_documentation_artifacts(config: ToolkitConfig, store: ArtifactStore) -
             "model_card.md.j2",
             "model_card.md",
             {
-                "model": config.model.model_dump() if config.model else {},
+                "model": _build_dynamic_model_context(config, prompt_bundle),
                 "project_name": config.project_name,
                 "adapter": config.adapters.model_dump(mode="json"),
             },

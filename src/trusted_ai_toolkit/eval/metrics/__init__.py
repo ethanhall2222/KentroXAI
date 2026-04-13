@@ -617,8 +617,17 @@ def metric_fairness_demographic_parity_diff(context: dict) -> MetricResult:
     """Toy demographic parity difference inspired by fairness checks."""
 
     fairness_dataset = _fairness_dataset(context)
-    privileged_labels = fairness_dataset.get("privileged_labels") if fairness_dataset else [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
-    unprivileged_labels = fairness_dataset.get("unprivileged_labels") if fairness_dataset else [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
+    if not fairness_dataset:
+        return MetricResult(
+            metric_id="fairness_demographic_parity_diff",
+            value=0.0,
+            details={
+                "sensitive_features": context.get("sensitive_features", []),
+                "data_basis": "not_available_from_runtime_metadata",
+            },
+        )
+    privileged_labels = fairness_dataset.get("privileged_labels", [])
+    unprivileged_labels = fairness_dataset.get("unprivileged_labels", [])
     value = round(statistical_parity_difference(unprivileged_labels, privileged_labels), 3)
     ci = _bootstrap_confidence_interval(
         [*[(1, int(value)) for value in privileged_labels], *[(0, int(value)) for value in unprivileged_labels]],
@@ -641,7 +650,7 @@ def metric_fairness_demographic_parity_diff(context: dict) -> MetricResult:
 
 
 def metric_accuracy_stub(context: dict) -> MetricResult:
-    """Use labeled observations when available; otherwise fall back to the placeholder."""
+    """Use labeled observations when available; otherwise mark the metric unavailable."""
 
     labeled = _labeled_evaluation(context)
     if labeled:
@@ -667,10 +676,10 @@ def metric_accuracy_stub(context: dict) -> MetricResult:
 
     return MetricResult(
         metric_id="accuracy_stub",
-        value=0.81,
+        value=0.0,
         details={
             "dataset": context.get("dataset_name", "unknown"),
-            "data_basis": "placeholder_until_labeled_eval_set_exists",
+            "data_basis": "not_available_from_runtime_metadata",
         },
     )
 
@@ -679,8 +688,16 @@ def metric_fairness_disparate_impact_ratio(context: dict) -> MetricResult:
     """AIF360-inspired disparate impact ratio fairness metric."""
 
     fairness_dataset = _fairness_dataset(context)
-    privileged_labels = fairness_dataset.get("privileged_labels") if fairness_dataset else [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
-    unprivileged_labels = fairness_dataset.get("unprivileged_labels") if fairness_dataset else [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
+    if not fairness_dataset:
+        return MetricResult(
+            metric_id="fairness_disparate_impact_ratio",
+            value=0.0,
+            details={
+                "data_basis": "not_available_from_runtime_metadata",
+            },
+        )
+    privileged_labels = fairness_dataset.get("privileged_labels", [])
+    unprivileged_labels = fairness_dataset.get("unprivileged_labels", [])
     value = round(disparate_impact_ratio(unprivileged_labels, privileged_labels), 3)
     ci = _bootstrap_confidence_interval(
         [*[(1, int(value)) for value in privileged_labels], *[(0, int(value)) for value in unprivileged_labels]],
@@ -706,10 +723,18 @@ def metric_fairness_equal_opportunity_difference(context: dict) -> MetricResult:
     """AIF360-inspired equal opportunity difference fairness metric."""
 
     fairness_dataset = _fairness_dataset(context)
-    privileged_true = fairness_dataset.get("privileged_true") if fairness_dataset else [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
-    privileged_pred = fairness_dataset.get("privileged_pred") if fairness_dataset else [1, 1, 1, 0, 1, 0, 1, 0, 0, 1]
-    unprivileged_true = fairness_dataset.get("unprivileged_true") if fairness_dataset else [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
-    unprivileged_pred = fairness_dataset.get("unprivileged_pred") if fairness_dataset else [1, 0, 1, 0, 0, 0, 0, 1, 0, 1]
+    if not fairness_dataset:
+        return MetricResult(
+            metric_id="fairness_equal_opportunity_difference",
+            value=0.0,
+            details={
+                "data_basis": "not_available_from_runtime_metadata",
+            },
+        )
+    privileged_true = fairness_dataset.get("privileged_true", [])
+    privileged_pred = fairness_dataset.get("privileged_pred", [])
+    unprivileged_true = fairness_dataset.get("unprivileged_true", [])
+    unprivileged_pred = fairness_dataset.get("unprivileged_pred", [])
     value = round(
         equal_opportunity_difference(unprivileged_true, unprivileged_pred, privileged_true, privileged_pred),
         3,
@@ -729,10 +754,18 @@ def metric_fairness_average_odds_difference(context: dict) -> MetricResult:
     """AIF360-inspired average odds difference fairness metric."""
 
     fairness_dataset = _fairness_dataset(context)
-    privileged_true = fairness_dataset.get("privileged_true") if fairness_dataset else [1, 1, 1, 0, 1, 0, 1, 1, 0, 1]
-    privileged_pred = fairness_dataset.get("privileged_pred") if fairness_dataset else [1, 1, 1, 0, 1, 0, 1, 0, 0, 1]
-    unprivileged_true = fairness_dataset.get("unprivileged_true") if fairness_dataset else [1, 0, 1, 0, 1, 0, 0, 1, 0, 1]
-    unprivileged_pred = fairness_dataset.get("unprivileged_pred") if fairness_dataset else [1, 0, 1, 0, 0, 0, 0, 1, 0, 1]
+    if not fairness_dataset:
+        return MetricResult(
+            metric_id="fairness_average_odds_difference",
+            value=0.0,
+            details={
+                "data_basis": "not_available_from_runtime_metadata",
+            },
+        )
+    privileged_true = fairness_dataset.get("privileged_true", [])
+    privileged_pred = fairness_dataset.get("privileged_pred", [])
+    unprivileged_true = fairness_dataset.get("unprivileged_true", [])
+    unprivileged_pred = fairness_dataset.get("unprivileged_pred", [])
     value = round(
         average_odds_difference(unprivileged_true, unprivileged_pred, privileged_true, privileged_pred),
         3,

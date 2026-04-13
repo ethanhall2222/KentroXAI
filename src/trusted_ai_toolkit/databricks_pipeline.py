@@ -21,6 +21,168 @@ from trusted_ai_toolkit.cli import _apply_adapter_overrides, _run_prompt_workflo
 from trusted_ai_toolkit.config import load_config
 from trusted_ai_toolkit.schemas import ToolkitConfig
 
+_LABEL_KEYS = ("label", "expected_label", "ground_truth", "actual_label", "target")
+_PREDICTION_KEYS = ("prediction", "predicted_label", "model_prediction", "answer_label")
+_GROUP_KEYS = ("group", "sensitive_group", "cohort", "protected_group", "demographic_group")
+_PRIVILEGED_KEYS = ("is_privileged", "privileged")
+
+
+def _first_present(chunk: dict[str, Any], keys: tuple[str, ...]) -> Any:
+    for key in keys:
+        if key in chunk and chunk[key] is not None:
+            return chunk[key]
+    metadata = chunk.get("metadata")
+    if isinstance(metadata, dict):
+        for key in keys:
+            if key in metadata and metadata[key] is not None:
+                return metadata[key]
+    return None
+
+
+def _coerce_binary_label(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float)):
+        if value in {0, 1}:
+            return int(value)
+        return None
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "pass", "supported", "approved"}:
+            return 1
+        if normalized in {"0", "false", "no", "fail", "unsupported", "rejected"}:
+            return 0
+    return None
+
+
+def _coerce_bool(value: Any) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value in {0, 1}:
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes"}:
+            return True
+        if normalized in {"0", "false", "no"}:
+            return False
+    return None
+
+
+def _derive_labeled_evaluation(chunks: list[dict[str, Any]]) -> dict[str, Any] | None:
+    labels: list[int] = []
+    predictions: list[int] = []
+    dataset_names: set[str] = set()
+
+    for chunk in chunks:
+        label = _coerce_binary_label(_first_present(chunk, _LABEL_KEYS))
+        prediction = _coerce_binary_label(_first_present(chunk, _PREDICTION_KEYS))
+        if label is None or prediction is None:
+            continue
+        labels.append(label)
+        predictions.append(prediction)
+        dataset_name = _first_present(chunk, ("dataset_name", "index_name", "source_table", "table_name"))
+        if dataset_name:
+            dataset_names.add(str(dataset_name))
+
+    if not labels or len(labels) != len(predictions):
+        return None
+
+    return {
+        "dataset_name": sorted(dataset_names)[0] if dataset_names else "databricks_index_observed_labels",
+        "labels": labels,
+        "predictions": predictions,
+    }
+
+
+def _derive_fairness_dataset(chunks: list[dict[str, Any]]) -> dict[str, Any] | None:
+    privileged_labels: list[int] = []
+    unprivileged_labels: list[int] = []
+    privileged_true: list[int] = []
+    privileged_pred: list[int] = []
+    unprivileged_true: list[int] = []
+    unprivileged_pred: list[int] = []
+    sensitive_features: set[str] = set()
+
+    for chunk in chunks:
+        label = _coerce_binary_label(_first_present(chunk, _LABEL_KEYS))
+        prediction = _coerce_binary_label(_first_present(chunk, _PREDICTION_KEYS))
+        privileged = _coerce_bool(_first_present(chunk, _PRIVILEGED_KEYS))
+        group = _first_present(chunk, _GROUP_KEYS)
+        if privileged is None and group is not None:
+            normalized_group = str(group).strip().lower()
+            privileged = normalized_group in {"privileged", "control", "reference", "group_a", "a"}
+        if privileged is None or label is None:
+            continue
+
+        group_name = _first_present(chunk, ("sensitive_feature", "protected_attribute", "group_field"))
+        if group_name:
+            sensitive_features.add(str(group_name))
+
+        if privileged:
+            privileged_labels.append(label)
+            if prediction is not None:
+                privileged_true.append(label)
+                privileged_pred.append(prediction)
+        else:
+            unprivileged_labels.append(label)
+            if prediction is not None:
+                unprivileged_true.append(label)
+                unprivileged_pred.append(prediction)
+
+    if not privileged_labels or not unprivileged_labels:
+        return None
+
+    payload: dict[str, Any] = {
+        "privileged_labels": privileged_labels,
+        "unprivileged_labels": unprivileged_labels,
+        "sensitive_features": sorted(sensitive_features),
+    }
+    if privileged_true and privileged_pred and unprivileged_true and unprivileged_pred:
+        payload.update(
+            {
+                "privileged_true": privileged_true,
+                "privileged_pred": privileged_pred,
+                "unprivileged_true": unprivileged_true,
+                "unprivileged_pred": unprivileged_pred,
+            }
+        )
+    return payload
+
+
+def _derive_runtime_metadata(chunks: list[dict[str, Any]], system_context: dict[str, Any] | None) -> dict[str, Any]:
+    source_types: set[str] = set()
+    owners: set[str] = set()
+    classifications: set[str] = set()
+    datasets: set[str] = set()
+
+    for chunk in chunks:
+        for key in ("source_type", "content_type", "document_type"):
+            value = _first_present(chunk, (key,))
+            if value:
+                source_types.add(str(value))
+        for key in ("owner", "data_owner", "document_owner"):
+            value = _first_present(chunk, (key,))
+            if value:
+                owners.add(str(value))
+        for key in ("classification", "data_classification", "sensitivity"):
+            value = _first_present(chunk, (key,))
+            if value:
+                classifications.add(str(value))
+        for key in ("dataset_name", "index_name", "source_table", "table_name"):
+            value = _first_present(chunk, (key,))
+            if value:
+                datasets.add(str(value))
+
+    return {
+        "retrieved_chunk_count": len(chunks),
+        "dataset_names": sorted(datasets),
+        "owners": sorted(owners),
+        "classifications": sorted(classifications),
+        "source_types": sorted(source_types),
+        "system_context_keys": sorted(system_context.keys()) if system_context else [],
+    }
+
 
 def _normalize_retrieved_chunks(retrieved_chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Normalize chunk payloads into the structure used by prompt artifacts.
@@ -46,7 +208,8 @@ def _normalize_retrieved_chunks(retrieved_chunks: list[dict[str, Any]]) -> list[
             or ""
         ).strip()
 
-        normalized.append(
+        normalized_chunk = dict(chunk)
+        normalized_chunk.update(
             {
                 "id": chunk_id,
                 "chunk_id": chunk_id,
@@ -54,12 +217,13 @@ def _normalize_retrieved_chunks(retrieved_chunks: list[dict[str, Any]]) -> list[
                 "doc_uri": doc_uri,
                 "text": chunk_text,
                 "chunk_text": chunk_text,
-                "title": str(chunk.get("title") or chunk.get("source") or doc_uri or chunk_id),
+                "title": str(chunk.get("title") or chunk.get("source") or chunk.get("doc_title") or doc_uri or chunk_id),
                 "score": chunk.get("score", chunk.get("retrieval_score")),
                 "retrieval_score": chunk.get("retrieval_score", chunk.get("score")),
                 "rank": chunk.get("rank", index),
             }
         )
+        normalized.append(normalized_chunk)
 
     return normalized
 
@@ -74,13 +238,19 @@ def build_prompt_bundle(
 ) -> dict[str, Any]:
     """Create the prompt bundle shape used by Kentro scoring and reporting."""
 
+    normalized_chunks = _normalize_retrieved_chunks(retrieved_chunks)
     payload = {
         "prompt": question,
         "model_output": answer,
-        "retrieved_contexts": _normalize_retrieved_chunks(retrieved_chunks),
+        "retrieved_contexts": normalized_chunks,
     }
     if system_context:
         payload["system_context"] = system_context
+    if labeled_evaluation := _derive_labeled_evaluation(normalized_chunks):
+        payload["labeled_evaluation"] = labeled_evaluation
+    if fairness_dataset := _derive_fairness_dataset(normalized_chunks):
+        payload["fairness_dataset"] = fairness_dataset
+    payload["runtime_metadata"] = _derive_runtime_metadata(normalized_chunks, system_context)
     if extra_context:
         payload.update(extra_context)
     return payload

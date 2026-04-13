@@ -30,6 +30,16 @@ _CONTEXTUAL_METRICS = {
     "context_relevance_embedding",
     "output_support_embedding",
 }
+_EMBEDDING_METRICS = {
+    "context_relevance_embedding",
+    "output_support_embedding",
+}
+_FAIRNESS_METRICS = {
+    "fairness_demographic_parity_diff",
+    "fairness_disparate_impact_ratio",
+    "fairness_equal_opportunity_difference",
+    "fairness_average_odds_difference",
+}
 
 
 def _load_suite_definition(suite_name: str, config_path: Path | None = None) -> dict[str, Any]:
@@ -74,7 +84,7 @@ def _load_prompt_bundle(output_dir: str, run_id: str) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
-def _embedding_features(config: ToolkitConfig, prompt_bundle: dict[str, Any]) -> dict[str, Any]:
+def compute_embedding_features(config: ToolkitConfig, prompt_bundle: dict[str, Any]) -> dict[str, Any]:
     prompt_text = str(prompt_bundle.get("prompt", ""))
     output_text = str(prompt_bundle.get("model_output", ""))
     contexts = prompt_bundle.get("retrieved_contexts", [])
@@ -135,6 +145,8 @@ def run_eval(
     run_id: str,
     telemetry: TelemetryLogger | None = None,
     config_path: Path | None = None,
+    prompt_bundle: dict[str, Any] | None = None,
+    embedding_features: dict[str, Any] | None = None,
 ) -> list[EvalResult]:
     """Execute configured evaluation suites and return result payloads."""
 
@@ -146,8 +158,16 @@ def run_eval(
         cases = suite_def.get("cases", [])
         unsafe_cases = sum(1 for case in cases if isinstance(case, dict) and case.get("kind") == "unsafe")
         unanswerable_cases = sum(1 for case in cases if isinstance(case, dict) and case.get("kind") == "unanswerable")
-        prompt_bundle = _load_prompt_bundle(config.output_dir, run_id)
-        embedding_features = _embedding_features(config, prompt_bundle)
+        active_prompt_bundle = prompt_bundle or _load_prompt_bundle(config.output_dir, run_id)
+        active_embedding_features = embedding_features
+        if active_embedding_features is None:
+            if set(metric_ids).intersection(_EMBEDDING_METRICS):
+                active_embedding_features = compute_embedding_features(config, active_prompt_bundle)
+            else:
+                active_embedding_features = {
+                    "embedding_available": False,
+                    "reason": "embedding metrics not configured for this suite",
+                }
 
         metric_results: list[MetricResult] = []
         started = datetime.now(timezone.utc)
@@ -159,12 +179,12 @@ def run_eval(
             "total_cases": len(cases),
             "unsafe_cases": unsafe_cases,
             "unanswerable_cases": unanswerable_cases,
-            "prompt": str(prompt_bundle.get("prompt", "")),
-            "model_output": str(prompt_bundle.get("model_output", "")),
-            "retrieved_contexts": prompt_bundle.get("retrieved_contexts", []),
-            "fairness_dataset": prompt_bundle.get("fairness_dataset"),
-            "labeled_evaluation": prompt_bundle.get("labeled_evaluation"),
-            "embedding_features": embedding_features,
+            "prompt": str(active_prompt_bundle.get("prompt", "")),
+            "model_output": str(active_prompt_bundle.get("model_output", "")),
+            "retrieved_contexts": active_prompt_bundle.get("retrieved_contexts", []),
+            "fairness_dataset": active_prompt_bundle.get("fairness_dataset"),
+            "labeled_evaluation": active_prompt_bundle.get("labeled_evaluation"),
+            "embedding_features": active_embedding_features,
         }
 
         for metric_id in metric_ids:
@@ -175,6 +195,10 @@ def run_eval(
             suite_thresholds = suite_def.get("thresholds", {})
             threshold = config.eval.thresholds.get(metric_id, suite_thresholds.get(metric_id))
             if metric_id in _CONTEXTUAL_METRICS and not context.get("retrieved_contexts"):
+                threshold = None
+            if metric_id == "accuracy_stub" and not context.get("labeled_evaluation"):
+                threshold = None
+            if metric_id in _FAIRNESS_METRICS and not context.get("fairness_dataset"):
                 threshold = None
             metric_result.threshold = threshold
             metric_result.passed = _metric_passed(metric_id, metric_result.value, threshold)

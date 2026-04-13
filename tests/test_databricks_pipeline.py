@@ -20,6 +20,10 @@ def test_build_prompt_bundle_normalizes_databricks_chunk_fields() -> None:
                 "doc_uri": "dbfs:/Volumes/main/policy.pdf",
                 "chunk_text": "Documented evaluation is required before release.",
                 "retrieval_score": 0.91,
+                "label": 1,
+                "prediction": 1,
+                "is_privileged": True,
+                "owner": "policy-team",
             }
         ],
         system_context={"model_provider": "openai"},
@@ -30,7 +34,10 @@ def test_build_prompt_bundle_normalizes_databricks_chunk_fields() -> None:
     assert bundle["retrieved_contexts"][0]["id"] == "chunk-001"
     assert bundle["retrieved_contexts"][0]["text"] == "Documented evaluation is required before release."
     assert bundle["retrieved_contexts"][0]["uri"] == "dbfs:/Volumes/main/policy.pdf"
+    assert bundle["retrieved_contexts"][0]["owner"] == "policy-team"
     assert bundle["system_context"]["model_provider"] == "openai"
+    assert bundle["labeled_evaluation"]["labels"] == [1]
+    assert bundle["runtime_metadata"]["owners"] == ["policy-team"]
 
 
 def test_run_databricks_answer_pipeline_reuses_prompt_workflow(tmp_path: Path, monkeypatch) -> None:

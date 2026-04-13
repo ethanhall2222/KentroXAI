@@ -29,6 +29,12 @@ def build_lineage_report(store: ArtifactStore) -> LineageReport:
     for idx, item in enumerate(contexts, start=1):
         if not isinstance(item, dict):
             continue
+        metadata = {
+            key: value
+            for key, value in item.items()
+            if key not in {"id", "chunk_id", "uri", "doc_uri", "title", "snippet", "text", "content", "chunk_text"}
+            and value is not None
+        }
         nodes.append(
             LineageNode(
                 node_id=str(item.get("id", f"ctx-{idx}")),
@@ -39,10 +45,7 @@ def build_lineage_report(store: ArtifactStore) -> LineageReport:
                 content_hash=hashlib.sha256(merged.encode("utf-8")).hexdigest() if (merged := " ".join(
                     str(item.get(key, "")).strip() for key in ("title", "snippet", "text", "content") if str(item.get(key, "")).strip()
                 )) else None,
-                metadata={
-                    "source": item.get("source"),
-                    "snippet": item.get("snippet"),
-                },
+                metadata={"source": item.get("source"), "snippet": item.get("snippet"), **metadata},
             )
         )
 
@@ -85,10 +88,10 @@ def build_authoritative_source_index(lineage: LineageReport) -> list[Authoritati
         AuthoritativeSource(
             source_id=node.node_id,
             name=node.title,
-            owner="data-governance",
-            classification="internal",
+            owner=str(node.metadata.get("owner") or node.metadata.get("data_owner") or "data-governance"),
+            classification=str(node.metadata.get("classification") or node.metadata.get("data_classification") or "internal"),
             uri=node.uri,
-            approved=True,
+            approved=bool(node.metadata.get("approved", True)),
         )
         for node in lineage.nodes
     ]

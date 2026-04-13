@@ -1,6 +1,7 @@
 """Scorecard reporting utilities for governance artifacts."""
 
 from __future__ import annotations
+import base64
 
 import json
 from pathlib import Path
@@ -16,6 +17,26 @@ from tat.controls import pillar_scores, risk_tier as controls_risk_tier, run_con
 from trusted_ai_toolkit.artifacts import ArtifactStore
 from trusted_ai_toolkit.schemas import MetricResult, RedTeamFinding, Scorecard, ToolkitConfig
 from tat.runtime import build_system_context, compute_system_hash
+
+def _embed_brand_logo() -> str | None:
+    """Return a portable data URI for the preferred Kentro logo asset if present."""
+
+    logo_path = _resolve_brand_logo()
+    if logo_path is None:
+        return None
+
+    path = Path(logo_path)
+    mime_type = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".svg": "image/svg+xml",
+    }.get(path.suffix.lower())
+    if mime_type is None:
+        return None
+
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{mime_type};base64,{encoded}"
 
 
 def _load_json_if_exists(path: Path) -> Any:
@@ -617,7 +638,7 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     context["raw_trust_score_pct"] = context["governance_score_pct"]
     context["weighting_rationale"] = scorecard.weighting_rationale
     context["release_readiness_score_pct"] = context["card_score"]["display_score_pct"]
-    context["brand_logo_path"] = _resolve_brand_logo()
+    context["brand_logo_src"] = _embed_brand_logo()
     context["generated_files"] = {
         "scorecard_md": str(store.path_for("scorecard.md")),
         "scorecard_html": str(store.path_for("scorecard.html")),

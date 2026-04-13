@@ -92,16 +92,26 @@ export default function App() {
           ...session,
           modelName: payload.model ?? "local-scaffold",
           lastModelUsed: payload.model ?? "local-scaffold",
-          governanceState: payload.governanceHookEnabled ? "Hook armed" : "Hook idle",
-          sessionPosture:
-            payload.sessionMode === "governance-enabled" ? "Governance-ready mode" : "Local chat mode",
-          statusText: payload.liveModelReady
-            ? payload.governanceHookEnabled
-              ? "Backend ready. Live model connected and governance handoff is armed."
-              : "Backend ready. Live model connected for operator chat."
+          governanceState: payload.jobBackendEnabled
+            ? "Job backend armed"
             : payload.governanceHookEnabled
-              ? "Backend ready. Governance handoff is armed for this session."
-              : "Backend ready for local chat.",
+              ? "Hook armed"
+              : "Governance idle",
+          sessionPosture:
+            payload.sessionMode === "databricks-job"
+              ? "Databricks job mode"
+              : payload.sessionMode === "governance-enabled"
+                ? "Governance-ready mode"
+                : "Local chat mode",
+          statusText: payload.jobBackendEnabled
+            ? "Backend ready. Databricks job execution is armed for governed responses."
+            : payload.liveModelReady
+              ? payload.governanceHookEnabled
+                ? "Backend ready. Live model connected and governance handoff is armed."
+                : "Backend ready. Live model connected for operator chat."
+              : payload.governanceHookEnabled
+                ? "Backend ready. Governance handoff is armed for this session."
+                : "Backend ready for local chat.",
         }));
       } catch (error) {
         if (cancelled) {
@@ -184,6 +194,13 @@ export default function App() {
 
       startTransition(() => {
         const scorecard = payload.governance?.scorecard ?? null;
+        const artifactPath = payload.governance?.artifactPath ?? "";
+        const scorecardHtml = payload.governance?.scorecardHtml ?? "";
+        const derivedScorecardUrl = scorecardHtml
+          ? URL.createObjectURL(new Blob([scorecardHtml], { type: "text/html" }))
+          : scorecard?.htmlUrl ?? "";
+        const trustValue = scorecard?.trustScore ?? payload.governance?.answerTrustScore ?? null;
+
         updateCurrentSession((session) => ({
           ...session,
           messages: [...session.messages, assistantMessage],
@@ -192,24 +209,32 @@ export default function App() {
           lastModelUsed: payload.model ?? "local-scaffold",
           governanceState: governanceLabel(payload.governance),
           sessionPosture: sessionPostureLabel(payload.governance),
-          lastArtifactPath: payload.governance?.artifactPath ?? "",
+          lastArtifactPath: artifactPath,
           lastArtifactRunId: payload.governance?.artifactRunId ?? "",
-          lastScorecardUrl: scorecard?.htmlUrl ?? "",
+          lastScorecardUrl: derivedScorecardUrl,
           lastScorecardHtmlPath: scorecard?.htmlPath ?? "",
-          lastScorecardJsonPath: scorecard?.jsonPath ?? "",
-          lastTrustScore: scorecard?.trustScore ?? null,
-          lastTrustScoreSource: scorecard?.scoreSource ?? "",
-          lastOverallStatus: scorecard?.overallStatus ?? "",
-          lastGoNoGo: scorecard?.goNoGo ?? "",
+          lastScorecardJsonPath: payload.governance?.scorecardJsonPath ?? scorecard?.jsonPath ?? "",
+          lastTrustScore: trustValue,
+          lastTrustScoreSource:
+            scorecard?.scoreSource ??
+            (payload.governance?.answerTrustScore !== null && payload.governance?.answerTrustScore !== undefined
+              ? "Answer trust"
+              : ""),
+          lastOverallStatus: scorecard?.overallStatus ?? payload.governance?.overallStatus ?? "",
+          lastGoNoGo: scorecard?.goNoGo ?? payload.governance?.goNoGo ?? "",
           lastEvidenceCompleteness: scorecard?.evidenceCompleteness ?? null,
           updatedAt: Date.now(),
         }));
       });
 
       if (payload.governance?.success) {
+        const trustValue =
+          payload.governance?.scorecard?.trustScore ??
+          payload.governance?.answerTrustScore ??
+          null;
         const trustSuffix =
-          payload.governance?.scorecard?.trustScore !== null && payload.governance?.scorecard?.trustScore !== undefined
-            ? ` · Trust ${formatTrustScoreValue(payload.governance.scorecard.trustScore)}`
+          trustValue !== null && trustValue !== undefined
+            ? ` · Trust ${formatTrustScoreValue(trustValue)}`
             : "";
         pushToast(
           `Artifacts generated${payload.governance?.artifactRunId ? ` · ${payload.governance.artifactRunId}` : ""}${trustSuffix}`,
@@ -253,9 +278,11 @@ export default function App() {
       governanceState: currentSession.governanceState,
       sessionPosture: currentSession.sessionPosture === "Backend issue" ? "Local chat mode" : currentSession.sessionPosture,
       statusText:
-        currentSession.governanceState === "Hook armed"
-          ? "Backend ready. Governance handoff is armed for this session."
-          : "Backend ready for local chat.",
+        currentSession.governanceState === "Job backend armed"
+          ? "Backend ready. Databricks job execution is armed for governed responses."
+          : currentSession.governanceState === "Hook armed"
+            ? "Backend ready. Governance handoff is armed for this session."
+            : "Backend ready for local chat.",
     });
 
     startTransition(() => {
@@ -292,9 +319,11 @@ export default function App() {
                 ? "Local chat mode"
                 : currentSession.sessionPosture,
             statusText:
-              currentSession.governanceState === "Hook armed"
-                ? "Backend ready. Governance handoff is armed for this session."
-                : "Backend ready for local chat.",
+              currentSession.governanceState === "Job backend armed"
+                ? "Backend ready. Databricks job execution is armed for governed responses."
+                : currentSession.governanceState === "Hook armed"
+                  ? "Backend ready. Governance handoff is armed for this session."
+                  : "Backend ready for local chat.",
           });
           setCurrentSessionId(replacement.id);
           return [replacement];
@@ -323,9 +352,11 @@ export default function App() {
             governanceState: currentSession.governanceState,
             sessionPosture: "Local chat mode",
             statusText:
-              currentSession.governanceState === "Hook armed"
-                ? "Backend ready. Governance handoff is armed for this session."
-                : "Backend ready for local chat.",
+              currentSession.governanceState === "Job backend armed"
+                ? "Backend ready. Databricks job execution is armed for governed responses."
+                : currentSession.governanceState === "Hook armed"
+                  ? "Backend ready. Governance handoff is armed for this session."
+                  : "Backend ready for local chat.",
           })
         : null;
 
@@ -459,7 +490,10 @@ export default function App() {
       tone:
         currentSession.governanceState === "Artifacts generated"
           ? "success"
-          : currentSession.governanceState === "Hook attempted" || currentSession.governanceState === "Hook armed"
+          : currentSession.governanceState === "Hook attempted" ||
+              currentSession.governanceState === "Hook armed" ||
+              currentSession.governanceState === "Job attempted" ||
+              currentSession.governanceState === "Job backend armed"
             ? "warning"
             : currentSession.governanceState === "Backend issue"
               ? "danger"
@@ -644,7 +678,7 @@ export default function App() {
               ) : (
                 <button type="button" className="scorecard-link scorecard-link-disabled" disabled>
                   <Icon name="external" />
-                  <span>Run governance to view scorecard</span>
+                  <span>Scorecard summarized below</span>
                 </button>
               )}
             </div>
@@ -716,7 +750,7 @@ export default function App() {
                       <div className="message-meta">Waiting for backend</div>
                     </div>
                   </div>
-                  <p>Thinking through the local scaffold and governance handoff...</p>
+                  <p>Running the Databricks governance job and waiting for the result...</p>
                 </article>
               ) : null}
               <div ref={scrollAnchorRef} />
@@ -754,9 +788,13 @@ export default function App() {
                 <p>
                   {currentSession.archived
                     ? "Restore the chat to continue the conversation."
-                    : currentSession.modelName === "local-scaffold"
-                      ? "Replies fall back to the local scaffold until a live model key is available."
-                      : "Replies are coming from the live model. Enable governance to generate scorecards and artifacts."}
+                    : currentSession.sessionPosture === "Databricks job mode" ||
+                        currentSession.sessionPosture === "Databricks governance run complete" ||
+                        currentSession.sessionPosture === "Databricks governance handoff attempted"
+                      ? "Replies are coming through the Databricks job backend with trust scoring."
+                      : currentSession.modelName === "local-scaffold"
+                        ? "Replies fall back to the local scaffold until a live model key is available."
+                        : "Replies are coming from the live model. Governance can be run from the backend."}
                 </p>
                 <button type="submit" className="send-button" disabled={currentSession.archived || pending || !draft.trim()}>
                   <span>{pending ? "Sending..." : "Send message"}</span>
@@ -1068,7 +1106,7 @@ function loadSessions() {
       archived: Boolean(session.archived),
       lastArtifactPath: session.lastArtifactPath ?? "",
       lastArtifactRunId: session.lastArtifactRunId ?? "",
-      lastScorecardUrl: session.lastScorecardUrl ?? "",
+      lastScorecardUrl: "",
       lastScorecardHtmlPath: session.lastScorecardHtmlPath ?? "",
       lastScorecardJsonPath: session.lastScorecardJsonPath ?? "",
       lastTrustScore: session.lastTrustScore ?? null,
@@ -1090,7 +1128,7 @@ function createSession(overrides = {}) {
     messages: createStarterMessages(),
     modelName: "local-scaffold",
     lastModelUsed: "local-scaffold",
-    governanceState: "Hook idle",
+    governanceState: "Governance idle",
     sessionPosture: "Local chat mode",
     statusText: "Checking local backend status...",
     archived: false,
@@ -1137,45 +1175,59 @@ function buildGovernanceMeta(governance) {
   if (!governance?.enabled) {
     return {
       label: "Assistant",
-      timestamp: `${timeLabel()} · Governance hook off`,
+      timestamp: `${timeLabel()} · Governance off`,
     };
   }
+
+  const trustValue =
+    governance.scorecard?.trustScore ??
+    governance.answerTrustScore ??
+    null;
 
   if (governance.success) {
     return {
       label: "Assistant",
       timestamp:
-        governance.scorecard?.trustScore !== null && governance.scorecard?.trustScore !== undefined
-          ? `${timeLabel()} · Artifacts generated · Trust ${formatTrustScoreValue(governance.scorecard.trustScore)}`
+        trustValue !== null && trustValue !== undefined
+          ? `${timeLabel()} · Artifacts generated · Trust ${formatTrustScoreValue(trustValue)}`
           : `${timeLabel()} · Artifacts generated`,
     };
   }
 
   return {
     label: "Assistant",
-    timestamp: `${timeLabel()} · Hook attempted`,
+    timestamp: `${timeLabel()} · Governance attempted`,
   };
 }
 
 function statusFromGovernance(governance, modelName) {
   if (!governance?.enabled) {
     return modelName === "local-scaffold"
-      ? "Reply returned locally. Governance hook is disabled."
-      : "Reply returned from the live model. Governance hook is disabled.";
+      ? "Reply returned locally. Governance is disabled."
+      : "Reply returned from the live model. Governance is disabled.";
   }
+
+  const trustValue =
+    governance.scorecard?.trustScore ??
+    governance.answerTrustScore ??
+    null;
 
   if (governance.success) {
-    return governance.scorecard?.trustScore !== null && governance.scorecard?.trustScore !== undefined
-      ? `Reply returned and Kentro generated a scorecard with a trust score of ${formatTrustScoreValue(governance.scorecard.trustScore)}.`
-      : "Reply returned and the Kentro CLI hook completed successfully.";
+    return trustValue !== null && trustValue !== undefined
+      ? `Reply returned and Kentro generated a scorecard with a trust score of ${formatTrustScoreValue(trustValue)}.`
+      : governance.mode === "databricks-job"
+        ? "Reply returned and the Databricks governance job completed successfully."
+        : "Reply returned and the Kentro CLI hook completed successfully.";
   }
 
-  return "Reply returned, but the Kentro CLI hook needs attention.";
+  return governance.mode === "databricks-job"
+    ? "Reply returned, but the Databricks governance job needs attention."
+    : "Reply returned, but the Kentro CLI hook needs attention.";
 }
 
 function governanceLabel(governance) {
   if (!governance?.enabled) {
-    return "Hook idle";
+    return "Governance idle";
   }
 
   if (governance.success) {
@@ -1183,10 +1235,10 @@ function governanceLabel(governance) {
   }
 
   if (governance.attempted) {
-    return "Hook attempted";
+    return governance.mode === "databricks-job" ? "Job attempted" : "Hook attempted";
   }
 
-  return "Hook idle";
+  return "Governance idle";
 }
 
 function sessionPostureLabel(governance) {
@@ -1195,11 +1247,15 @@ function sessionPostureLabel(governance) {
   }
 
   if (governance.success) {
-    return "Governance run complete";
+    return governance.mode === "databricks-job"
+      ? "Databricks governance run complete"
+      : "Governance run complete";
   }
 
   if (governance.attempted) {
-    return "Governance handoff attempted";
+    return governance.mode === "databricks-job"
+      ? "Databricks governance handoff attempted"
+      : "Governance handoff attempted";
   }
 
   return "Local chat mode";
@@ -1283,7 +1339,12 @@ function statusToneForGovernance(governanceState) {
     return "success";
   }
 
-  if (governanceState === "Hook attempted" || governanceState === "Hook armed") {
+  if (
+    governanceState === "Hook attempted" ||
+    governanceState === "Hook armed" ||
+    governanceState === "Job attempted" ||
+    governanceState === "Job backend armed"
+  ) {
     return "warning";
   }
 
@@ -1311,7 +1372,12 @@ function trustSummaryForSession(session) {
     displayValue: "Awaiting run",
     subLabel: "No governance scorecard yet",
     statusLabel: session.governanceState,
-    helperText: "Enable the governance hook to generate a scorecard and trust score.",
+    helperText:
+      session.sessionPosture === "Databricks job mode" ||
+      session.sessionPosture === "Databricks governance run complete" ||
+      session.sessionPosture === "Databricks governance handoff attempted"
+        ? "Use the Databricks job backend to generate a scorecard and trust score."
+        : "Enable the governance hook to generate a scorecard and trust score.",
     tone: "neutral",
   };
 }

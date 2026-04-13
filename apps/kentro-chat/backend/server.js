@@ -18,13 +18,17 @@ const PORT = Number.parseInt(process.env.PORT ?? process.env.DATABRICKS_APP_PORT
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
 const CHAT_MODEL = process.env.KENTRO_CHAT_MODEL ?? "gpt-4.1-mini";
 const DATABRICKS_HOST = (process.env.DATABRICKS_HOST ?? "").replace(/\/$/, "");
-const DATABRICKS_TOKEN = process.env.DATABRICKS_TOKEN ?? "";
+const DATABRICKS_CLIENT_ID = process.env.DATABRICKS_CLIENT_ID ?? "";
+const DATABRICKS_CLIENT_SECRET = process.env.DATABRICKS_CLIENT_SECRET ?? "";
 const DATABRICKS_JOB_ID = process.env.KENTRO_DATABRICKS_JOB_ID ?? "";
-const DATABRICKS_SQL_WAREHOUSE_ID = process.env.KENTRO_SQL_WAREHOUSE_ID ?? "";
-const GOVERNANCE_TABLE =
-  process.env.KENTRO_GOVERNANCE_TABLE ?? "wvu.ethanhall.kentroxai_governance_runs";
 const JOB_POLL_INTERVAL_MS = Number.parseInt(process.env.KENTRO_JOB_POLL_INTERVAL_MS ?? "3000", 10);
 const JOB_TIMEOUT_MS = Number.parseInt(process.env.KENTRO_JOB_TIMEOUT_MS ?? "120000", 10);
+
+let databricksAccessTokenCache = {
+  token: "",
+  expiresAtMs: 0,
+};
+
 const repoRoot = path.resolve(__dirname, "../../..");
 const defaultConfigPath = path.resolve(__dirname, "../../../config.yaml");
 const frontendDistDir = path.resolve(__dirname, "../frontend/dist");
@@ -45,6 +49,9 @@ app.get("/api/health", (_req, res) => {
     liveModelReady,
     governanceHookEnabled: isGovernanceHookEnabled(),
     jobBackendEnabled: isJobBackendEnabled(),
+    databricksHostConfigured: Boolean(DATABRICKS_HOST),
+    databricksClientIdConfigured: Boolean(DATABRICKS_CLIENT_ID),
+    databricksJobIdConfigured: Boolean(DATABRICKS_JOB_ID),
     sessionMode: isJobBackendEnabled()
       ? "databricks-job"
       : isGovernanceHookEnabled()
@@ -91,6 +98,7 @@ app.post("/api/chat", async (req, res) => {
       });
       return;
     } catch (error) {
+      console.error("Databricks job backend failed:", error);
       res.status(502).json({
         error: error instanceof Error ? error.message : String(error),
       });
@@ -198,29 +206,73 @@ function isGovernanceHookEnabled() {
   return String(process.env.KENTRO_ENABLE_GOVERNANCE_HOOK ?? "").toLowerCase() === "true";
 }
 
-function databricksHeaders() {
-  return {
-    Authorization: `Bearer ${DATABRICKS_TOKEN}`,
-    "Content-Type": "application/json",
-  };
-}
-
 function requireDatabricksBackendConfig() {
   const missing = [];
   if (!DATABRICKS_HOST) missing.push("DATABRICKS_HOST");
-  if (!DATABRICKS_TOKEN) missing.push("DATABRICKS_TOKEN");
+  if (!DATABRICKS_CLIENT_ID) missing.push("DATABRICKS_CLIENT_ID");
+  if (!DATABRICKS_CLIENT_SECRET) missing.push("DATABRICKS_CLIENT_SECRET");
   if (!DATABRICKS_JOB_ID) missing.push("KENTRO_DATABRICKS_JOB_ID");
-  if (!DATABRICKS_SQL_WAREHOUSE_ID) missing.push("KENTRO_SQL_WAREHOUSE_ID");
   if (missing.length > 0) {
     throw new Error(`Databricks job backend is missing required env vars: ${missing.join(", ")}`);
   }
 }
 
+async function getDatabricksAccessToken() {
+  const now = Date.now();
+
+  if (databricksAccessTokenCache.token && databricksAccessTokenCache.expiresAtMs - 60_000 > now) {
+    return databricksAccessTokenCache.token;
+  }
+
+  const tokenUrl = `${DATABRICKS_HOST}/oidc/v1/token`;
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    scope: "all-apis",
+  });
+
+  const basicAuth = Buffer.from(
+    `${DATABRICKS_CLIENT_ID}:${DATABRICKS_CLIENT_SECRET}`,
+    "utf8",
+  ).toString("base64");
+
+  const response = await fetch(tokenUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basicAuth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Databricks OAuth token request failed with ${response.status}: ${text}`);
+  }
+
+  const payload = await response.json();
+  const accessToken = payload.access_token ?? "";
+  const expiresIn = Number(payload.expires_in ?? 3600);
+
+  if (!accessToken) {
+    throw new Error("Databricks OAuth token response did not include access_token.");
+  }
+
+  databricksAccessTokenCache = {
+    token: accessToken,
+    expiresAtMs: now + expiresIn * 1000,
+  };
+
+  return accessToken;
+}
+
 async function databricksApi(pathname, init = {}) {
+  const accessToken = await getDatabricksAccessToken();
+
   const response = await fetch(`${DATABRICKS_HOST}${pathname}`, {
     ...init,
     headers: {
-      ...databricksHeaders(),
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },
   });
@@ -276,104 +328,71 @@ async function waitForRunCompletion(runId) {
   throw new Error(`Timed out waiting for Databricks job run ${runId}`);
 }
 
-async function fetchGovernanceRow(requestId) {
-  const statement = `
-    SELECT
-      request_id,
-      run_id,
-      created_at,
-      query_text,
-      answer_text,
-      answer_verdict,
-      answer_trust_score,
-      overall_status,
-      go_no_go,
-      top_doc_uris,
-      retrieved_chunks_json,
-      scorecard_json_path,
-      artifact_dir
-    FROM ${GOVERNANCE_TABLE}
-    WHERE request_id = '${requestId.replace(/'/g, "''")}'
-    ORDER BY created_at DESC
-    LIMIT 1
-  `;
+function getTaskRunId(runPayload) {
+  const task = Array.isArray(runPayload.tasks) ? runPayload.tasks[0] : null;
+  const taskRunId = task?.run_id;
 
-  const submitPayload = await databricksApi("/api/2.0/sql/statements", {
-    method: "POST",
-    body: JSON.stringify({
-      warehouse_id: DATABRICKS_SQL_WAREHOUSE_ID,
-      statement,
-      wait_timeout: "10s",
-      disposition: "INLINE",
-    }),
-  });
-
-  let payload = submitPayload;
-  while (payload.status?.state === "PENDING" || payload.status?.state === "RUNNING") {
-    await sleep(1000);
-    payload = await databricksApi(`/api/2.0/sql/statements/${payload.statement_id}`, {
-      method: "GET",
-    });
+  if (!taskRunId) {
+    throw new Error("Databricks run completed but no task run_id was found in the run payload.");
   }
 
-  if (payload.status?.state !== "SUCCEEDED") {
-    throw new Error(`SQL statement for request_id ${requestId} did not succeed: ${payload.status?.state ?? "UNKNOWN"}`);
-  }
-
-  const schema = payload.manifest?.schema?.columns ?? [];
-  const rows = payload.result?.data_array ?? [];
-  if (rows.length === 0) {
-    return null;
-  }
-
-  const row = {};
-  for (let idx = 0; idx < schema.length; idx += 1) {
-    row[schema[idx].name] = rows[0][idx];
-  }
-  return row;
+  return taskRunId;
 }
 
-async function waitForGovernanceRow(requestId) {
-  const startedAt = Date.now();
+async function getRunOutput(taskRunId) {
+  const payload = await databricksApi(`/api/2.1/jobs/runs/get-output?run_id=${taskRunId}`, {
+    method: "GET",
+  });
 
-  while (Date.now() - startedAt < JOB_TIMEOUT_MS) {
-    const row = await fetchGovernanceRow(requestId);
-    if (row) {
-      return row;
-    }
-    await sleep(JOB_POLL_INTERVAL_MS);
+  const rawResult = payload.notebook_output?.result ?? "";
+
+  if (!rawResult) {
+    throw new Error(`Databricks task run ${taskRunId} completed but notebook output was empty.`);
   }
 
-  throw new Error(`Timed out waiting for governance row for request_id ${requestId}`);
+  try {
+    return JSON.parse(rawResult);
+  } catch (error) {
+    throw new Error(
+      `Databricks task run ${taskRunId} returned non-JSON notebook output: ${rawResult.slice(0, 500)}`
+    );
+  }
 }
 
 async function runDatabricksJobBackend({ message, requestId }) {
   requireDatabricksBackendConfig();
 
   const runPayload = await submitDatabricksRun({ message, requestId });
-  const runId = runPayload.run_id;
-  await waitForRunCompletion(runId);
-  const row = await waitForGovernanceRow(requestId);
+  const parentRunId = runPayload.run_id;
+  const completedRunPayload = await waitForRunCompletion(parentRunId);
+  const taskRunId = getTaskRunId(completedRunPayload);
+  const output = await getRunOutput(taskRunId);
 
   return {
     enabled: true,
     attempted: true,
     success: true,
     mode: "databricks-job",
-    requestId,
-    databricksRunId: String(runId),
-    answerText: row.answer_text ?? "",
-    answerVerdict: row.answer_verdict ?? "",
-    answerTrustScore: row.answer_trust_score ?? null,
-    overallStatus: row.overall_status ?? "",
-    goNoGo: row.go_no_go ?? "",
-    topDocUris: Array.isArray(row.top_doc_uris) ? row.top_doc_uris : [],
-    retrievedChunksJson: row.retrieved_chunks_json ?? "",
-    artifactPath: row.artifact_dir ?? "",
-    artifactRunId: row.run_id ?? "",
-    scorecardJsonPath: row.scorecard_json_path ?? "",
+    requestId: output.request_id ?? requestId,
+    databricksRunId: String(parentRunId),
+    databricksTaskRunId: String(taskRunId),
+    answerText: output.answer ?? "",
+    answerVerdict: output.scorecard?.answer_verdict ?? "",
+    answerTrustScore: output.scorecard?.answer_trust_score ?? null,
+    overallStatus: output.scorecard?.overall_status ?? "",
+    goNoGo: output.scorecard?.go_no_go ?? "",
+    topDocUris: Array.isArray(output.retrieved_chunks)
+      ? output.retrieved_chunks.map((chunk) => chunk.doc_uri).filter(Boolean)
+      : [],
+    retrievedChunksJson: JSON.stringify(output.retrieved_chunks ?? []),
+    artifactPath: output.run_dir ?? "",
+    artifactRunId: output.scorecard?.run_id ?? "",
+    scorecardJsonPath: output.scorecard_json_path ?? "",
+    scorecardHtml: output.scorecard_html ?? "",
     model: CHAT_MODEL,
+    scorecard: output.scorecard ?? null,
   };
+
 }
 
 async function maybeRunGovernanceHook({ message, reply }) {

@@ -1,144 +1,156 @@
-# Trusted AI Toolkit
+# Kentro Chat
 
-A lightweight, offline-first Trusted AI governance toolkit aligned to four workstreams:
+`apps/kentro-chat` is a companion app that lets Kentro's chat product live alongside the existing Python governance engine instead of replacing it.
 
-- Workstream A: Explainability and Reasoning Report
-- Workstream B: Evaluation and Evidence Pipeline
-- Workstream C: Security/Red Teaming, Monitoring, and Incident Response
-- Workstream D: Documentation Templates and Artifact Repository Structure
+It includes:
 
-## Inspiration and References
+- a React frontend with a ChatGPT-style dark workspace
+- a Node/Express backend with `POST /api/chat`
+- an optional backend hook that can call Kentro's existing Python CLI after each reply to generate governance artifacts
 
-- AIF360 (fairness and bias evaluation patterns): https://github.com/Trusted-AI/AIF360
+## Local Run
 
-See `DESIGN_NOTES.md` for how this repository maps inspiration patterns into local modules, and `ATTRIBUTION.md` for public reuse guidance.
-See [Calculation Methods](docs/calculations/CALCULATION_METHODS.md) for a plain-English explanation of the current formulas, thresholds, and known limitations behind scorecard decisions.
-See [Trust Metrics Specification](docs/architecture/TRUST_METRICS_SPEC.md) for the current trust-score and stage-gate contract.
-See [Scorecard Data Backing](docs/architecture/SCORECARD_DATA_BACKING.md) for what scorecard values are directly backed versus proxy-backed.
-
-Current AIF360-inspired implementations:
-- Statistical Parity Difference (SPD) fairness metric
-- Disparate Impact Ratio (DIR) fairness metric
-- Equal Opportunity Difference (EOD) fairness metric
-- Average Odds Difference (AOD) fairness metric
-- Fairness threshold presentation in scorecards
-
-## Quickstart
+From the repo root:
 
 ```bash
-pip install -e .
+cd apps/kentro-chat
+npm install
+npm run dev
 ```
+
+That starts:
+
+- frontend at `http://localhost:5173`
+- backend at `http://localhost:5050`
+
+The Vite dev server proxies `/api/*` calls to the Express backend.
+
+## Databricks Apps Deploy
+
+To deploy this as a Databricks App, point the app source at:
+
+```text
+apps/kentro-chat
+```
+
+This folder is now packaged as a single deployable Node app:
+
+- `npm run build` builds the React frontend into `frontend/dist`
+- `npm run start` starts Express
+- Express serves both `/api/*` and the built frontend bundle
+- the server automatically listens on `DATABRICKS_APP_PORT` when running inside Databricks Apps
+
+Required setup notes:
+
+- Do not point Databricks at the broader repo root unless you add separate root-level app packaging.
+- If you deploy from a workspace folder, make sure the selected folder is `apps/kentro-chat` itself.
+- If you want the governance hook enabled in Databricks, add the same env vars from `backend/.env.example` in the Databricks app Environment tab.
+
+## Project Layout
+
+```text
+apps/kentro-chat/
+  app.yaml
+  backend/
+  frontend/
+  package.json
+  README.md
+```
+
+## Backend Chat API
+
+The scaffold exposes:
 
 ```bash
-pytest
+POST /api/chat
+Content-Type: application/json
 ```
+
+Request shape:
+
+```json
+{
+  "message": "What changed in the latest policy review?",
+  "history": [
+    { "role": "user", "content": "Summarize our deployment posture." }
+  ]
+}
+```
+
+Response shape:
+
+```json
+{
+  "reply": "Scaffolded assistant response...",
+  "model": "local-scaffold",
+  "governance": {
+    "enabled": false,
+    "attempted": false
+  }
+}
+```
+
+## Kentro Governance Handoff
+
+By default, chat responses stay local to the Node backend and do not invoke the Python toolkit.
+
+To trigger governance artifacts after each assistant reply, create `apps/kentro-chat/backend/.env`:
 
 ```bash
-tat init
-tat run prompt --config config.yaml --prompt "Summarize the policy update."
+PORT=5050
+FRONTEND_ORIGIN=http://localhost:5173
+KENTRO_CHAT_MODEL=local-scaffold
+KENTRO_ENABLE_GOVERNANCE_HOOK=true
+KENTRO_CLI_BIN=tat
+KENTRO_CLI_ARGS=
+KENTRO_CONFIG_PATH=../../../config.yaml
+KENTRO_CONTEXT_FILE=
 ```
+
+When enabled, the backend will execute:
 
 ```bash
-ollama serve
-ollama pull qwen2.5-coder:3b
-tat run simulate --config config.yaml --prompt "Summarize the policy update."
+tat run prompt --config ../../../config.yaml --prompt "<user message>" --model-output "<assistant reply>"
 ```
+
+Useful alternatives:
+
+- If `tat` is installed in the environment, keep `KENTRO_CLI_BIN=tat`.
+- If the repo is only available as source, set `KENTRO_CLI_BIN=python` and `KENTRO_CLI_ARGS=-m trusted_ai_toolkit.cli`.
+- If you want a different config, point `KENTRO_CONFIG_PATH` at another Kentro YAML file.
+- If you already have retrieved context in JSON form, point `KENTRO_CONTEXT_FILE` at that file and it will be forwarded to the CLI.
+
+The chat API still returns a reply even if the governance hook fails. Hook status is included in the JSON response so the UI can surface the result without turning routine chat into a hard failure.
+
+## Databricks Job Backend (Option A)
+
+This app can also hand off each question to a Databricks Job instead of
+running the local CLI hook. In this mode the backend:
+
+1. generates a `request_id`
+2. calls `jobs/run-now` with `question` and `request_id`
+3. waits for the Databricks job to finish
+4. queries the governance Delta table by `request_id`
+5. returns the final answer plus trust-card summary to the frontend
+
+Enable it by setting these backend env vars:
 
 ```bash
-tat demo
+KENTRO_ENABLE_DATABRICKS_JOB_BACKEND=true
+DATABRICKS_HOST=https://<your-workspace-host>
+DATABRICKS_TOKEN=<token-with-job-and-sql-access>
+KENTRO_DATABRICKS_JOB_ID=<job-id>
+KENTRO_SQL_WAREHOUSE_ID=<sql-warehouse-id>
+KENTRO_GOVERNANCE_TABLE=wvu.ethanhall.kentroxai_governance_runs
+KENTRO_JOB_POLL_INTERVAL_MS=3000
+KENTRO_JOB_TIMEOUT_MS=120000
 ```
 
-`tat demo` runs the full end-to-end toolkit workflow in one command: it initializes `config.yaml` if needed, executes evaluation, red-team, explainability, reporting, monitoring, documentation, and incident checks, then prints the generated scorecard path. Use `tat demo --open-scorecard` to open the HTML scorecard automatically.
+The Databricks job notebook must accept these widgets:
 
-## Databricks
-
-This repo now includes a Databricks-ready wheel entrypoint and sample Asset Bundle configuration:
-
-- [Databricks integration guide](docs/databricks_integration.md)
-- `databricks.yml`
-- `resources/trusted_ai_toolkit_job.yml`
-
-The recommended deployment model is a Python wheel task that reads config and context files from a Unity Catalog volume and writes evidence-pack artifacts back to that volume.
-
-## Companion Apps
-
-This repo can also host adjacent product surfaces without replacing the Python governance engine.
-
-- `apps/kentro-chat/` contains a local React + Express chat scaffold.
-- The chat backend exposes `/api/chat`.
-- The backend can optionally call `tat run prompt` after each response so chat interactions still flow into Kentro governance artifacts.
-- See `apps/kentro-chat/README.md` for local run instructions and hook configuration.
-
-
-## Core Commands
-
-```bash
-# (Don't paste this comment in terminal)One-command end-to-end demo
-tat demo
-tat demo --open-scorecard
-
-# (Don't paste this comment in terminal)Primary end-to-end run
-tat run prompt --config config.yaml --prompt "Summarize policy controls" --model-output "Stub answer"
-
-# (Don't paste this comment in terminal)Free local-model simulation run
-ollama serve
-ollama pull qwen2.5-coder:3b
-tat run simulate --config config.yaml --prompt "Summarize policy controls"
-
-# (Don't paste this comment in terminal)OpenAI-compatible hosted run if needed
-tat run simulate --config config.yaml --prompt "Summarize policy controls" \
-  --provider openai_compatible \
-  --endpoint https://api.openai.com/v1 \
-  --model gpt-4.1-mini \
-  --request-format responses
-
-# (Don't paste this comment in terminal)Individual workflows
-tat eval run --config config.yaml
-tat redteam run --config config.yaml
-tat xai reasoning-report --config config.yaml
-tat report --config config.yaml
-
-# (Don't paste this comment in terminal)Workstream D and Ops workflows
-tat docs build --config config.yaml
-tat monitor summarize --config config.yaml
-tat incident generate --config config.yaml
-```
-## Open Scorecard:
-```
-export RUN_ID=$(ls -1t artifacts | head -n 1)
-open artifacts/$RUN_ID/scorecard.html
-```
-## Evidence Pack Outputs
-
-Each run writes to `artifacts/<run_id>/` and includes:
-
-- Workstream A: `reasoning_report.md`, `reasoning_report.json`, `lineage_report.md`, `authoritative_data_index.json`
-- Workstream B: `eval_results.json`, `scorecard.md`, `scorecard.html`, `scorecard.json`
-- Workstream C: `redteam_findings.json`, `redteam_summary.json`, `monitoring_summary.json`, `incident_report.md` (when triggered)
-- Workstream D: `system_card.md`, `data_card.md`, `model_card.md`, `artifact_manifest.json`, `artifact_manifest.md`
-- Shared: `prompt_run.json`, `telemetry.jsonl`
-  
-## Red-Team & Monitoring Vertical Slice
-
-A configuration-driven red-team vertical slice has been implemented under:
-
-`tests/redteam/`
-
-This demonstrates deterministic adversarial validation, artifact persistence, and telemetry instrumentation.
-
-Example execution:
-
-```bash
-tat redteam run --config tests/redteam/configs/config_rt01.yaml
-tat redteam run --config tests/redteam/configs/config_rt03.yaml
+```python
+dbutils.widgets.text("question", "")
+dbutils.widgets.text("request_id", "")
 ```
 
-## Notes
-
-- No external APIs are required for stubbed runs or local Ollama simulation runs.
-- `tat init` now bootstraps the adapter for a free local `Ollama` model by default.
-- `tat run simulate` routes across Ollama native generate, OpenAI Responses, and OpenAI-compatible chat completions APIs while keeping the rest of the toolkit in dry-run mode.
-- Golden suites include 50+ deterministic test cases across low, medium, and high tiers.
-- Red-team suite includes 20 deterministic security cases.
-- This repository is public-facing and designed to allow referenced inspiration patterns with explicit attribution.
-- Pytest disables its built-in `debugging` plugin by default because that plugin can crash under some Python 3.13 environments; for local troubleshooting, re-enable it explicitly with `pytest -p debugging`.
+and persist `request_id` into the governance Delta table.

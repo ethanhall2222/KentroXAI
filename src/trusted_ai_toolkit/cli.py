@@ -18,7 +18,7 @@ from tat.runtime import RunContext
 from trusted_ai_toolkit.artifacts import ArtifactStore
 from trusted_ai_toolkit.config import load_config
 from trusted_ai_toolkit.documentation import build_documentation_artifacts
-from trusted_ai_toolkit.eval.runner import run_eval
+from trusted_ai_toolkit.eval.runner import compute_embedding_features, run_eval
 from trusted_ai_toolkit.incident import generate_incident_record, should_open_incident
 from trusted_ai_toolkit.model_client import ModelInvocationError, embed_texts, invoke_model, resolve_embedding_model_name
 from trusted_ai_toolkit.monitoring import TelemetryLogger, load_telemetry_events, summarize_telemetry
@@ -140,56 +140,37 @@ def _write_redteam_summary(store: ArtifactStore, findings: list[dict]) -> Path:
     return store.write_json("redteam_summary.json", {"severity": severity_summary, "tags": by_tag})
 
 
-def _write_embedding_trace(cfg: ToolkitConfig, store: ArtifactStore, prompt_bundle: dict) -> None:
-    contexts = prompt_bundle.get("retrieved_contexts", [])
-    context_texts: list[str] = []
-    if isinstance(contexts, list):
-        for item in contexts:
-            if not isinstance(item, dict):
-                continue
-            merged = " ".join(
-                part.strip()
-                for part in (
-                    str(item.get("title", "")),
-                    str(item.get("snippet", "")),
-                    str(item.get("text", "")),
-                    str(item.get("content", "")),
-                )
-                if part and part.strip()
-            )
-            if merged:
-                context_texts.append(merged)
-
-    if not prompt_bundle.get("prompt") or not prompt_bundle.get("model_output") or not context_texts:
+def _write_embedding_trace(store: ArtifactStore, embedding_features: dict[str, object]) -> None:
+    if not embedding_features.get("embedding_available"):
         store.write_json(
             "embedding_trace.json",
-            {"enabled": False, "reason": "prompt, model output, and retrieved contexts are required"},
+            {
+                "enabled": False,
+                "reason": embedding_features.get("reason") or embedding_features.get("error") or "embedding unavailable",
+            },
         )
         return
 
-    try:
-        result = embed_texts(
-            [str(prompt_bundle["prompt"]), str(prompt_bundle["model_output"]), *context_texts],
-            cfg,
-            model_name=resolve_embedding_model_name(cfg),
-        )
-    except ModelInvocationError as exc:
-        store.write_json("embedding_trace.json", {"enabled": False, "reason": str(exc)})
-        return
+    context_vectors = embedding_features.get("context_vectors", [])
+    vector_count = 2 + len(context_vectors) if isinstance(context_vectors, list) else 0
+    prompt_vector = embedding_features.get("prompt_vector")
+    vector_dimensions = len(prompt_vector) if isinstance(prompt_vector, list) else 0
 
     store.write_json(
         "embedding_trace.json",
         {
             "enabled": True,
-            "provider": result.provider,
-            "model": result.model,
-            "route": result.route,
-            "request_url": result.request_url,
-            "vector_count": len(result.embeddings),
-            "vector_dimensions": len(result.embeddings[0]) if result.embeddings else 0,
-            "request": result.request_payload,
+            "provider": embedding_features.get("provider"),
+            "model": embedding_features.get("embedding_model"),
+            "route": "embeddings",
+            "request_url": embedding_features.get("request_url"),
+            "vector_count": vector_count,
+            "vector_dimensions": vector_dimensions,
+            "request": embedding_features.get("request_payload"),
             "response_preview": {
-                "keys": sorted(result.response_payload.keys()),
+                "keys": sorted(embedding_features.get("response_payload", {}).keys())
+                if isinstance(embedding_features.get("response_payload"), dict)
+                else [],
             },
         },
     )
@@ -470,10 +451,18 @@ def _run_prompt_workflow(
     if model_details:
         store.write_json("model_response.json", model_details)
         telemetry.log_event("ARTIFACT_WRITTEN", "orchestration", {"artifact": "model_response.json"})
-    _write_embedding_trace(cfg, store, prompt_bundle)
+    embedding_features = compute_embedding_features(cfg, prompt_bundle)
+    _write_embedding_trace(store, embedding_features)
     telemetry.log_event("ARTIFACT_WRITTEN", "orchestration", {"artifact": "embedding_trace.json"})
 
-    eval_results = run_eval(cfg, run_context.run_id, telemetry=telemetry, config_path=Path(config_path))
+    eval_results = run_eval(
+        cfg,
+        run_context.run_id,
+        telemetry=telemetry,
+        config_path=Path(config_path),
+        prompt_bundle=prompt_bundle,
+        embedding_features=embedding_features,
+    )
     store.write_json(
         "eval_results.json",
         {
@@ -512,23 +501,22 @@ def _run_prompt_workflow(
     telemetry.log_event("ARTIFACT_WRITTEN", "xai", {"artifact": str(lineage_md)})
     telemetry.log_event("ARTIFACT_WRITTEN", "xai", {"artifact": str(lineage_json)})
 
-    scorecard = generate_scorecard(cfg, store)
-    telemetry.log_event("ARTIFACT_WRITTEN", "reporting", {"artifact": "scorecard.md"})
-    telemetry.log_event("ARTIFACT_WRITTEN", "reporting", {"artifact": "scorecard.html"})
-
     monitoring = _monitoring_for_run(store)
     telemetry.log_event("ARTIFACT_WRITTEN", "monitoring", {"artifact": "monitoring_summary.json"})
 
     _docs_for_run(cfg, store)
     telemetry.log_event("ARTIFACT_WRITTEN", "docs", {"artifact": "artifact_manifest.json"})
 
+    scorecard = generate_scorecard(cfg, store)
+    telemetry.log_event("ARTIFACT_WRITTEN", "reporting", {"artifact": "scorecard.md"})
+    telemetry.log_event("ARTIFACT_WRITTEN", "reporting", {"artifact": "scorecard.html"})
+
     incident_opened = _incident_for_run(cfg, store, monitoring)
     if incident_opened:
         telemetry.log_event("ARTIFACT_WRITTEN", "incident", {"artifact": "incident_report.md"})
-
-    # Refresh scorecard once docs/monitoring/incident artifacts exist for completeness calculations.
-    scorecard = generate_scorecard(cfg, store)
-    _docs_for_run(cfg, store)
+        # Refresh docs and scorecard only when incident artifacts changed completeness.
+        _docs_for_run(cfg, store)
+        scorecard = generate_scorecard(cfg, store)
     telemetry.log_event(
         "RUN_FINISHED",
         "orchestration",
