@@ -666,137 +666,152 @@
   </style>
 </head>
 <body>
-  {% set ns = namespace(failed_metrics=0) %}
-  {% set gate_ns = namespace(blocking_gates=[]) %}
-  {% for m in metric_results %}
-    {% if m.passed is sameas false %}
-      {% set ns.failed_metrics = ns.failed_metrics + 1 %}
-    {% endif %}
-  {% endfor %}
+  
+  
+  
+    
+  
+    
+  
+    
+  
+    
+      
+    
+  
+    
+  
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+  
+    
+  
 
-  {% set display_risk_tier = deployment_risk_tier or risk_tier %}
-  {% set pedigree = display_risk_tier | title %}
-  {% if overall_status == "pass" %}
-    {% set policy_text = "Gates Passed" %}
-  {% elif overall_status == "fail" %}
-    {% set policy_text = "Gates Blocked" %}
-  {% else %}
-    {% set policy_text = "Review Required" %}
-  {% endif %}
-  {% for gate, status in stage_gate_status.items() %}
-    {% if status == "fail" %}
-      {% set gate_ns.blocking_gates = gate_ns.blocking_gates + [gate | replace("_", " ") | title] %}
-    {% endif %}
-  {% endfor %}
+  
+  
+  
+    
+  
+  
+    
+      
+    
+  
+    
+  
+    
+  
+    
+  
 
   <div class="frame">
     <section class="trust-card">
       <div class="card-head">
         <div>
           <div class="brand-lockup">
-            {% if brand_logo_src %}
-            <img class="brand-logo" src="{{ brand_logo_src }}" alt="Kentro logo" />
-            {% else %}
-            <div style="display:flex; align-items:center; gap:18px;">
-              <div class="brand-mark" aria-hidden="true"></div>
-              <div class="brand-copy">
-                <p class="brand-name">KENTRO</p>
-              </div>
-            </div>
-            {% endif %}
+            
+            <img class="brand-logo" src="data:image/png;base64,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" alt="Kentro logo" />
+            
             <p class="brand-tag">Answer Trust Review</p>
           </div>
         </div>
-        <p class="evidence">Evidence Pack: {{ run_id }}</p>
+        <p class="evidence">Evidence Pack: 3b297dd5-d24b-40f9-8b1c-6bb4e6bcd275</p>
       </div>
 
       <div class="chips">
-        <span class="chip pass hint" title="This is the answer-level trust verdict for the current response.">{{ answer_verdict | replace("_", " ") | title if answer_verdict else policy_text }}</span>
-        <span class="chip blue hint" title="This shows how complete the evidence pack is compared with the list of required artifacts for this run.">{{ artifact_signal.evidence_label }}</span>
-        <span class="chip purple hint" title="Configured risk is the declared risk level for this use case. It is set in configuration and does not change based on the score.">Configured Risk {{ pedigree }}</span>
-        <span class="chip amber hint" title="Traceability shows whether this run includes system context and telemetry fields that let you trace the result back to a specific governed system.">{{ artifact_signal.trace_label }}</span>
-        <span class="chip sky hint" title="Blocker findings are the red-team findings severe enough to stop release at the current threshold, which means high and critical in this demo.">{{ artifact_signal.security_label }}</span>
-        {% if evidence_confidence and evidence_confidence.tier %}
-        <span class="chip {% if evidence_confidence.tier == 'high' %}pass{% elif evidence_confidence.tier == 'medium' %}amber{% else %}sky{% endif %} hint" title="Evidence confidence reflects how much signal backs the answer trust score: dimensional coverage, claim sample size, modality diversity, and modality agreement. Low confidence downgrades a trusted verdict to use_caution.">Evidence Confidence: {{ evidence_confidence.tier | title }}</span>
-        {% endif %}
+        <span class="chip pass hint" title="This is the answer-level trust verdict for the current response.">Trusted</span>
+        <span class="chip blue hint" title="This shows how complete the evidence pack is compared with the list of required artifacts for this run.">Evidence Complete 100%</span>
+        <span class="chip purple hint" title="Configured risk is the declared risk level for this use case. It is set in configuration and does not change based on the score.">Configured Risk Medium</span>
+        <span class="chip amber hint" title="Traceability shows whether this run includes system context and telemetry fields that let you trace the result back to a specific governed system.">Traceability On</span>
+        <span class="chip sky hint" title="Blocker findings are the red-team findings severe enough to stop release at the current threshold, which means high and critical in this demo.">Blocker Findings 0</span>
       </div>
 
       <div class="layout">
         <div class="score-wrap">
           <div class="ring">
-            <p class="num">{{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }}</p>
+            <p class="num">70</p>
             <p class="label">Answer Trust</p>
           </div>
-          <p class="ring-note hint" title="The displayed score combines a grounding sub-score (geometric mean of claim support and evidence sufficiency), a semantic sub-score (embedding output support), and a multiplicative contradiction penalty so that contradictions cannot be averaged away by strong grounding.">This score reflects confidence in this answer.</p>
+          <p class="ring-note hint" title="The displayed score is the answer-level trust score derived from supported claims, unsupported claims, contradictions, and evidence sufficiency.">This score reflects confidence in this answer.</p>
           <div class="score-sidecard">
             <div class="mini-section">
               <p class="tier-label hint" title="Deployment risk is the declared risk category for the system or use case. It is chosen in configuration and represents the intended operating context.">Deployment Risk</p>
-              <p class="tier-value">{{ display_risk_tier | title }}</p>
+              <p class="tier-value">Medium</p>
 
               <p class="minor-label hint" title="Control tier is derived from the worst failed control severity. Tier 1 is best, Tier 3 is worst.">Control Tier</p>
-              <p class="minor-value">{{ risk_tier }}</p>
+              <p class="minor-value">Tier 1</p>
             </div>
 
             <div class="mini-section">
               <p class="minor-label hint" title="Answer verdict tells the user whether this specific answer should be trusted, used cautiously, or not trusted.">Answer Verdict</p>
-              <p class="minor-value">{{ answer_verdict | replace("_", " ") | title if answer_verdict else "Unknown" }}</p>
+              <p class="minor-value">Trusted</p>
 
-              <p class="review-note{% if overall_status == "pass" %} pass{% elif overall_status == "needs_review" %} review{% endif %}">{{ card_score.status_note }}</p>
-              {% if gate_ns.blocking_gates %}
+              <p class="review-note">This answer has governance blockers. Review the failed gates and findings.</p>
+              
               <div class="gate-alert">
                 <p class="gate-alert-title hint" title="Blocking gates are the specific stage checks that failed and caused the release to be blocked.">Blocking Gates</p>
                 <div class="gate-list">
-                  {% for gate_name in gate_ns.blocking_gates %}
-                  <span class="gate-chip">{{ gate_name }}</span>
-                  {% endfor %}
+                  
+                  <span class="gate-chip">Evaluation</span>
+                  
                 </div>
-                {% for gate, status in stage_gate_status.items() %}
-                  {% if status == "fail" %}
+                
+                  
                   <details class="gate-detail">
-                    <summary class="gate-summary">{{ gate | replace("_", " ") | title }}</summary>
+                    <summary class="gate-summary">Evaluation</summary>
                     <div class="gate-body">
-                      {% if gate == "evaluation" %}
+                      
                       <p>The evaluation gate fails when one or more configured metrics do not meet their thresholds.</p>
-                      <pre class="gate-code">failing_metric_count = {{ metric_summary.failed }}
+                      <pre class="gate-code">failing_metric_count = 5
 evaluation = "fail" if failing_metric_count &gt; 0 else "pass"
 
-{{ metric_summary.failed }} &gt; 0 -> {{ status | upper }}</pre>
-                      {% elif gate == "redteam" %}
-                      <p>The red-team gate fails when blocker-level findings are present for this risk tier, or when red-team evidence is required but missing.</p>
-                      <pre class="gate-code">high_findings = redteam_summary["high"] + redteam_summary["critical"]
-require_redteam = {{ "true" if redteam_gate_rules.require_redteam else "false" }}
-block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity else "false" }}
-total_findings = {{ redteam_summary.total_findings if redteam_summary.total_findings is defined else (redteam_summary.low + redteam_summary.medium + redteam_summary.high + redteam_summary.critical) }}
-
-redteam = "needs_review" if high_findings else "pass"
-if require_redteam and total_findings == 0:
-    redteam = "fail"
-if block_on_high_severity and high_findings &gt; 0:
-    redteam = "fail"
-
-high_findings = {{ redteam_summary.high }} + {{ redteam_summary.critical }} = {{ redteam_summary.high + redteam_summary.critical }}
-require_redteam = {{ "true" if redteam_gate_rules.require_redteam else "false" }}, total_findings = {{ redteam_summary.total_findings if redteam_summary.total_findings is defined else (redteam_summary.low + redteam_summary.medium + redteam_summary.high + redteam_summary.critical) }}
-block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity else "false" }}
-
-{{ "true" if redteam_gate_rules.block_on_high_severity else "false" }} and {{ redteam_summary.high + redteam_summary.critical }} &gt; 0 -> {{ status | upper }}</pre>
-                      {% elif gate == "documentation" %}
-                      <p>The documentation gate fails review when the evidence pack is incomplete.</p>
-                      <pre class="gate-code">documentation = "pass" if evidence_completeness &gt;= 90 else "needs_review"
-
-{{ "%.0f"|format(evidence_completeness) }} &gt;= 90 -> {{ status | upper }}</pre>
-                      {% elif gate == "monitoring" %}
-                      <p>The monitoring gate reflects whether required monitoring evidence is available for the run.</p>
-                      <pre class="gate-code">monitoring = "pass"</pre>
-                      {% else %}
-                      <p>This gate is controlled by the stage-gate policy for the current risk tier.</p>
-                      <pre class="gate-code">{{ gate }} = "{{ status }}"</pre>
-                      {% endif %}
+5 &gt; 0 -> FAIL</pre>
+                      
                     </div>
                   </details>
-                  {% endif %}
-                {% endfor %}
+                  
+                
+                  
+                
+                  
+                
+                  
+                
               </div>
-              {% endif %}
+              
             </div>
           </div>
         </div>
@@ -805,19 +820,16 @@ block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity 
           <div class="detail-group">
             <h3>Why This Verdict</h3>
             <ul>
-              <li>Answer trust score: {{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }} — grounding sub-score (geometric mean of claim support and evidence sufficiency) combined with semantic support and penalised multiplicatively by the contradiction rate.</li>
-              {% if evidence_confidence and evidence_confidence.tier %}
-              <li>Evidence confidence: <strong>{{ evidence_confidence.tier | title }}</strong> — measured {{ evidence_confidence.dimensional_coverage }}/4 answer-truth dimensions{% if evidence_confidence.claim_count is not none %} across {{ evidence_confidence.claim_count }} extracted claim(s){% endif %}{% if evidence_confidence.modality_diversity %} with dual-modality support{% if evidence_confidence.modality_disagreement is not none %} (|tfidf−embedding| = {{ "%.2f"|format(evidence_confidence.modality_disagreement) }}){% endif %}{% else %} with single-modality support{% endif %}.</li>
-              {% endif %}
-              <li>Claim support rate: {{ answer_truth_summary.claim_support_rate if answer_truth_summary.claim_support_rate is not none else "N/A" }}.</li>
-              <li>Unsupported claim rate: {{ answer_truth_summary.unsupported_claim_rate if answer_truth_summary.unsupported_claim_rate is not none else "N/A" }}.</li>
-              <li>Contradiction rate: {{ answer_truth_summary.contradiction_rate if answer_truth_summary.contradiction_rate is not none else "N/A" }}.</li>
-              <li>Evidence sufficiency score: {{ answer_truth_summary.evidence_sufficiency_score if answer_truth_summary.evidence_sufficiency_score is not none else "N/A" }}.</li>
-              <li>Bias risk: {{ bias_assessment.risk | title if bias_assessment.risk else "Unknown" }}{% if bias_assessment.signal_terms %} ({{ bias_assessment.signal_terms | join(", ") }}){% endif %}.</li>
-              <li>Trust z-score: {{ trust_score_z if trust_score_z is not none else "N/A" }} keeps the historical cohort comparison for audit and benchmarking.</li>
-              <li>Governance score: {{ card_score.control_score_pct if card_score.control_score_pct is not none else "N/A" }} from the four trust pillars.</li>
-              <li>Security {{ "%.0f"|format(pillar_scores.security * 100) if pillar_scores else "N/A" }}%, Reliability {{ "%.0f"|format(pillar_scores.reliability * 100) if pillar_scores else "N/A" }}%, Transparency {{ "%.0f"|format(pillar_scores.transparency * 100) if pillar_scores else "N/A" }}%, Governance {{ "%.0f"|format(pillar_scores.governance * 100) if pillar_scores else "N/A" }}%.</li>
-              <li>Evidence completeness: {{ "%.0f"|format(evidence_completeness) }}%.</li>
+              <li>Answer trust score: 73.0 from claim support, unsupported-claim rate, contradiction rate, and evidence sufficiency.</li>
+              <li>Claim support rate: 1.0.</li>
+              <li>Unsupported claim rate: 0.0.</li>
+              <li>Contradiction rate: 0.0.</li>
+              <li>Evidence sufficiency score: 1.0.</li>
+              <li>Bias risk: Low.</li>
+              <li>Trust z-score: -0.0895 keeps the historical cohort comparison for audit and benchmarking.</li>
+              <li>Governance score: 100 from the four trust pillars.</li>
+              <li>Security 100%, Reliability 100%, Transparency 100%, Governance 100%.</li>
+              <li>Evidence completeness: 100%.</li>
               <li>Governance blockers are still shown separately and can still change the final decision status.</li>
             </ul>
           </div>
@@ -825,29 +837,29 @@ block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity 
           <div class="detail-group">
             <h3>Answer Checks</h3>
             <ul>
-              {% for reason in answer_reasons %}
-              <li>{{ reason }}</li>
-              {% endfor %}
+              
+              <li>The answer is well supported by the retrieved evidence and no contradictions were detected.</li>
+              
             </ul>
           </div>
 
           <div class="detail-group">
             <h3>Traceability</h3>
             <ul>
-              <li>Run ID: {{ run_id }}</li>
-              <li>System: {{ system_context.system_id if system_context else "n/a" }} | Environment: {{ system_context.environment if system_context else "n/a" }}</li>
-              <li>System hash: {{ system_context.system_hash[:12] ~ "..." if system_context and system_context.system_hash else "n/a" }}</li>
-              <li>{{ artifact_signal.trace_label }} | {{ artifact_signal.evidence_label }}</li>
+              <li>Run ID: 3b297dd5-d24b-40f9-8b1c-6bb4e6bcd275</li>
+              <li>System: sample-trusted-ai-system | Environment: staging</li>
+              <li>System hash: 52a55808796f...</li>
+              <li>Traceability On | Evidence Complete 100%</li>
             </ul>
           </div>
 
           <div class="detail-group">
             <h3>Security Context</h3>
             <ul>
-              <li>Blocking threshold: {{ severity_threshold | upper }}.</li>
-              <li>Blocker findings: {{ redteam_summary.high + redteam_summary.critical }} (High: {{ redteam_summary.high }}, Critical: {{ redteam_summary.critical }}).</li>
-              <li>Passed or non-blocking findings: {{ redteam_summary.medium + redteam_summary.low }} (Medium: {{ redteam_summary.medium }}, Low: {{ redteam_summary.low }}).</li>
-              <li>Evaluation checks passed: {{ metric_summary.passed }} of {{ metric_summary.total }}.</li>
+              <li>Blocking threshold: HIGH.</li>
+              <li>Blocker findings: 0 (High: 0, Critical: 0).</li>
+              <li>Passed or non-blocking findings: 20 (Medium: 0, Low: 20).</li>
+              <li>Evaluation checks passed: 15 of 20.</li>
             </ul>
           </div>
 
@@ -855,49 +867,88 @@ block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity 
             <h3>Baseline Trust Inputs</h3>
             <p class="breakdown-note">Expand a pillar to see the formula, weighting, and contribution to the trust score.</p>
             <ul class="pillar-meta">
-              <li>Weighting policy: Security {{ "%.0f"|format(weighting_rationale.security * 100) }}%, Reliability {{ "%.0f"|format(weighting_rationale.reliability * 100) }}%, Transparency {{ "%.0f"|format(weighting_rationale.transparency * 100) }}%, Governance {{ "%.0f"|format(weighting_rationale.governance * 100) }}%.</li>
+              <li>Weighting policy: Security 30%, Reliability 30%, Transparency 25%, Governance 15%.</li>
             </ul>
             <div>
-              {% if pillar_breakdowns %}
-              {% for pillar_name, breakdown in pillar_breakdowns.items() %}
+              
+              
               <details class="pillar-detail">
-                <summary class="pillar-summary">{{ pillar_name | title }}: {{ "%.0f"|format(breakdown.pillar_score * 100) }}%</summary>
+                <summary class="pillar-summary">Security: 100%</summary>
                 <ul class="pillar-meta">
-                  <li>Formula: {{ breakdown.formula }}</li>
-                  {% if breakdown.redteam_pass_rate is defined %}
+                  <li>Formula: 50% weighted security controls + 50% red-team pass rate.</li>
+                  
                   <li>Why it looks different: security blends weighted controls with red-team results.</li>
-                  <li>Weighted controls: {{ breakdown.control_weight_passed|round(0)|int }} of {{ breakdown.control_weight_total|round(0)|int }} control points passed = {{ "%.0f"|format(breakdown.control_pass_rate * 100) if breakdown.control_pass_rate is not none else "N/A" }}%</li>
-                  {% else %}
-                  <li>Why it is {{ "%.0f"|format(breakdown.pillar_score * 100) }}%: this pillar uses weighted control points, not a flat control count.</li>
-                  {% endif %}
-                  {% if breakdown.redteam_pass_rate is defined %}
-                  <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
-                  <li>Controls alone: {{ "%.0f"|format(breakdown.control_pass_rate * 100) if breakdown.control_pass_rate is not none else "N/A" }}%</li>
-                  <li>Red-team result: {{ "%.0f"|format(breakdown.redteam_pass_rate * 100) }}%</li>
-                  {% else %}
-                  <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
-                  <li>Controls checked: {{ breakdown.control_total }}</li>
-                  {% endif %}
-                  <li>How much this matters: this pillar is {{ "%.0f"|format(breakdown.trust_weight * 100) }}% of the total trust score.</li>
-                  <li>Contribution to the final trust score: {{ "%.0f"|format(breakdown.trust_contribution * 100) }} points out of 100.</li>
+                  <li>Weighted controls: 8 of 8 control points passed = 100%</li>
+                  
+                  
+                  <li>Controls passed: 3/3</li>
+                  <li>Controls alone: 100%</li>
+                  <li>Red-team result: 100%</li>
+                  
+                  <li>How much this matters: this pillar is 30% of the total trust score.</li>
+                  <li>Contribution to the final trust score: 30 points out of 100.</li>
                 </ul>
               </details>
-              {% endfor %}
-              {% else %}
-              <ul>
-                <li>Pillar scores are not available for this run.</li>
-              </ul>
-              {% endif %}
+              
+              <details class="pillar-detail">
+                <summary class="pillar-summary">Reliability: 100%</summary>
+                <ul class="pillar-meta">
+                  <li>Formula: 100% weighted control pass rate.</li>
+                  
+                  <li>Why it is 100%: this pillar uses weighted control points, not a flat control count.</li>
+                  
+                  
+                  <li>Controls passed: 3/3</li>
+                  <li>Controls checked: 3</li>
+                  
+                  <li>How much this matters: this pillar is 30% of the total trust score.</li>
+                  <li>Contribution to the final trust score: 30 points out of 100.</li>
+                </ul>
+              </details>
+              
+              <details class="pillar-detail">
+                <summary class="pillar-summary">Transparency: 100%</summary>
+                <ul class="pillar-meta">
+                  <li>Formula: 100% weighted control pass rate.</li>
+                  
+                  <li>Why it is 100%: this pillar uses weighted control points, not a flat control count.</li>
+                  
+                  
+                  <li>Controls passed: 3/3</li>
+                  <li>Controls checked: 3</li>
+                  
+                  <li>How much this matters: this pillar is 25% of the total trust score.</li>
+                  <li>Contribution to the final trust score: 25 points out of 100.</li>
+                </ul>
+              </details>
+              
+              <details class="pillar-detail">
+                <summary class="pillar-summary">Governance: 100%</summary>
+                <ul class="pillar-meta">
+                  <li>Formula: 100% weighted control pass rate.</li>
+                  
+                  <li>Why it is 100%: this pillar uses weighted control points, not a flat control count.</li>
+                  
+                  
+                  <li>Controls passed: 3/3</li>
+                  <li>Controls checked: 3</li>
+                  
+                  <li>How much this matters: this pillar is 15% of the total trust score.</li>
+                  <li>Contribution to the final trust score: 15 points out of 100.</li>
+                </ul>
+              </details>
+              
+              
             </div>
           </div>
 
           <div class="detail-group">
             <h3>Governance Flags</h3>
             <ul>
-              <li>Decision status: {{ overall_status | replace("_", " ") | title }}</li>
-              <li>Release decision: {{ go_no_go | upper }}</li>
-              <li>Stage gates: {% for gate, status in stage_gate_status.items() %}{{ gate | replace("_", " ") | title }}={{ status | upper }}{% if not loop.last %}; {% endif %}{% endfor %}</li>
-              <li>{{ card_score.status_note }}</li>
+              <li>Decision status: Fail</li>
+              <li>Release decision: NO-GO</li>
+              <li>Stage gates: Evaluation=FAIL; Redteam=PASS; Documentation=PASS; Monitoring=PASS</li>
+              <li>This answer has governance blockers. Review the failed gates and findings.</li>
             </ul>
           </div>
         </div>

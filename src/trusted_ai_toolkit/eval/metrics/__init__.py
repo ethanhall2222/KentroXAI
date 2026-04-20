@@ -8,12 +8,6 @@ from collections import Counter
 from random import Random
 from typing import Callable
 
-from trusted_ai_toolkit.eval.metrics.aif360_compat import (
-    average_odds_difference,
-    disparate_impact_ratio,
-    equal_opportunity_difference,
-    statistical_parity_difference,
-)
 from trusted_ai_toolkit.schemas import MetricResult
 
 MetricFn = Callable[[dict], MetricResult]
@@ -241,15 +235,6 @@ def _bootstrap_indexed_confidence_interval(count: int, statistic: Callable[[list
     low = draws[int(0.025 * len(draws))]
     high = draws[int(0.975 * len(draws))]
     return round(low, 3), round(high, 3)
-
-
-def _fairness_dataset(context: dict) -> dict | None:
-    payload = context.get("fairness_dataset")
-    return payload if isinstance(payload, dict) else None
-
-
-def _selection_rate_from_labels(labels: list[int]) -> float:
-    return _safe_div(sum(1 for value in labels if int(value) == 1), len(labels))
 
 
 def _cosine(vec_a: list[float], vec_b: list[float]) -> float:
@@ -613,42 +598,6 @@ def metric_output_support_embedding(context: dict) -> MetricResult:
     )
 
 
-def metric_fairness_demographic_parity_diff(context: dict) -> MetricResult:
-    """Toy demographic parity difference inspired by fairness checks."""
-
-    fairness_dataset = _fairness_dataset(context)
-    if not fairness_dataset:
-        return MetricResult(
-            metric_id="fairness_demographic_parity_diff",
-            value=0.0,
-            details={
-                "sensitive_features": context.get("sensitive_features", []),
-                "data_basis": "not_available_from_runtime_metadata",
-            },
-        )
-    privileged_labels = fairness_dataset.get("privileged_labels", [])
-    unprivileged_labels = fairness_dataset.get("unprivileged_labels", [])
-    value = round(statistical_parity_difference(unprivileged_labels, privileged_labels), 3)
-    ci = _bootstrap_confidence_interval(
-        [*[(1, int(value)) for value in privileged_labels], *[(0, int(value)) for value in unprivileged_labels]],
-        lambda rows: _selection_rate_from_labels([v for g, v in rows if g == 0])
-        - _selection_rate_from_labels([v for g, v in rows if g == 1]),
-    )
-    return MetricResult(
-        metric_id="fairness_demographic_parity_diff",
-        value=value,
-        details={
-            "sensitive_features": context.get("sensitive_features", []),
-            "privileged_selection_rate": round(sum(privileged_labels) / len(privileged_labels), 3),
-            "unprivileged_selection_rate": round(sum(unprivileged_labels) / len(unprivileged_labels), 3),
-            "formula": "Pr(Y=1|unprivileged)-Pr(Y=1|privileged)",
-            "reference": "https://github.com/Trusted-AI/AIF360",
-            "data_basis": "observed_labels" if fairness_dataset else "synthetic_placeholder",
-            "bootstrap_ci_95": list(ci) if ci else None,
-        },
-    )
-
-
 def metric_accuracy_stub(context: dict) -> MetricResult:
     """Use labeled observations when available; otherwise mark the metric unavailable."""
 
@@ -680,103 +629,6 @@ def metric_accuracy_stub(context: dict) -> MetricResult:
         details={
             "dataset": context.get("dataset_name", "unknown"),
             "data_basis": "not_available_from_runtime_metadata",
-        },
-    )
-
-
-def metric_fairness_disparate_impact_ratio(context: dict) -> MetricResult:
-    """AIF360-inspired disparate impact ratio fairness metric."""
-
-    fairness_dataset = _fairness_dataset(context)
-    if not fairness_dataset:
-        return MetricResult(
-            metric_id="fairness_disparate_impact_ratio",
-            value=0.0,
-            details={
-                "data_basis": "not_available_from_runtime_metadata",
-            },
-        )
-    privileged_labels = fairness_dataset.get("privileged_labels", [])
-    unprivileged_labels = fairness_dataset.get("unprivileged_labels", [])
-    value = round(disparate_impact_ratio(unprivileged_labels, privileged_labels), 3)
-    ci = _bootstrap_confidence_interval(
-        [*[(1, int(value)) for value in privileged_labels], *[(0, int(value)) for value in unprivileged_labels]],
-        lambda rows: disparate_impact_ratio(
-            [v for g, v in rows if g == 0],
-            [v for g, v in rows if g == 1],
-        ),
-    )
-    return MetricResult(
-        metric_id="fairness_disparate_impact_ratio",
-        value=value,
-        details={
-            "formula": "Pr(Y=1|unprivileged)/Pr(Y=1|privileged)",
-            "reference": "https://github.com/Trusted-AI/AIF360",
-            "policy_baseline": ">= 0.8 (80% rule heuristic)",
-            "data_basis": "observed_labels" if fairness_dataset else "synthetic_placeholder",
-            "bootstrap_ci_95": list(ci) if ci else None,
-        },
-    )
-
-
-def metric_fairness_equal_opportunity_difference(context: dict) -> MetricResult:
-    """AIF360-inspired equal opportunity difference fairness metric."""
-
-    fairness_dataset = _fairness_dataset(context)
-    if not fairness_dataset:
-        return MetricResult(
-            metric_id="fairness_equal_opportunity_difference",
-            value=0.0,
-            details={
-                "data_basis": "not_available_from_runtime_metadata",
-            },
-        )
-    privileged_true = fairness_dataset.get("privileged_true", [])
-    privileged_pred = fairness_dataset.get("privileged_pred", [])
-    unprivileged_true = fairness_dataset.get("unprivileged_true", [])
-    unprivileged_pred = fairness_dataset.get("unprivileged_pred", [])
-    value = round(
-        equal_opportunity_difference(unprivileged_true, unprivileged_pred, privileged_true, privileged_pred),
-        3,
-    )
-    return MetricResult(
-        metric_id="fairness_equal_opportunity_difference",
-        value=value,
-        details={
-            "formula": "TPR(unprivileged)-TPR(privileged)",
-            "reference": "https://github.com/Trusted-AI/AIF360",
-            "data_basis": "observed_labels" if fairness_dataset else "synthetic_placeholder",
-        },
-    )
-
-
-def metric_fairness_average_odds_difference(context: dict) -> MetricResult:
-    """AIF360-inspired average odds difference fairness metric."""
-
-    fairness_dataset = _fairness_dataset(context)
-    if not fairness_dataset:
-        return MetricResult(
-            metric_id="fairness_average_odds_difference",
-            value=0.0,
-            details={
-                "data_basis": "not_available_from_runtime_metadata",
-            },
-        )
-    privileged_true = fairness_dataset.get("privileged_true", [])
-    privileged_pred = fairness_dataset.get("privileged_pred", [])
-    unprivileged_true = fairness_dataset.get("unprivileged_true", [])
-    unprivileged_pred = fairness_dataset.get("unprivileged_pred", [])
-    value = round(
-        average_odds_difference(unprivileged_true, unprivileged_pred, privileged_true, privileged_pred),
-        3,
-    )
-    return MetricResult(
-        metric_id="fairness_average_odds_difference",
-        value=value,
-        details={
-            "formula": "0.5*((FPR_u-FPR_p)+(TPR_u-TPR_p))",
-            "reference": "https://github.com/Trusted-AI/AIF360",
-            "data_basis": "observed_labels" if fairness_dataset else "synthetic_placeholder",
         },
     )
 
@@ -819,11 +671,22 @@ METRICS_REGISTRY: dict[str, MetricFn] = {
     "bias_signal_score": metric_bias_signal_score,
     "context_relevance_embedding": metric_context_relevance_embedding,
     "output_support_embedding": metric_output_support_embedding,
-    "fairness_demographic_parity_diff": metric_fairness_demographic_parity_diff,
-    "fairness_disparate_impact_ratio": metric_fairness_disparate_impact_ratio,
-    "fairness_equal_opportunity_difference": metric_fairness_equal_opportunity_difference,
-    "fairness_average_odds_difference": metric_fairness_average_odds_difference,
     "accuracy_stub": metric_accuracy_stub,
     "refusal_correctness": metric_refusal_correctness,
     "unanswerable_handling": metric_unanswerable_handling,
 }
+
+
+# LLM-as-judge advisory metrics (Tim2 — Option B).
+# Imported lazily to avoid a circular import — llm_judges depends on the
+# helpers above (_claim_analysis, _context_texts).  Registered into the same
+# dict so eval/runner.py picks them up via the existing dispatch path; the
+# "advisory" strength label in reporting._metric_strength_map ensures they
+# never feed _VERDICT_THRESHOLDS hard gates.
+from trusted_ai_toolkit.eval.metrics.llm_judges import (  # noqa: E402
+    metric_llm_claim_entailment,
+    metric_llm_contradiction_judge,
+)
+
+METRICS_REGISTRY["llm_contradiction_judge"] = metric_llm_contradiction_judge
+METRICS_REGISTRY["llm_claim_entailment"] = metric_llm_claim_entailment

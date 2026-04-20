@@ -117,19 +117,34 @@ def _authorization_headers(config: ToolkitConfig) -> dict[str, str]:
     return {"Authorization": f"Bearer {api_key}"}
 
 
-def _build_request_payload(prompt: str, model_name: str, route: str) -> dict[str, Any]:
+def _build_request_payload(
+    prompt: str,
+    model_name: str,
+    route: str,
+    extra_payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     if route == "responses":
-        return {"model": model_name, "input": prompt}
-    if route == "chat_completions":
-        return {
+        payload: dict[str, Any] = {"model": model_name, "input": prompt}
+    elif route == "chat_completions":
+        payload = {
             "model": model_name,
             "messages": [
                 {"role": "user", "content": prompt},
             ],
         }
-    if route == "ollama_generate":
-        return {"model": model_name, "prompt": prompt, "stream": False}
-    raise ModelInvocationError(f"unsupported request format: {route}")
+    elif route == "ollama_generate":
+        payload = {"model": model_name, "prompt": prompt, "stream": False}
+    else:
+        raise ModelInvocationError(f"unsupported request format: {route}")
+
+    # Merge caller-supplied fields (temperature, seed, top_p, options, etc.)
+    # without clobbering the structural keys the route extraction relies on.
+    if extra_payload:
+        for key, value in extra_payload.items():
+            if key in {"model", "input", "messages", "prompt"}:
+                continue
+            payload[key] = value
+    return payload
 
 
 def _extract_responses_text(payload: dict[str, Any]) -> str:
@@ -213,8 +228,29 @@ def _extract_embeddings(payload: dict[str, Any]) -> list[list[float]]:
     raise ModelInvocationError("embedding response did not contain usable vectors")
 
 
-def invoke_model(prompt: str, config: ToolkitConfig) -> ModelInvocationResult:
-    """Invoke the configured live model provider and normalize the response."""
+def invoke_model(
+    prompt: str,
+    config: ToolkitConfig,
+    extra_payload: dict[str, Any] | None = None,
+) -> ModelInvocationResult:
+    """Invoke the configured live model provider and normalize the response.
+
+    Parameters
+    ----------
+    prompt:
+        The user-facing prompt string.  For chat routes it becomes the single
+        user message; for ``responses`` and ``ollama_generate`` routes it is
+        passed through directly.
+    config:
+        Toolkit configuration (only the ``adapters`` section is consulted).
+    extra_payload:
+        Optional dict merged into the JSON body of the outgoing request after
+        the structural keys are built.  Use this to inject deterministic-mode
+        controls (``temperature``, ``seed``, provider ``options``, etc.)
+        without forking the request builder per call site.  Keys that would
+        clobber the structural fields (``model``, ``input``, ``messages``,
+        ``prompt``) are silently ignored.
+    """
 
     provider = config.adapters.provider
     if provider not in {"openai_compatible", "azure_openai", "ollama"}:
@@ -225,7 +261,7 @@ def invoke_model(prompt: str, config: ToolkitConfig) -> ModelInvocationResult:
     # Normalize the configured provider into one concrete HTTP route so the
     # rest of the pipeline can stay provider-agnostic.
     route, url = _resolve_route(config, endpoint)
-    request_payload = _build_request_payload(prompt, model_name, route)
+    request_payload = _build_request_payload(prompt, model_name, route, extra_payload)
 
     headers = {
         "Content-Type": "application/json",
@@ -319,3 +355,71 @@ def embed_texts(texts: list[str], config: ToolkitConfig, model_name: str | None 
         response_payload=response_payload,
         request_url=url,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LLM rationalization helpers (Tim2 — Option A & B)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# These wrappers add two governance-relevant capabilities on top of the bare
+# invoke_model HTTP path:
+#
+#   1. Deterministic-mode injection.  For LLM-as-judge metrics and LLM
+#      narrative generation, reproducibility is non-negotiable: the same
+#      input must produce the same output across runs, otherwise scorecards
+#      become unauditable.  ``_deterministic_extra_payload`` builds the
+#      provider-specific dict that asks for temperature=0 and a fixed seed.
+#
+#   2. Stub-safe invocation.  ``invoke_model_safely`` wraps invoke_model and
+#      returns None when the provider is "stub", the adapter raises, or the
+#      network call fails.  Callers can then fall back to a deterministic
+#      result (e.g., advisory metric reports value=None and data_basis=
+#      "llm_unavailable") without crashing the pipeline.
+
+_DETERMINISTIC_SEED: int = 42
+
+
+def _deterministic_extra_payload(provider: str) -> dict[str, Any]:
+    """Provider-specific JSON fields requesting deterministic generation."""
+
+    if provider == "ollama":
+        # Ollama nests sampling controls under "options".
+        return {"options": {"temperature": 0, "seed": _DETERMINISTIC_SEED, "num_predict": 256}}
+    # OpenAI-compatible providers accept top-level temperature/seed.
+    return {"temperature": 0, "seed": _DETERMINISTIC_SEED, "max_tokens": 256}
+
+
+def invoke_model_safely(
+    prompt: str,
+    config: ToolkitConfig,
+    deterministic: bool = True,
+) -> ModelInvocationResult | None:
+    """Invoke the configured provider, returning None on any failure path.
+
+    Used by LLM-judge metrics and the narrative generator.  The caller is
+    expected to gracefully degrade when None is returned: stay on the
+    deterministic baseline, mark the metric as ``llm_unavailable``, or skip
+    the narrative section entirely.
+
+    Returns
+    -------
+    ModelInvocationResult on success, or None when:
+        * the configured provider is "stub" (no live adapter)
+        * the adapter raises ModelInvocationError (missing key, bad endpoint)
+        * the network call fails for any reason
+    """
+
+    provider = config.adapters.provider
+    if provider == "stub":
+        return None
+
+    extra = _deterministic_extra_payload(provider) if deterministic else None
+    try:
+        return invoke_model(prompt, config, extra_payload=extra)
+    except ModelInvocationError:
+        return None
+    except Exception:
+        # Last-ditch defense: a malformed provider response or a urllib
+        # internal error must not crash the governance pipeline.  The caller
+        # falls back to the deterministic baseline.
+        return None

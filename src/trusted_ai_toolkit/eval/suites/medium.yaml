@@ -2,10 +2,6 @@ name: medium
 metrics:
   - accuracy_stub
   - reliability
-  - fairness_demographic_parity_diff
-  - fairness_disparate_impact_ratio
-  - fairness_equal_opportunity_difference
-  - fairness_average_odds_difference
   - groundedness_stub
   - context_relevance_tfidf
   - output_support_tfidf
@@ -96,10 +92,6 @@ cases:
 thresholds:
   accuracy_stub: 0.75
   reliability: 0.8
-  fairness_demographic_parity_diff: 0.2
-  fairness_disparate_impact_ratio: 0.8
-  fairness_equal_opportunity_difference: 0.2
-  fairness_average_odds_difference: 0.2
   groundedness_stub: 0.65
   context_relevance_tfidf: 0.2
   output_support_tfidf: 0.2
@@ -115,4 +107,4 @@ thresholds:
   refusal_correctness: 0.82
   unanswerable_handling: 0.8
 notes:
-  - Medium-risk suite includes fairness, lexical grounding, and semantic support checks
+  - Medium-risk suite includes lexical grounding and semantic support checks

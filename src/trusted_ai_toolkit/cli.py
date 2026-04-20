@@ -314,13 +314,6 @@ def _benchmark_context_variant(context_payload: dict, tier: str, scenario_index:
             }
             retrieved_contexts.append(distractor)
 
-    fairness_dataset = variant_payload.get("fairness_dataset")
-    if isinstance(fairness_dataset, dict):
-        for key in ("privileged_labels", "unprivileged_labels", "privileged_true", "privileged_pred", "unprivileged_true", "unprivileged_pred"):
-            value = fairness_dataset.get(key)
-            if isinstance(value, list):
-                fairness_dataset[key] = _bootstrap_sequence([int(item) for item in value], rng)
-
     labeled_evaluation = variant_payload.get("labeled_evaluation")
     if isinstance(labeled_evaluation, dict):
         labels = labeled_evaluation.get("labels")

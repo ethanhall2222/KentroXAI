@@ -42,10 +42,6 @@ class EvalConfig(BaseModel):
         default_factory=lambda: {
             "accuracy_stub": 0.7,
             "reliability": 0.75,
-            "fairness_demographic_parity_diff": 0.2,
-            "fairness_disparate_impact_ratio": 0.8,
-            "fairness_equal_opportunity_difference": 0.2,
-            "fairness_average_odds_difference": 0.2,
             "groundedness_stub": 0.6,
             "context_relevance_tfidf": 0.2,
             "output_support_tfidf": 0.2,
@@ -239,7 +235,7 @@ class MetricResult(BaseModel):
     """Individual metric output with threshold evaluation status."""
 
     metric_id: str
-    value: float
+    value: float | None = None
     threshold: float | None = None
     passed: bool | None = None
     details: dict[str, Any] = Field(default_factory=dict)
@@ -281,10 +277,12 @@ class Scorecard(BaseModel):
     evidence_completeness: float = 0.0
     metric_results: list[MetricResult] = Field(default_factory=list)
     answer_verdict: Literal["trusted", "use_caution", "not_trusted"] | None = None
+    answer_reasons: list[str] = Field(default_factory=list)
     answer_trust_score: float | None = None
+    evidence_confidence: dict[str, Any] = Field(default_factory=dict)
     answer_truth_summary: dict[str, Any] = Field(default_factory=dict)
     bias_assessment: dict[str, Any] = Field(default_factory=dict)
-    metric_strength: dict[str, Literal["strong", "moderate", "proxy"]] = Field(default_factory=dict)
+    metric_strength: dict[str, Literal["strong", "moderate", "proxy", "advisory"]] = Field(default_factory=dict)
     redteam_summary: dict[str, Any] = Field(default_factory=dict)
     pillar_scores: dict[str, float] | None = None
     trust_score: float | None = None

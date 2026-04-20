@@ -6,9 +6,10 @@
 **Run ID:** {{ run_id }}  
 **Deployment Risk:** {{ display_risk_tier | title }}  
 **Control-Derived Tier:** {{ risk_tier }}  
-**Answer Verdict:** {{ answer_verdict | replace("_", " ") | title if answer_verdict else "Unknown" }}  
-**Answer Trust Score:** {{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }}%  
-**Overall Status:** {{ overall_status | replace("_", " ") | title }}  
+**Answer Verdict:** {{ answer_verdict | replace("_", " ") | title if answer_verdict else "Unknown" }}
+**Answer Trust Score:** {{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }}%
+{% if evidence_confidence and evidence_confidence.tier %}**Evidence Confidence:** {{ evidence_confidence.tier | title }} ({{ evidence_confidence.dimensional_coverage }}/4 dimensions{% if evidence_confidence.claim_count is not none %}, {{ evidence_confidence.claim_count }} claim(s){% endif %}{% if evidence_confidence.modality_diversity %}, dual modality{% else %}, single modality{% endif %})
+{% endif %}**Overall Status:** {{ overall_status | replace("_", " ") | title }}
 **Go/No-Go:** {{ go_no_go | upper }}
 
 ## Executive Summary
@@ -67,20 +68,11 @@
 
 | Dimension | Status |
 |---|---|
-| Fairness | {{ rai_dimensions.fairness }} |
 | Reliability and Safety | {{ rai_dimensions.reliability_and_safety }} |
 | Privacy and Security | {{ rai_dimensions.privacy_and_security }} |
 | Transparency | {{ rai_dimensions.transparency }} |
 | Accountability | {{ rai_dimensions.accountability }} |
 | Inclusiveness | {{ rai_dimensions.inclusiveness }} |
-
-## Fairness Snapshot (AIF360-Inspired)
-
-- Statistical Parity Difference target: `abs(SPD) <= threshold`
-- Disparate Impact Ratio target: `DIR >= 0.8` (80% rule heuristic)
-- Equal Opportunity Difference target: `abs(EOD) <= threshold`
-- Average Odds Difference target: `abs(AOD) <= threshold`
-- Reference: https://github.com/Trusted-AI/AIF360
 
 ## Metrics Table
 

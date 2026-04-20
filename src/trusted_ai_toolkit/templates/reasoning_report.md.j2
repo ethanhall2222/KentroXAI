@@ -1,39 +1,42 @@
 # Reasoning Report
 
-**Project:** {{ project_name }}  
-**Run ID:** {{ run_id }}  
+**Project:** {{ project_name }}
+**Run ID:** {{ run_id }}
 **Risk Tier:** {{ risk_tier | title }}
 
 ## Executive Overview
 
-This artifact explains decision behavior, source grounding, and governance implications without exposing chain-of-thought reasoning.
+This artifact explains decision behaviour, source grounding, and governance
+implications without exposing chain-of-thought reasoning.  Four XAI methods
+were applied to characterise which prompt segments and retrieved sources drove
+this output.
 
 ## Prompt and Response Snapshot
 
-- Prompt: {{ prompt }}
-- Model Output: {{ model_output }}
-- Citation Coverage: {{ citation_coverage }}
-- Transparency Risk: {{ transparency_risk | title }}
+- **Prompt:** {{ prompt }}
+- **Model Output:** {{ model_output }}
+- **Citation Coverage:** {{ citation_coverage }}
+- **Transparency Risk:** {{ transparency_risk | title }}
 
 ## Intended Use and Scope
 
-- Intended Use: {{ model.intended_use if model else "Not provided" }}
-- Primary Task: {{ model.task if model else "Not provided" }}
-- Out-of-Scope: High-risk deployment without human review and controls.
+- **Intended Use:** {{ model.intended_use if model else "Not provided" }}
+- **Primary Task:** {{ model.task if model else "Not provided" }}
+- **Out-of-Scope:** High-risk deployment without human review and controls.
 
 ## Data Summary
 
-- Dataset: {{ data.dataset_name if data else "Not provided" }}
-- Source: {{ data.source if data else "Not provided" }}
-- Sensitive Features: {{ data.sensitive_features if data else [] }}
-- Limitations: {{ data.limitations if data else "Not provided" }}
+- **Dataset:** {{ data.dataset_name if data else "Not provided" }}
+- **Source:** {{ data.source if data else "Not provided" }}
+- **Sensitive Features:** {{ data.sensitive_features if data else [] }}
+- **Limitations:** {{ data.limitations if data else "Not provided" }}
 
 ## Model Summary
 
-- Model Name: {{ model.model_name if model else "Not provided" }}
-- Version: {{ model.version if model else "Not provided" }}
-- Owner: {{ model.owner if model else "Not provided" }}
-- Known Failures: {{ model.known_failures if model else [] }}
+- **Model Name:** {{ model.model_name if model else "Not provided" }}
+- **Version:** {{ model.version if model else "Not provided" }}
+- **Owner:** {{ model.owner if model else "Not provided" }}
+- **Known Failures:** {{ model.known_failures if model else [] }}
 
 ## Evidence-Linked Evaluation Summary
 
@@ -54,11 +57,121 @@ No evaluation outputs were found for this run.
 - {{ node.node_id }}: {{ node.title }}{% if node.uri %} ({{ node.uri }}){% endif %}
 {%- endfor %}
 
-## Explainability Approach
+---
 
-{%- for method in explainability_methods %}
-- {{ method }}
+## Explainability Analysis
+
+{%- if xai_available %}
+
+The following XAI methods were applied post-hoc to the stored prompt and
+model output.  No second model invocation was required.
+
+**Methods applied:**
+{%- for label in xai_method_labels %}
+- {{ label }}
 {%- endfor %}
+
+### Context Attribution
+
+*Which retrieved source chunks had the most lexical influence on the output?*
+
+Each chunk is scored by TF-IDF cosine similarity to the model output
+(**influence\_score**) and by the drop in aggregate grounding coverage when
+that chunk is excluded (**loo\_impact**).
+
+{%- if context_attribution %}
+| Rank | Source | Influence Score | LOO Impact |
+|------|--------|----------------|------------|
+{%- for entry in context_attribution %}
+| {{ entry.rank }} | {{ entry.title }} | {{ "%.4f" | format(entry.influence_score) }} | {{ "%.4f" | format(entry.loo_impact) }} |
+{%- endfor %}
+{%- else %}
+No retrieved contexts were available for attribution analysis.
+{%- endif %}
+
+### LIME-style Prompt Attribution
+
+*Which prompt sentences contributed most to the output's vocabulary?*
+
+Method: Leave-One-Out (LOO) attribution inspired by LIME (Ribeiro et al. 2016).
+Each sentence's score equals the drop in TF-IDF cosine similarity when it is
+removed.  Positive = influential; negative = introduced irrelevant vocabulary.
+95% bootstrap confidence intervals (200 samples) indicate score stability.
+
+**Baseline similarity (output vs. full prompt):** {{ "%.4f" | format(lime_attribution.baseline_sim) }}
+**Segments analysed:** {{ lime_attribution.segment_count }}
+
+{%- if lime_attribution.segments %}
+| Rank | Segment (truncated) | Attribution | 95% CI |
+|------|---------------------|-------------|--------|
+{%- for seg in lime_attribution.segments %}
+| {{ loop.index }} | {{ seg.text }} | {{ "%.4f" | format(seg.attribution) }} | [{{ seg.ci_95[0] }}, {{ seg.ci_95[1] }}] |
+{%- endfor %}
+{%- else %}
+{{ lime_attribution.get('note', 'No segments produced for LIME analysis.') }}
+{%- endif %}
+
+### SHAP-style Shapley Values
+
+*What is the fair credit allocation for each prompt segment?*
+
+Method: Shapley value estimation (Lundberg & Lee 2017).
+{% if shapley_attribution.method == 'shapley_exact' -%}
+Exact computation over all 2^N = {{ 2 ** shapley_attribution.segment_count }} coalitions (N = {{ shapley_attribution.segment_count }} ≤ 8).
+{%- else -%}
+Monte Carlo approximation over 300 random permutations (N = {{ shapley_attribution.segment_count }} > 8).
+{%- endif %}
+
+Shapley values satisfy efficiency (Σφ ≈ baseline similarity), symmetry, and
+the dummy property — the only attribution satisfying all three axioms.
+
+**Baseline similarity:** {{ "%.4f" | format(shapley_attribution.baseline_sim) }}
+**Efficiency sum (Σφ):** {{ "%.4f" | format(shapley_attribution.efficiency_sum) }}
+
+{%- if shapley_attribution.segments %}
+| Rank | Segment (truncated) | Shapley Value | Normalised |
+|------|---------------------|---------------|------------|
+{%- for seg in shapley_attribution.segments %}
+| {{ loop.index }} | {{ seg.text }} | {{ "%.4f" | format(seg.shapley_value) }} | {{ "%.1f" | format(seg.normalised * 100) }}% |
+{%- endfor %}
+{%- else %}
+{{ shapley_attribution.get('note', 'No segments produced for Shapley analysis.') }}
+{%- endif %}
+
+### Counterfactual Analysis
+
+*What would happen if key inputs were absent or degraded?*
+
+{%- if counterfactual_summary %}
+{%- for statement in counterfactual_summary %}
+- {{ statement }}
+{%- endfor %}
+{%- else %}
+No counterfactual statements could be generated from available evidence.
+{%- endif %}
+
+{%- else %}
+
+**XAI analysis was not available for this run.**  This occurs when both the
+prompt and model output are empty (e.g. stub or offline runs).  Re-run with
+a configured model adapter to generate explainability artifacts.
+
+{%- endif %}
+
+---
+
+## LLM Narrative Rationale
+
+{% if llm_narrative and llm_narrative.available %}
+> **Generated by:** {{ llm_narrative.model or "configured adapter" }}{% if llm_narrative.cache_hit %} (cached){% endif %}
+> **Note:** This narrative is an *additive* plain-language explanation of the deterministic verdict and metric values. It does not modify the scorecard and is not a substitute for the audit trail. Generated with `temperature=0` and a fixed seed for reproducibility.
+
+{{ llm_narrative.narrative }}
+{% else %}
+*LLM narrative not generated — no live adapter is configured (`adapters.provider == "stub"`) or the adapter call failed. The deterministic verdict and metric values above remain authoritative.*
+{% endif %}
+
+---
 
 ## Escalation Cues
 
@@ -72,13 +185,13 @@ No evaluation outputs were found for this run.
 - {{ control }}
 {%- endfor %}
 
-{%- for todo in todo_markers %}
-- {{ todo }}
-{%- endfor %}
-
 ## Limitations and Open Questions
 
-- Evidence links should be replaced with real experiment artifacts in production.
+- XAI scores use TF-IDF as a bag-of-words proxy.  Semantic nuances not
+  captured by lexical overlap may not be reflected in attribution scores.
+- For production deployments, complement these scores with embedding-based
+  context attribution (``context_relevance_embedding`` metric) where a live
+  embedding model is available.
 - Human review and legal/compliance sign-off are required before deployment.
 
 ## References

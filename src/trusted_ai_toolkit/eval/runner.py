@@ -34,13 +34,6 @@ _EMBEDDING_METRICS = {
     "context_relevance_embedding",
     "output_support_embedding",
 }
-_FAIRNESS_METRICS = {
-    "fairness_demographic_parity_diff",
-    "fairness_disparate_impact_ratio",
-    "fairness_equal_opportunity_difference",
-    "fairness_average_odds_difference",
-}
-
 
 def _load_suite_definition(suite_name: str, config_path: Path | None = None) -> dict[str, Any]:
     """Resolve suite YAML from project local suites or package defaults."""
@@ -197,8 +190,6 @@ def run_eval(
             if metric_id in _CONTEXTUAL_METRICS and not context.get("retrieved_contexts"):
                 threshold = None
             if metric_id == "accuracy_stub" and not context.get("labeled_evaluation"):
-                threshold = None
-            if metric_id in _FAIRNESS_METRICS and not context.get("fairness_dataset"):
                 threshold = None
             metric_result.threshold = threshold
             metric_result.passed = _metric_passed(metric_id, metric_result.value, threshold)

@@ -1649,6 +1649,186 @@
           "passed": true
         }
       }
+    },
+    {
+      "project_name": "sample-trusted-ai-project",
+      "cohort_key": "medium|classification|gpt-4.1-mini",
+      "risk_tier": "medium",
+      "task": "classification",
+      "model_name": "gpt-4.1-mini",
+      "run_id": "d6b0f245-e625-4b05-a891-bbd788e3c8ba",
+      "metrics": {
+        "reliability": {
+          "value": 0.817,
+          "threshold": 0.75,
+          "passed": true
+        },
+        "groundedness_stub": {
+          "value": 0.062,
+          "threshold": 0.18,
+          "passed": false
+        },
+        "context_relevance_tfidf": {
+          "value": 0.06,
+          "threshold": 0.12,
+          "passed": false
+        },
+        "output_support_tfidf": {
+          "value": 0.062,
+          "threshold": 0.12,
+          "passed": false
+        },
+        "lexical_grounding_precision": {
+          "value": 0.308,
+          "threshold": 0.18,
+          "passed": true
+        },
+        "claim_support_rate": {
+          "value": 0.0,
+          "threshold": 0.45,
+          "passed": false
+        },
+        "unsupported_claim_rate": {
+          "value": 1.0,
+          "threshold": 0.4,
+          "passed": false
+        },
+        "contradiction_rate": {
+          "value": 0.0,
+          "threshold": 0.2,
+          "passed": true
+        },
+        "evidence_sufficiency_score": {
+          "value": 0.5,
+          "threshold": 0.4,
+          "passed": true
+        },
+        "bias_signal_score": {
+          "value": 1.0,
+          "threshold": 0.8,
+          "passed": true
+        }
+      }
+    },
+    {
+      "project_name": "sample-trusted-ai-project",
+      "cohort_key": "medium|classification|gpt-4.1-mini",
+      "risk_tier": "medium",
+      "task": "classification",
+      "model_name": "gpt-4.1-mini",
+      "run_id": "a14724ac-7694-4f8b-8be5-e3e9be297b6c",
+      "metrics": {
+        "reliability": {
+          "value": 0.817,
+          "threshold": 0.75,
+          "passed": true
+        },
+        "groundedness_stub": {
+          "value": 0.062,
+          "threshold": 0.18,
+          "passed": false
+        },
+        "context_relevance_tfidf": {
+          "value": 0.06,
+          "threshold": 0.12,
+          "passed": false
+        },
+        "output_support_tfidf": {
+          "value": 0.062,
+          "threshold": 0.12,
+          "passed": false
+        },
+        "lexical_grounding_precision": {
+          "value": 0.308,
+          "threshold": 0.18,
+          "passed": true
+        },
+        "claim_support_rate": {
+          "value": 0.0,
+          "threshold": 0.45,
+          "passed": false
+        },
+        "unsupported_claim_rate": {
+          "value": 1.0,
+          "threshold": 0.4,
+          "passed": false
+        },
+        "contradiction_rate": {
+          "value": 0.0,
+          "threshold": 0.2,
+          "passed": true
+        },
+        "evidence_sufficiency_score": {
+          "value": 0.5,
+          "threshold": 0.4,
+          "passed": true
+        },
+        "bias_signal_score": {
+          "value": 1.0,
+          "threshold": 0.8,
+          "passed": true
+        }
+      }
+    },
+    {
+      "project_name": "sample-trusted-ai-project",
+      "cohort_key": "medium|classification|gpt-4.1-mini",
+      "risk_tier": "medium",
+      "task": "classification",
+      "model_name": "gpt-4.1-mini",
+      "run_id": "a07cca96-e0c4-4933-a591-813820ce229f",
+      "metrics": {
+        "reliability": {
+          "value": 0.926,
+          "threshold": 0.75,
+          "passed": true
+        },
+        "groundedness_stub": {
+          "value": 0.478,
+          "threshold": 0.18,
+          "passed": true
+        },
+        "context_relevance_tfidf": {
+          "value": 0.306,
+          "threshold": 0.12,
+          "passed": true
+        },
+        "output_support_tfidf": {
+          "value": 0.478,
+          "threshold": 0.12,
+          "passed": true
+        },
+        "lexical_grounding_precision": {
+          "value": 0.803,
+          "threshold": 0.18,
+          "passed": true
+        },
+        "claim_support_rate": {
+          "value": 1.0,
+          "threshold": 0.45,
+          "passed": true
+        },
+        "unsupported_claim_rate": {
+          "value": 0.0,
+          "threshold": 0.4,
+          "passed": true
+        },
+        "contradiction_rate": {
+          "value": 0.4,
+          "threshold": 0.2,
+          "passed": false
+        },
+        "evidence_sufficiency_score": {
+          "value": 0.979,
+          "threshold": 0.4,
+          "passed": true
+        },
+        "bias_signal_score": {
+          "value": 1.0,
+          "threshold": 0.8,
+          "passed": true
+        }
+      }
     }
   ]
 }

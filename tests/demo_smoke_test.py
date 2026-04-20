@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -15,6 +16,9 @@ def test_demo_prep_generates_consistent_bundle(tmp_path: Path) -> None:
     env["DEMO_OUTPUT_ROOT"] = str(output_root)
     env["DEMO_CONFIG_PATH"] = str(repo_root / "configs" / "demo_config.yaml")
     env["DEMO_CONTEXT_PATH"] = str(repo_root / "configs" / "demo_context.json")
+    # The script defaults to `python3`, which does not exist on Windows.
+    # Inject the interpreter that's running pytest so the test is portable.
+    env["PYTHON"] = sys.executable
 
     subprocess.run(["bash", str(script_path)], cwd=repo_root, env=env, check=True)
 

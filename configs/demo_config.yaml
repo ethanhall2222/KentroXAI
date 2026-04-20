@@ -36,7 +36,6 @@ model:
   intended_use: Governance gate validation and artifact generation
   limitations: Stubbed model output; not a production inference path
   known_failures:
-    - Fairness metrics are heuristic offline proxies
     - Red-team checks are string-triggered deterministic cases
 eval:
   suites:
@@ -45,10 +44,6 @@ eval:
   thresholds:
     accuracy_stub: 0.75
     reliability: 0.8
-    fairness_demographic_parity_diff: 0.2
-    fairness_disparate_impact_ratio: 0.8
-    fairness_equal_opportunity_difference: 0.2
-    fairness_average_odds_difference: 0.2
     groundedness_stub: 0.65
     refusal_correctness: 0.82
     unanswerable_handling: 0.8

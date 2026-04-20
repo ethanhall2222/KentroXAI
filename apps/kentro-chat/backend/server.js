@@ -101,6 +101,10 @@ app.post("/api/chat", async (req, res) => {
       console.error("Databricks job backend failed:", error);
       res.status(502).json({
         error: error instanceof Error ? error.message : String(error),
+        details:
+          error && typeof error === "object" && "details" in error && typeof error.details === "string"
+            ? error.details
+            : "",
       });
       return;
     }
@@ -300,16 +304,19 @@ async function submitDatabricksRun({ message, requestId }) {
 
 async function waitForRunCompletion(runId) {
   const startedAt = Date.now();
+  let lastPayload = null;
 
   while (Date.now() - startedAt < JOB_TIMEOUT_MS) {
     const payload = await databricksApi(`/api/2.1/jobs/runs/get?run_id=${runId}`);
+    lastPayload = payload;
     const state = payload.state ?? {};
     const lifeCycleState = state.life_cycle_state ?? "";
     const resultState = state.result_state ?? "";
 
     if (lifeCycleState === "TERMINATED") {
       if (resultState !== "SUCCESS") {
-        throw new Error(
+        throw await buildDatabricksRunError(
+          payload,
           `Databricks job run ${runId} finished with ${resultState || "UNKNOWN"}: ${state.state_message ?? ""}`.trim(),
         );
       }
@@ -317,7 +324,8 @@ async function waitForRunCompletion(runId) {
     }
 
     if (lifeCycleState === "INTERNAL_ERROR" || lifeCycleState === "SKIPPED") {
-      throw new Error(
+      throw await buildDatabricksRunError(
+        payload,
         `Databricks job run ${runId} failed in state ${lifeCycleState}: ${state.state_message ?? ""}`.trim(),
       );
     }
@@ -325,7 +333,10 @@ async function waitForRunCompletion(runId) {
     await sleep(JOB_POLL_INTERVAL_MS);
   }
 
-  throw new Error(`Timed out waiting for Databricks job run ${runId}`);
+  throw await buildDatabricksRunError(
+    lastPayload,
+    `Timed out waiting for Databricks job run ${runId}`,
+  );
 }
 
 function getTaskRunId(runPayload) {
@@ -339,10 +350,19 @@ function getTaskRunId(runPayload) {
   return taskRunId;
 }
 
-async function getRunOutput(taskRunId) {
-  const payload = await databricksApi(`/api/2.1/jobs/runs/get-output?run_id=${taskRunId}`, {
+function maybeTaskRunId(runPayload) {
+  const task = Array.isArray(runPayload?.tasks) ? runPayload.tasks[0] : null;
+  return task?.run_id ? String(task.run_id) : "";
+}
+
+async function getRunOutputPayload(taskRunId) {
+  return databricksApi(`/api/2.1/jobs/runs/get-output?run_id=${taskRunId}`, {
     method: "GET",
   });
+}
+
+async function getRunOutput(taskRunId) {
+  const payload = await getRunOutputPayload(taskRunId);
 
   const rawResult = payload.notebook_output?.result ?? "";
 
@@ -357,6 +377,80 @@ async function getRunOutput(taskRunId) {
       `Databricks task run ${taskRunId} returned non-JSON notebook output: ${rawResult.slice(0, 500)}`
     );
   }
+}
+
+function compactDetail(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim();
+}
+
+function makeDatabricksError(message, details) {
+  const error = new Error(message);
+  error.details = details;
+  return error;
+}
+
+async function buildDatabricksRunError(runPayload, fallbackMessage) {
+  const state = runPayload?.state ?? {};
+  const task = Array.isArray(runPayload?.tasks) ? runPayload.tasks[0] : null;
+  const taskRunId = maybeTaskRunId(runPayload);
+  const detailLines = [];
+  let taskOutput = null;
+
+  detailLines.push(`Run ID: ${runPayload?.run_id ?? "unknown"}`);
+  if (taskRunId) {
+    detailLines.push(`Task run ID: ${taskRunId}`);
+  }
+  if (state.life_cycle_state || state.result_state || state.state_message) {
+    detailLines.push(
+      `Run state: ${state.life_cycle_state || "UNKNOWN"} / ${state.result_state || "UNKNOWN"}${state.state_message ? ` - ${state.state_message}` : ""}`,
+    );
+  }
+  if (task?.task_key) {
+    detailLines.push(`Task key: ${task.task_key}`);
+  }
+  if (task?.state) {
+    detailLines.push(
+      `Task state: ${task.state.life_cycle_state || "UNKNOWN"} / ${task.state.result_state || "UNKNOWN"}${task.state.state_message ? ` - ${task.state.state_message}` : ""}`,
+    );
+  }
+
+  if (taskRunId) {
+    try {
+      taskOutput = await getRunOutputPayload(taskRunId);
+    } catch (error) {
+      const apiFailure = error instanceof Error ? error.message : String(error);
+      detailLines.push(`Task output lookup failed: ${apiFailure}`);
+    }
+  }
+
+  const outputError = compactDetail(taskOutput?.error);
+  const outputTrace = compactDetail(taskOutput?.error_trace);
+  const notebookResult = compactDetail(taskOutput?.notebook_output?.result);
+  const taskStateMessage = compactDetail(taskOutput?.metadata?.state?.state_message);
+  const summaryReason = outputError || taskStateMessage || state.state_message || "";
+  const summary = summaryReason ? `${fallbackMessage}\nCause: ${summaryReason}` : fallbackMessage;
+
+  if (outputError) {
+    detailLines.push("");
+    detailLines.push("Databricks error:");
+    detailLines.push(outputError);
+  }
+  if (outputTrace) {
+    detailLines.push("");
+    detailLines.push("Error trace:");
+    detailLines.push(outputTrace);
+  }
+  if (notebookResult) {
+    detailLines.push("");
+    detailLines.push("Notebook output:");
+    detailLines.push(notebookResult);
+  }
+
+  return makeDatabricksError(summary, detailLines.join("\n"));
 }
 
 async function runDatabricksJobBackend({ message, requestId }) {

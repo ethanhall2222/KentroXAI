@@ -71,6 +71,11 @@ type GovernancePayload = {
   goNoGo?: string;
 };
 
+type ErrorPayload = {
+  error?: string;
+  details?: string;
+};
+
 export default function App() {
   const initialSessionsRef = useRef<ChatSession[] | null>(null);
   if (!initialSessionsRef.current) {
@@ -236,7 +241,10 @@ export default function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        const errorPayload = (await response.json().catch(() => null)) as ErrorPayload | null;
+        const summary = errorPayload?.error?.trim() || `Request failed with status ${response.status}`;
+        const details = errorPayload?.details?.trim() || "";
+        throw new Error(details ? `${summary}\n\n${details}` : summary);
       }
 
       const payload = await response.json();

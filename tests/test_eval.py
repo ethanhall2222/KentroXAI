@@ -19,10 +19,6 @@ def test_eval_runner_returns_case_based_results(tmp_path: Path) -> None:
                 "metrics": [
                     "accuracy_stub",
                     "reliability",
-                    "fairness_demographic_parity_diff",
-                    "fairness_disparate_impact_ratio",
-                    "fairness_equal_opportunity_difference",
-                    "fairness_average_odds_difference",
                     "groundedness_stub",
                     "refusal_correctness",
                     "unanswerable_handling",
@@ -58,7 +54,7 @@ def test_eval_runner_returns_case_based_results(tmp_path: Path) -> None:
     results = run_eval(cfg, run_id="run1", config_path=config_path)
     assert len(results) == 1
     assert results[0].suite_name == "medium"
-    assert len(results[0].metric_results) == 9
+    assert len(results[0].metric_results) == 5
     assert any("Golden cases executed" in note for note in results[0].notes)
 
 
