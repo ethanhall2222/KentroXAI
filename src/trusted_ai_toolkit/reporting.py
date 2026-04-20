@@ -276,6 +276,38 @@ def _metric_strength_map(metric_results: list[MetricResult]) -> dict[str, str]:
     return {metric.metric_id: _label(metric.metric_id) for metric in metric_results}
 
 
+def _independent_failing_metrics(metric_results: list[MetricResult]) -> list[MetricResult]:
+    """Return the failing metrics that should affect evaluation and card penalties.
+
+    This intentionally filters out advisory-only signals and de-duplicates
+    correlated pairs so the scorecard does not count the same underlying issue
+    multiple times.
+    """
+
+    strength_map = _metric_strength_map(metric_results)
+    lookup = _metric_lookup(metric_results)
+
+    failing = {
+        metric.metric_id: metric
+        for metric in metric_results
+        if metric.passed is False and strength_map.get(metric.metric_id) != "advisory"
+    }
+
+    # unsupported_claim_rate is the exact complement of claim_support_rate; if
+    # both fail, keep the primary grounding metric and drop the complement.
+    if "claim_support_rate" in failing and "unsupported_claim_rate" in failing:
+        failing.pop("unsupported_claim_rate", None)
+
+    # When both modalities for the same construct fail, keep the embedding
+    # measurement as the higher-fidelity representative and suppress TF-IDF.
+    for tfidf_id, embedding_id in _TFIDF_SUPERSEDED_BY_EMBEDDING.items():
+        if embedding_id in failing and tfidf_id in failing:
+            failing.pop(tfidf_id, None)
+
+    # Preserve original metric order so required-actions text remains stable.
+    return [lookup[metric.metric_id] for metric in metric_results if metric.metric_id in failing]
+
+
 def _metric_lookup(metric_results: list[MetricResult]) -> dict[str, MetricResult]:
     return {metric.metric_id: metric for metric in metric_results}
 
@@ -1287,7 +1319,18 @@ def _card_score_summary(
     overall_status: str,
     stage_gate_status: dict[str, str],
 ) -> dict[str, Any]:
-    """Compute the UI-facing trust score for the current answer."""
+    """Compute the UI-facing release-readiness score for the current run.
+
+    This score is intentionally distinct from ``answer_trust_score``:
+
+    - ``answer_trust_score`` is the answer-level grounding/confidence score.
+    - ``display_score_pct`` below is a governance/release-readiness rollup that
+      starts from the control score and applies penalties for failed metrics,
+      red-team findings, and incomplete artifacts.
+
+    Keeping the calculations separate avoids mixing answer quality with
+    deployment readiness, and the template must label them accordingly.
+    """
 
     base = float(control_score_pct) if control_score_pct is not None else 70.0
     penalty = 0.0
@@ -1309,8 +1352,62 @@ def _card_score_summary(
     return {
         "display_score_pct": int(display_score),
         "control_score_pct": int(round(control_score_pct, 0)) if control_score_pct is not None else None,
-        "label": "Trust Score",
+        "label": "Release Readiness",
         "status_note": status_note,
+    }
+
+
+def _decision_summary(
+    answer_verdict: str | None,
+    go_no_go: str,
+    overall_status: str,
+    answer_reasons: list[str],
+    evidence_confidence: dict[str, Any],
+    evidence_completeness: float,
+    severity_counts: dict[str, int],
+) -> dict[str, str]:
+    """Build a blunt top-line summary for the scorecard.
+
+    The goal is to present the decision in plain language before the user dives
+    into metric math.  This is display-only; it does not affect scoring.
+    """
+
+    blocker_count = int(severity_counts.get("high", 0)) + int(severity_counts.get("critical", 0))
+    primary_reason = answer_reasons[0] if answer_reasons else "No explanatory reason was captured."
+    confidence_tier = str(evidence_confidence.get("tier", "")).lower()
+
+    if go_no_go == "no-go":
+        headline = "Do not rely on this answer without remediation."
+    elif answer_verdict == "use_caution":
+        headline = "Use this answer cautiously and verify it before action."
+    else:
+        headline = "This answer is acceptable to use within the current evidence bounds."
+
+    if overall_status == "fail":
+        summary = "Release is blocked by governance checks even if parts of the answer appear grounded."
+    elif overall_status == "needs_review":
+        summary = "The answer is available, but governance review items still need to be cleared."
+    else:
+        summary = "No governance blocker is currently stopping release."
+
+    if blocker_count > 0:
+        next_action = f"Resolve {blocker_count} blocker-level red-team finding(s) before release."
+    elif evidence_completeness < 90:
+        next_action = "Complete the missing evidence-pack artifacts before treating this run as release-ready."
+    elif confidence_tier == "low":
+        next_action = "Collect stronger supporting evidence before treating this answer as fully trustworthy."
+    elif answer_verdict == "not_trusted":
+        next_action = "Revise the answer or retrieval source set, then rerun evaluation."
+    elif answer_verdict == "use_caution":
+        next_action = "Have an operator review the cited evidence before using the answer downstream."
+    else:
+        next_action = "Retain the evidence pack with the answer for audit and traceability."
+
+    return {
+        "headline": headline,
+        "summary": summary,
+        "primary_reason": primary_reason,
+        "next_action": next_action,
     }
 
 
@@ -1366,7 +1463,7 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     metric_strength = _metric_strength_map(metric_results)
     computed_risk_tier = controls_risk_tier(control_results)
 
-    failing_metrics = [m.metric_id for m in metric_results if m.passed is False]
+    failing_metrics = [metric.metric_id for metric in _independent_failing_metrics(metric_results)]
     high_findings = severity_counts["high"] + severity_counts["critical"]
     required_outputs = config.artifact_policy.required_outputs_by_risk_tier.get(config.risk_tier, [])
     evidence_completeness = _artifact_completeness(store, required_outputs)
@@ -1508,6 +1605,15 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     context["raw_trust_score_pct"] = context["governance_score_pct"]
     context["weighting_rationale"] = scorecard.weighting_rationale
     context["release_readiness_score_pct"] = context["card_score"]["display_score_pct"]
+    context["decision_summary"] = _decision_summary(
+        answer_verdict=scorecard.answer_verdict,
+        go_no_go=go_no_go,
+        overall_status=overall_status,
+        answer_reasons=answer_reasons,
+        evidence_confidence=computed_evidence_confidence,
+        evidence_completeness=evidence_completeness,
+        severity_counts=severity_counts,
+    )
     context["brand_logo_src"] = _embed_brand_logo()
     context["generated_files"] = {
         "scorecard_md": str(store.path_for("scorecard.md")),
