@@ -481,6 +481,20 @@ class TestAnswerTrustScoreRegression:
         assert _answer_trust_score(good) > 0.7
         assert _answer_trust_score(contradicting) < 0.3
 
+    def test_catastrophic_contradiction_does_not_zero_supported_answer(self) -> None:
+        """A contradictory but source-overlapping answer should be low, not displayed as 0%."""
+        result = [
+            _m("claim_support_rate", 1.0, threshold=0.65),
+            _m("contradiction_rate", 0.40, threshold=0.05),
+            _m("evidence_sufficiency_score", 1.0, threshold=0.58),
+            _m("output_support_tfidf", 0.50, threshold=0.2),
+        ]
+
+        score = _answer_trust_score(result)
+
+        assert score is not None
+        assert 0.1 < score < 0.3
+
     def test_geometric_mean_on_correlated_pair(self) -> None:
         """High CSR + low ESS → geo-mean penalty; arithmetic mean would over-report."""
         asymmetric = [

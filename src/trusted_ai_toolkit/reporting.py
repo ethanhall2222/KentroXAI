@@ -383,17 +383,17 @@ def _answer_trust_score(metric_results: list[MetricResult]) -> float | None:
 
     Stage 3 — Multiplicative contradiction penalty
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ``trust_score = base_score × max(0, 1 − contradiction_rate / _CEILING)``
+    ``trust_score = base_score × max(_FLOOR, 1 − contradiction_rate / _CEILING)``
 
     * At contradiction_rate = 0.00 → penalty = 1.00 (no effect)
     * At contradiction_rate = 0.05 → penalty = 0.833
     * At contradiction_rate = 0.15 → penalty = 0.500 (base score halved)
-    * At contradiction_rate ≥ 0.30 → penalty = 0.00  (score floors to zero)
+    * At contradiction_rate ≥ 0.30 → penalty = 0.25  (severe contradiction floor)
 
     The ceiling (_CONTRADICTION_CEILING = 0.30) is the point at which the system
-    is considered fully untrustworthy.  A 30 % contradiction rate means nearly
-    a third of all output claims actively conflict with the provided evidence;
-    no grounding score can redeem that.
+    is considered not trusted.  The floor prevents the display score from
+    claiming "no evidence support" when the real issue is contradictions inside
+    an otherwise source-overlapping answer.
 
     Excluded metrics (carried over from previous revision)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -408,8 +408,9 @@ def _answer_trust_score(metric_results: list[MetricResult]) -> float | None:
         contributing metrics are present at all.
     """
 
-    # ── Sentinel: maximum contradiction_rate before trust_score floors to 0 ──
+    # ── Sentinel: maximum contradiction_rate before severe penalty floor ──
     _CONTRADICTION_CEILING: float = 0.30
+    _CONTRADICTION_PENALTY_FLOOR: float = 0.25
 
     lookup = _metric_lookup(metric_results)
 
@@ -464,11 +465,13 @@ def _answer_trust_score(metric_results: list[MetricResult]) -> float | None:
     # contradiction_rate is a safety signal: active conflicts between output
     # claims and source evidence.  It is applied multiplicatively so that no
     # amount of high grounding can compensate for a high contradiction rate.
-    # The penalty is linear from 1.0 at contradiction_rate=0 down to 0.0 at
-    # contradiction_rate=_CONTRADICTION_CEILING.
+    # The penalty is linear from 1.0 at contradiction_rate=0 down to a severe
+    # floor at contradiction_rate=_CONTRADICTION_CEILING.  We do not zero the
+    # numeric score because a contradiction problem is different from having no
+    # source support at all; the answer verdict still carries the hard warning.
     contradiction_rate = _get("contradiction_rate")
     if contradiction_rate is not None:
-        penalty = max(0.0, 1.0 - contradiction_rate / _CONTRADICTION_CEILING)
+        penalty = max(_CONTRADICTION_PENALTY_FLOOR, 1.0 - contradiction_rate / _CONTRADICTION_CEILING)
         trust_score = base_score * penalty
     else:
         # If the metric was not run at all, no penalty is applied; the absence
