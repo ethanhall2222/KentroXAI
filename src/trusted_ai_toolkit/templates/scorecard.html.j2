@@ -834,6 +834,7 @@
         <span class="chip purple hint" title="Configured risk is the declared risk level for this use case. It is set in configuration and does not change based on the score.">Configured Risk {{ pedigree }}</span>
         <span class="chip amber hint" title="Traceability shows whether this run includes system context and telemetry fields that let you trace the result back to a specific governed system.">{{ artifact_signal.trace_label }}</span>
         <span class="chip sky hint" title="Blocker findings are the red-team findings severe enough to stop release at the current threshold, which means high and critical in this demo.">{{ artifact_signal.security_label }}</span>
+        <span class="chip purple hint" title="Template version marker. If this chip is missing, the Databricks job is running an older workspace checkout or cached package.">Template {{ scorecard_template_version }}</span>
         {% if evidence_confidence and evidence_confidence.tier %}
         <span class="chip {% if evidence_confidence.tier == 'high' %}pass{% elif evidence_confidence.tier == 'medium' %}amber{% else %}sky{% endif %} hint" title="Evidence confidence reflects how much signal backs the answer trust score: dimensional coverage, claim sample size, modality diversity, and modality agreement. Low confidence downgrades a trusted verdict to use_caution.">Evidence Confidence: {{ evidence_confidence.tier | title }}</span>
         {% endif %}

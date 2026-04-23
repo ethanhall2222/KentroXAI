@@ -1548,6 +1548,7 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     context["raw_trust_score_pct"] = context["governance_score_pct"]
     context["weighting_rationale"] = scorecard.weighting_rationale
     context["release_readiness_score_pct"] = context["card_score"]["display_score_pct"]
+    context["scorecard_template_version"] = "scorecard-details-v2"
     context["brand_logo_src"] = _embed_brand_logo()
     context["generated_files"] = {
         "scorecard_md": str(store.path_for("scorecard.md")),
