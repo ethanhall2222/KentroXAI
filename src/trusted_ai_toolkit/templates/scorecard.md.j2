@@ -12,13 +12,6 @@
 {% endif %}**Overall Status:** {{ overall_status | replace("_", " ") | title }}
 **Go/No-Go:** {{ go_no_go | upper }}
 
-## Bottom Line
-
-- {{ decision_summary.headline }}
-- {{ decision_summary.summary }}
-- Primary driver: {{ decision_summary.primary_reason }}
-- Next action: {{ decision_summary.next_action }}
-
 ## Executive Summary
 
 {{ executive_summary }}
@@ -52,11 +45,11 @@
 ## Trust Math
 
 {% if pillar_scores %}
-- Benchmark trust z-score: {{ trust_score_z }}
+- Trust z-score: {{ trust_score }}
 - Answer trust score: {{ answer_trust_score_pct }}%
-- {{ card_score.label }}: {{ release_readiness_score_pct }}%
 - Empirical quality score: {{ empirical_score_pct }}%
 - Governance score (pre-penalty): {{ raw_trust_score_pct }}%
+- Release readiness (after penalties): {{ release_readiness_score_pct }}%
 - Security: {{ "%.0f"|format(pillar_scores.security * 100) }}%
 - Reliability: {{ "%.0f"|format(pillar_scores.reliability * 100) }}%
 - Transparency: {{ "%.0f"|format(pillar_scores.transparency * 100) }}%

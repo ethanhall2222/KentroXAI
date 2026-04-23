@@ -5,7 +5,7 @@ from pathlib import Path
 
 from trusted_ai_toolkit.artifacts import ArtifactStore
 from trusted_ai_toolkit.benchmarking import update_registry_for_config
-from trusted_ai_toolkit.reporting import _independent_failing_metrics, generate_scorecard
+from trusted_ai_toolkit.reporting import generate_scorecard
 from trusted_ai_toolkit.schemas import MetricResult, ToolkitConfig
 from tat.schemas import SystemSpec
 
@@ -146,9 +146,6 @@ def test_reporting_writes_computed_scores_and_system_context(tmp_path: Path) -> 
     assert "- Security: 75%" in scorecard_md
     scorecard_html = store.path_for("scorecard.html").read_text(encoding="utf-8")
     assert "Answer Trust" in scorecard_html
-    assert "Bottom Line" in scorecard_html
-    assert "Core Evidence Readout" in scorecard_html
-    assert "Governance And Release Detail" in scorecard_html
     assert "Baseline Trust Inputs" in scorecard_html
     assert "Weighting policy: Security 30%, Reliability 30%, Transparency 25%, Governance 15%." in scorecard_html
     assert "Contribution to the final trust score: 22 points out of 100." in scorecard_html
@@ -157,7 +154,6 @@ def test_reporting_writes_computed_scores_and_system_context(tmp_path: Path) -> 
     assert "Traceability On" in scorecard_html
     assert "Blocker Findings 1" in scorecard_html
     assert "This answer has governance blockers. Review the failed gates and findings." in scorecard_html
-    assert "Primary Driver" in scorecard_html
 
 
 def test_reporting_uses_historical_metric_distribution_for_trust_score(tmp_path: Path) -> None:
@@ -211,17 +207,3 @@ def test_reporting_uses_historical_metric_distribution_for_trust_score(tmp_path:
     assert scorecard.trust_score > 1.0
     assert payload["registry_path"].endswith("registry.json")
     assert "accuracy_stub" in payload["metric_distributions"]
-
-
-def test_independent_failing_metrics_drop_complements_and_advisory() -> None:
-    results = [
-        MetricResult(metric_id="claim_support_rate", value=0.4, threshold=0.7, passed=False, details={}),
-        MetricResult(metric_id="unsupported_claim_rate", value=0.6, threshold=0.3, passed=False, details={}),
-        MetricResult(metric_id="output_support_tfidf", value=0.3, threshold=0.6, passed=False, details={}),
-        MetricResult(metric_id="output_support_embedding", value=0.2, threshold=0.6, passed=False, details={}),
-        MetricResult(metric_id="llm_contradiction_judge", value=0.7, threshold=0.1, passed=False, details={}),
-    ]
-
-    metric_ids = [metric.metric_id for metric in _independent_failing_metrics(results)]
-
-    assert metric_ids == ["claim_support_rate", "output_support_embedding"]

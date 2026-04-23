@@ -259,107 +259,6 @@
       padding: 18px 20px;
     }
 
-    .bottom-line {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(180px, 1fr));
-      gap: 12px;
-      margin: 0 0 14px;
-    }
-
-    .bottom-line-card {
-      border: 1px solid rgba(15, 23, 40, 0.06);
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.94);
-      padding: 16px 18px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
-    }
-
-    .bottom-line-card .kicker {
-      margin: 0 0 6px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .bottom-line-card .headline {
-      margin: 0 0 6px;
-      font-size: 24px;
-      line-height: 1.15;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--ink);
-    }
-
-    .bottom-line-card .body {
-      margin: 0;
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--muted);
-    }
-
-    .bottom-line-card .metric {
-      margin: 0;
-      font-size: 30px;
-      line-height: 1;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--ink);
-    }
-
-    .section-detail {
-      border-top: 1px solid rgba(15, 23, 40, 0.06);
-      padding: 14px 0 0;
-    }
-
-    .section-detail + .section-detail {
-      margin-top: 14px;
-    }
-
-    .section-summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      cursor: pointer;
-      list-style: none;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--ink);
-    }
-
-    .section-summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .section-summary::after {
-      content: "+";
-      width: 26px;
-      height: 26px;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(15, 23, 40, 0.06);
-      color: var(--muted);
-      font-size: 18px;
-      font-weight: 700;
-      flex: 0 0 auto;
-    }
-
-    .section-detail[open] .section-summary::after {
-      content: "–";
-    }
-
-    .section-summary .subcopy {
-      display: block;
-      margin-top: 3px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--muted);
-    }
-
     .detail-group + .detail-group {
       margin-top: 16px;
       padding-top: 14px;
@@ -730,7 +629,6 @@
       .detail-group li { font-size: 12px; }
       .btn { font-size: 12px; min-width: 116px; }
       .footnote { font-size: 11px; }
-      .bottom-line { grid-template-columns: 1fr 1fr; }
     }
 
     @media (max-width: 930px) {
@@ -749,7 +647,6 @@
       .evidence { font-size: 16px; }
       .chip { font-size: 13px; }
       .layout { grid-template-columns: 1fr; gap: 16px; }
-      .bottom-line { grid-template-columns: 1fr; }
       .score-wrap { flex-direction: row; flex-wrap: wrap; align-items: stretch; }
       .ring { width: 160px; height: 160px; }
       .ring .num { font-size: 52px; }
@@ -827,7 +724,7 @@
       <div class="layout">
         <div class="score-wrap">
           <div class="ring">
-            <p class="num">{{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }}</p>
+            <p class="num">{{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }}</p>
             <p class="label">Answer Trust</p>
           </div>
           <p class="ring-note hint" title="The displayed score combines a grounding sub-score (geometric mean of claim support and evidence sufficiency), a semantic sub-score (embedding output support), and a multiplicative contradiction penalty so that contradictions cannot be averaged away by strong grounding.">This score reflects confidence in this answer.</p>
@@ -843,9 +740,6 @@
             <div class="mini-section">
               <p class="minor-label hint" title="Answer verdict tells the user whether this specific answer should be trusted, used cautiously, or not trusted.">Answer Verdict</p>
               <p class="minor-value">{{ answer_verdict | replace("_", " ") | title if answer_verdict else "Unknown" }}</p>
-
-              <p class="minor-label hint" title="Release readiness starts from the governance control score and applies penalties for failing metrics, blocker findings, and incomplete artifacts. It is distinct from the answer trust score shown in the main ring.">{{ card_score.label }}</p>
-              <p class="minor-value">{{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }}</p>
 
               <p class="review-note{% if overall_status == "pass" %} pass{% elif overall_status == "needs_review" %} review{% endif %}">{{ card_score.status_note }}</p>
               {% if gate_ns.blocking_gates %}
@@ -908,139 +802,104 @@ block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity 
         </div>
 
         <div class="detail-panel">
-          <div class="bottom-line">
-            <article class="bottom-line-card">
-              <p class="kicker">Bottom Line</p>
-              <h3 class="headline">{{ decision_summary.headline }}</h3>
-              <p class="body">{{ decision_summary.summary }}</p>
-            </article>
-            <article class="bottom-line-card">
-              <p class="kicker">Primary Driver</p>
-              <p class="metric">{{ answer_verdict | replace("_", " ") | title if answer_verdict else "Unknown" }}</p>
-              <p class="body">{{ decision_summary.primary_reason }}</p>
-            </article>
-            <article class="bottom-line-card">
-              <p class="kicker">Next Action</p>
-              <p class="metric">{{ go_no_go | upper }}</p>
-              <p class="body">{{ decision_summary.next_action }}</p>
-            </article>
+          <div class="detail-group">
+            <h3>Why This Verdict</h3>
+            <ul>
+              <li>Answer trust score: {{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }} — grounding sub-score (geometric mean of claim support and evidence sufficiency) combined with semantic support and penalised multiplicatively by the contradiction rate.</li>
+              {% if evidence_confidence and evidence_confidence.tier %}
+              <li>Evidence confidence: <strong>{{ evidence_confidence.tier | title }}</strong> — measured {{ evidence_confidence.dimensional_coverage }}/4 answer-truth dimensions{% if evidence_confidence.claim_count is not none %} across {{ evidence_confidence.claim_count }} extracted claim(s){% endif %}{% if evidence_confidence.modality_diversity %} with dual-modality support{% if evidence_confidence.modality_disagreement is not none %} (|tfidf−embedding| = {{ "%.2f"|format(evidence_confidence.modality_disagreement) }}){% endif %}{% else %} with single-modality support{% endif %}.</li>
+              {% endif %}
+              <li>Claim support rate: {{ answer_truth_summary.claim_support_rate if answer_truth_summary.claim_support_rate is not none else "N/A" }}.</li>
+              <li>Unsupported claim rate: {{ answer_truth_summary.unsupported_claim_rate if answer_truth_summary.unsupported_claim_rate is not none else "N/A" }}.</li>
+              <li>Contradiction rate: {{ answer_truth_summary.contradiction_rate if answer_truth_summary.contradiction_rate is not none else "N/A" }}.</li>
+              <li>Evidence sufficiency score: {{ answer_truth_summary.evidence_sufficiency_score if answer_truth_summary.evidence_sufficiency_score is not none else "N/A" }}.</li>
+              <li>Bias risk: {{ bias_assessment.risk | title if bias_assessment.risk else "Unknown" }}{% if bias_assessment.signal_terms %} ({{ bias_assessment.signal_terms | join(", ") }}){% endif %}.</li>
+              <li>Trust z-score: {{ trust_score_z if trust_score_z is not none else "N/A" }} keeps the historical cohort comparison for audit and benchmarking.</li>
+              <li>Governance score: {{ card_score.control_score_pct if card_score.control_score_pct is not none else "N/A" }} from the four trust pillars.</li>
+              <li>Security {{ "%.0f"|format(pillar_scores.security * 100) if pillar_scores else "N/A" }}%, Reliability {{ "%.0f"|format(pillar_scores.reliability * 100) if pillar_scores else "N/A" }}%, Transparency {{ "%.0f"|format(pillar_scores.transparency * 100) if pillar_scores else "N/A" }}%, Governance {{ "%.0f"|format(pillar_scores.governance * 100) if pillar_scores else "N/A" }}%.</li>
+              <li>Evidence completeness: {{ "%.0f"|format(evidence_completeness) }}%.</li>
+              <li>Governance blockers are still shown separately and can still change the final decision status.</li>
+            </ul>
           </div>
 
-          <details class="section-detail" open>
-            <summary class="section-summary">
-              <span>Core Evidence Readout</span>
-              <span class="subcopy">Answer quality, confidence, and why it landed here.</span>
-            </summary>
-            <div class="detail-group">
-              <h3>Why This Verdict</h3>
-              <ul>
-                <li>Answer trust score: {{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }} — grounding sub-score (geometric mean of claim support and evidence sufficiency) combined with semantic support and penalised multiplicatively by the contradiction rate.</li>
-                <li>{{ card_score.label }}: {{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }} — governance/readiness rollup derived from the control score after penalties for failed independent checks, blocker findings, and incomplete evidence-pack artifacts.</li>
-                {% if evidence_confidence and evidence_confidence.tier %}
-                <li>Evidence confidence: <strong>{{ evidence_confidence.tier | title }}</strong> — measured {{ evidence_confidence.dimensional_coverage }}/4 answer-truth dimensions{% if evidence_confidence.claim_count is not none %} across {{ evidence_confidence.claim_count }} extracted claim(s){% endif %}{% if evidence_confidence.modality_diversity %} with dual-modality support{% if evidence_confidence.modality_disagreement is not none %} (|tfidf−embedding| = {{ "%.2f"|format(evidence_confidence.modality_disagreement) }}){% endif %}{% else %} with single-modality support{% endif %}.</li>
-                {% endif %}
-                <li>Claim support rate: {{ answer_truth_summary.claim_support_rate if answer_truth_summary.claim_support_rate is not none else "N/A" }}.</li>
-                <li>Unsupported claim rate: {{ answer_truth_summary.unsupported_claim_rate if answer_truth_summary.unsupported_claim_rate is not none else "N/A" }}.</li>
-                <li>Contradiction rate: {{ answer_truth_summary.contradiction_rate if answer_truth_summary.contradiction_rate is not none else "N/A" }}.</li>
-                <li>Evidence sufficiency score: {{ answer_truth_summary.evidence_sufficiency_score if answer_truth_summary.evidence_sufficiency_score is not none else "N/A" }}.</li>
-                <li>Bias risk: {{ bias_assessment.risk | title if bias_assessment.risk else "Unknown" }}{% if bias_assessment.signal_terms %} ({{ bias_assessment.signal_terms | join(", ") }}){% endif %}.</li>
-              </ul>
-            </div>
+          <div class="detail-group">
+            <h3>Answer Checks</h3>
+            <ul>
+              {% for reason in answer_reasons %}
+              <li>{{ reason }}</li>
+              {% endfor %}
+            </ul>
+          </div>
 
-            <div class="detail-group">
-              <h3>Answer Checks</h3>
-              <ul>
-                {% for reason in answer_reasons %}
-                <li>{{ reason }}</li>
-                {% endfor %}
-              </ul>
-            </div>
-          </details>
+          <div class="detail-group">
+            <h3>Traceability</h3>
+            <ul>
+              <li>Run ID: {{ run_id }}</li>
+              <li>System: {{ system_context.system_id if system_context else "n/a" }} | Environment: {{ system_context.environment if system_context else "n/a" }}</li>
+              <li>System hash: {{ system_context.system_hash[:12] ~ "..." if system_context and system_context.system_hash else "n/a" }}</li>
+              <li>{{ artifact_signal.trace_label }} | {{ artifact_signal.evidence_label }}</li>
+            </ul>
+          </div>
 
-          <details class="section-detail">
-            <summary class="section-summary">
-              <span>Governance And Release Detail</span>
-              <span class="subcopy">Release state, gate outcomes, and blocker conditions.</span>
-            </summary>
-            <div class="detail-group">
-              <h3>Governance Flags</h3>
-              <ul>
-                <li>Decision status: {{ overall_status | replace("_", " ") | title }}</li>
-                <li>Release decision: {{ go_no_go | upper }}</li>
-                <li>Stage gates: {% for gate, status in stage_gate_status.items() %}{{ gate | replace("_", " ") | title }}={{ status | upper }}{% if not loop.last %}; {% endif %}{% endfor %}</li>
-                <li>{{ card_score.status_note }}</li>
-                <li>Evidence completeness: {{ "%.0f"|format(evidence_completeness) }}%.</li>
-              </ul>
-            </div>
+          <div class="detail-group">
+            <h3>Security Context</h3>
+            <ul>
+              <li>Blocking threshold: {{ severity_threshold | upper }}.</li>
+              <li>Blocker findings: {{ redteam_summary.high + redteam_summary.critical }} (High: {{ redteam_summary.high }}, Critical: {{ redteam_summary.critical }}).</li>
+              <li>Passed or non-blocking findings: {{ redteam_summary.medium + redteam_summary.low }} (Medium: {{ redteam_summary.medium }}, Low: {{ redteam_summary.low }}).</li>
+              <li>Evaluation checks passed: {{ metric_summary.passed }} of {{ metric_summary.total }}.</li>
+            </ul>
+          </div>
 
-            <div class="detail-group">
-              <h3>Security Context</h3>
-              <ul>
-                <li>Blocking threshold: {{ severity_threshold | upper }}.</li>
-                <li>Blocker findings: {{ redteam_summary.high + redteam_summary.critical }} (High: {{ redteam_summary.high }}, Critical: {{ redteam_summary.critical }}).</li>
-                <li>Passed or non-blocking findings: {{ redteam_summary.medium + redteam_summary.low }} (Medium: {{ redteam_summary.medium }}, Low: {{ redteam_summary.low }}).</li>
-                <li>Evaluation checks passed: {{ metric_summary.passed }} of {{ metric_summary.total }}.</li>
-              </ul>
-            </div>
-          </details>
-
-          <details class="section-detail">
-            <summary class="section-summary">
-              <span>Full Audit Trail</span>
-              <span class="subcopy">Traceability, benchmark context, and scoring breakdowns.</span>
-            </summary>
-            <div class="detail-group">
-              <h3>Traceability</h3>
-              <ul>
-                <li>Run ID: {{ run_id }}</li>
-                <li>System: {{ system_context.system_id if system_context else "n/a" }} | Environment: {{ system_context.environment if system_context else "n/a" }}</li>
-                <li>System hash: {{ system_context.system_hash[:12] ~ "..." if system_context and system_context.system_hash else "n/a" }}</li>
-                <li>{{ artifact_signal.trace_label }} | {{ artifact_signal.evidence_label }}</li>
-              </ul>
-            </div>
-
-            <div class="detail-group">
-              <h3>Baseline Trust Inputs</h3>
-              <p class="breakdown-note">Expand a pillar to see the formula, weighting, and contribution to the trust score.</p>
-              <ul class="pillar-meta">
-                <li>Benchmark trust z-score: {{ trust_score_z if trust_score_z is not none else "N/A" }} keeps the historical cohort comparison for audit and benchmarking.</li>
-                <li>Governance score: {{ card_score.control_score_pct if card_score.control_score_pct is not none else "N/A" }} from the four trust pillars.</li>
-                <li>Weighting policy: Security {{ "%.0f"|format(weighting_rationale.security * 100) }}%, Reliability {{ "%.0f"|format(weighting_rationale.reliability * 100) }}%, Transparency {{ "%.0f"|format(weighting_rationale.transparency * 100) }}%, Governance {{ "%.0f"|format(weighting_rationale.governance * 100) }}%.</li>
-              </ul>
-              <div>
-                {% if pillar_breakdowns %}
-                {% for pillar_name, breakdown in pillar_breakdowns.items() %}
-                <details class="pillar-detail">
-                  <summary class="pillar-summary">{{ pillar_name | title }}: {{ "%.0f"|format(breakdown.pillar_score * 100) }}%</summary>
-                  <ul class="pillar-meta">
-                    <li>Formula: {{ breakdown.formula }}</li>
-                    {% if breakdown.redteam_pass_rate is defined %}
-                    <li>Why it looks different: security blends weighted controls with red-team results.</li>
-                    <li>Weighted controls: {{ breakdown.control_weight_passed|round(0)|int }} of {{ breakdown.control_weight_total|round(0)|int }} control points passed = {{ "%.0f"|format(breakdown.control_pass_rate * 100) if breakdown.control_pass_rate is not none else "N/A" }}%</li>
-                    {% else %}
-                    <li>Why it is {{ "%.0f"|format(breakdown.pillar_score * 100) }}%: this pillar uses weighted control points, not a flat control count.</li>
-                    {% endif %}
-                    {% if breakdown.redteam_pass_rate is defined %}
-                    <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
-                    <li>Controls alone: {{ "%.0f"|format(breakdown.control_pass_rate * 100) if breakdown.control_pass_rate is not none else "N/A" }}%</li>
-                    <li>Red-team result: {{ "%.0f"|format(breakdown.redteam_pass_rate * 100) }}%</li>
-                    {% else %}
-                    <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
-                    <li>Controls checked: {{ breakdown.control_total }}</li>
-                    {% endif %}
-                    <li>How much this matters: this pillar is {{ "%.0f"|format(breakdown.trust_weight * 100) }}% of the total trust score.</li>
-                    <li>Contribution to the final trust score: {{ "%.0f"|format(breakdown.trust_contribution * 100) }} points out of 100.</li>
-                  </ul>
-                </details>
-                {% endfor %}
-                {% else %}
-                <ul>
-                  <li>Pillar scores are not available for this run.</li>
+          <div class="detail-group">
+            <h3>Baseline Trust Inputs</h3>
+            <p class="breakdown-note">Expand a pillar to see the formula, weighting, and contribution to the trust score.</p>
+            <ul class="pillar-meta">
+              <li>Weighting policy: Security {{ "%.0f"|format(weighting_rationale.security * 100) }}%, Reliability {{ "%.0f"|format(weighting_rationale.reliability * 100) }}%, Transparency {{ "%.0f"|format(weighting_rationale.transparency * 100) }}%, Governance {{ "%.0f"|format(weighting_rationale.governance * 100) }}%.</li>
+            </ul>
+            <div>
+              {% if pillar_breakdowns %}
+              {% for pillar_name, breakdown in pillar_breakdowns.items() %}
+              <details class="pillar-detail">
+                <summary class="pillar-summary">{{ pillar_name | title }}: {{ "%.0f"|format(breakdown.pillar_score * 100) }}%</summary>
+                <ul class="pillar-meta">
+                  <li>Formula: {{ breakdown.formula }}</li>
+                  {% if breakdown.redteam_pass_rate is defined %}
+                  <li>Why it looks different: security blends weighted controls with red-team results.</li>
+                  <li>Weighted controls: {{ breakdown.control_weight_passed|round(0)|int }} of {{ breakdown.control_weight_total|round(0)|int }} control points passed = {{ "%.0f"|format(breakdown.control_pass_rate * 100) if breakdown.control_pass_rate is not none else "N/A" }}%</li>
+                  {% else %}
+                  <li>Why it is {{ "%.0f"|format(breakdown.pillar_score * 100) }}%: this pillar uses weighted control points, not a flat control count.</li>
+                  {% endif %}
+                  {% if breakdown.redteam_pass_rate is defined %}
+                  <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
+                  <li>Controls alone: {{ "%.0f"|format(breakdown.control_pass_rate * 100) if breakdown.control_pass_rate is not none else "N/A" }}%</li>
+                  <li>Red-team result: {{ "%.0f"|format(breakdown.redteam_pass_rate * 100) }}%</li>
+                  {% else %}
+                  <li>Controls passed: {{ breakdown.control_passed }}/{{ breakdown.control_total }}</li>
+                  <li>Controls checked: {{ breakdown.control_total }}</li>
+                  {% endif %}
+                  <li>How much this matters: this pillar is {{ "%.0f"|format(breakdown.trust_weight * 100) }}% of the total trust score.</li>
+                  <li>Contribution to the final trust score: {{ "%.0f"|format(breakdown.trust_contribution * 100) }} points out of 100.</li>
                 </ul>
-                {% endif %}
-              </div>
+              </details>
+              {% endfor %}
+              {% else %}
+              <ul>
+                <li>Pillar scores are not available for this run.</li>
+              </ul>
+              {% endif %}
             </div>
-          </details>
+          </div>
+
+          <div class="detail-group">
+            <h3>Governance Flags</h3>
+            <ul>
+              <li>Decision status: {{ overall_status | replace("_", " ") | title }}</li>
+              <li>Release decision: {{ go_no_go | upper }}</li>
+              <li>Stage gates: {% for gate, status in stage_gate_status.items() %}{{ gate | replace("_", " ") | title }}={{ status | upper }}{% if not loop.last %}; {% endif %}{% endfor %}</li>
+              <li>{{ card_score.status_note }}</li>
+            </ul>
+          </div>
         </div>
       </div>
 
