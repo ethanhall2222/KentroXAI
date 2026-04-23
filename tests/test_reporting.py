@@ -241,7 +241,8 @@ def test_high_answer_trust_with_review_metric_is_go_not_no_go(tmp_path: Path) ->
     assert scorecard.answer_trust_score >= 0.95
     assert scorecard.stage_gate_status["evaluation"] == "needs_review"
     assert scorecard.go_no_go == "go"
-    assert "All Evaluation Metrics" in html
+    assert "All Evaluation Metrics - Pass/Fail" in html
+    assert '<details class="detail-group">\n            <summary class="detail-summary"><h3>All Evaluation Metrics - Pass/Fail</h3></summary>' in html
     assert "reliability" in html
 
 
