@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 
 from trusted_ai_toolkit.eval.runner import run_eval
+from trusted_ai_toolkit.eval.metrics import METRICS_REGISTRY
 from trusted_ai_toolkit.model_client import EmbeddingInvocationResult
 from trusted_ai_toolkit.schemas import ToolkitConfig
 
@@ -58,6 +59,37 @@ def test_eval_runner_returns_case_based_results(tmp_path: Path) -> None:
     assert any("Golden cases executed" in note for note in results[0].notes)
 
 
+def test_project_suites_reference_registered_metrics() -> None:
+    suite_paths = [*Path("suites").glob("*.yaml"), *Path("src/trusted_ai_toolkit/eval/suites").glob("*.yaml")]
+
+    for suite_path in suite_paths:
+        suite = yaml.safe_load(suite_path.read_text(encoding="utf-8")) or {}
+        metric_ids = suite.get("metrics", [])
+        missing = [metric_id for metric_id in metric_ids if metric_id not in METRICS_REGISTRY]
+        extra_thresholds = [
+            metric_id
+            for metric_id in (suite.get("thresholds") or {})
+            if metric_id not in metric_ids
+        ]
+
+        assert missing == [], f"{suite_path} references unregistered metrics: {missing}"
+        assert extra_thresholds == [], f"{suite_path} defines thresholds for inactive metrics: {extra_thresholds}"
+
+
+def test_rag_live_activates_advisory_llm_judge_metrics() -> None:
+    suite = yaml.safe_load(Path("suites/rag_live.yaml").read_text(encoding="utf-8")) or {}
+    config = yaml.safe_load(Path("config.yaml").read_text(encoding="utf-8")) or {}
+    expected = {"llm_contradiction_judge", "llm_claim_entailment"}
+
+    assert expected.issubset(set(suite.get("metrics", [])))
+    assert expected.issubset(set(config.get("eval", {}).get("metrics", [])))
+
+    # Tim's LLM judges are advisory. They must be computed and displayed, but
+    # not threshold-gated into go/no-go decisions.
+    assert expected.isdisjoint(set((suite.get("thresholds") or {}).keys()))
+    assert expected.isdisjoint(set((config.get("eval", {}).get("thresholds") or {}).keys()))
+
+
 def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_path: Path, monkeypatch) -> None:
     suites_dir = tmp_path / "suites"
     suites_dir.mkdir()
@@ -69,13 +101,15 @@ def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_p
                     "context_relevance_tfidf",
                     "output_support_tfidf",
                     "context_relevance_embedding",
+                    "context_relevance_embedding_coverage",
                     "output_support_embedding",
                 ],
                 "cases": [{"case_id": "1", "kind": "safe"}],
                 "thresholds": {
-                    "context_relevance_tfidf": 0.19,
+                    "context_relevance_tfidf": 0.18,
                     "output_support_tfidf": 0.1,
                     "context_relevance_embedding": 0.5,
+                    "context_relevance_embedding_coverage": 0.5,
                     "output_support_embedding": 0.5,
                 },
             },
@@ -88,7 +122,7 @@ def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_p
     artifacts_dir.mkdir(parents=True)
     (artifacts_dir / "prompt_run.json").write_text(
         """
-{"prompt":"summarize controls","model_output":"controls require evidence","retrieved_contexts":[{"title":"Policy","snippet":"controls require evidence and review"}]}
+{"prompt":"summarize controls","model_output":"controls require evidence","retrieved_contexts":[{"title":"Policy A","snippet":"controls require evidence and review"},{"title":"Policy B","snippet":"controls require approval and signoff"},{"title":"Policy C","snippet":"unrelated topic about weather"}]}
 """.strip(),
         encoding="utf-8",
     )
@@ -98,9 +132,9 @@ def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_p
             provider="ollama",
             model="nomic-embed-text",
             route="embeddings",
-            embeddings=[[1.0, 0.0], [0.9, 0.1], [0.95, 0.05]],
+            embeddings=[[1.0, 0.0], [0.9, 0.1], [0.95, 0.05], [0.8, 0.2], [0.0, 1.0]],
             request_payload={"input": texts},
-            response_payload={"embeddings": [[1.0, 0.0], [0.9, 0.1], [0.95, 0.05]]},
+            response_payload={"embeddings": [[1.0, 0.0], [0.9, 0.1], [0.95, 0.05], [0.8, 0.2], [0.0, 1.0]]},
             request_url="http://localhost:11434/api/embed",
         )
 
@@ -113,7 +147,7 @@ def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_p
         eval={
             "suites": ["medium"],
             "thresholds": {
-                "context_relevance_tfidf": 0.19,
+                "context_relevance_tfidf": 0.18,
                 "output_support_tfidf": 0.1,
                 "context_relevance_embedding": 0.5,
                 "output_support_embedding": 0.5,
@@ -129,6 +163,9 @@ def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_p
     assert metrics["context_relevance_tfidf"].passed is True
     assert metrics["output_support_tfidf"].passed is True
     assert metrics["context_relevance_embedding"].details["embedding_available"] is True
+    assert metrics["context_relevance_embedding_coverage"].value == 0.667
+    assert metrics["context_relevance_embedding_coverage"].passed is True
+    assert metrics["context_relevance_embedding_coverage"].details["relevant_chunk_count"] == 2
     assert metrics["output_support_embedding"].passed is True
 
 

@@ -48,6 +48,7 @@ class EvalConfig(BaseModel):
             "lexical_grounding_precision": 0.25,
             "claim_coverage_recall": 0.1,
             "context_relevance_embedding": 0.5,
+            "context_relevance_embedding_coverage": 0.4,
             "output_support_embedding": 0.45,
             "claim_support_rate": 0.65,
             "unsupported_claim_rate": 0.25,

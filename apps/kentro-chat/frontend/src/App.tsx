@@ -58,17 +58,31 @@ type GovernancePayload = {
   scorecardJsonPath?: string;
   scorecard?: {
     trustScore?: number | null;
+    trust_score?: number | null;
+    answerTrustScore?: number | null;
+    answer_trust_score?: number | null;
+    governanceScore?: number | null;
+    governance_score?: number | null;
+    empiricalScore?: number | null;
+    empirical_score?: number | null;
     htmlUrl?: string;
     htmlPath?: string;
     jsonPath?: string;
     overallStatus?: string;
+    overall_status?: string;
     goNoGo?: string;
+    go_no_go?: string;
     evidenceCompleteness?: number | null;
+    evidence_completeness?: number | null;
     scoreSource?: string;
+    score_source?: string;
   };
   answerTrustScore?: number | null;
+  answer_trust_score?: number | null;
   overallStatus?: string;
+  overall_status?: string;
   goNoGo?: string;
+  go_no_go?: string;
 };
 
 type ErrorPayload = {
@@ -262,7 +276,7 @@ export default function App() {
         const derivedScorecardUrl = scorecardHtml
           ? URL.createObjectURL(new Blob([scorecardHtml], { type: "text/html" }))
           : scorecard?.htmlUrl ?? "";
-        const trustValue = scorecard?.trustScore ?? payload.governance?.answerTrustScore ?? null;
+        const trustValue = selectAnswerTrustScore(payload.governance);
 
         updateCurrentSession((session) => ({
           ...session,
@@ -278,23 +292,16 @@ export default function App() {
           lastScorecardHtmlPath: scorecard?.htmlPath ?? "",
           lastScorecardJsonPath: payload.governance?.scorecardJsonPath ?? scorecard?.jsonPath ?? "",
           lastTrustScore: trustValue,
-          lastTrustScoreSource:
-            scorecard?.scoreSource ??
-            (payload.governance?.answerTrustScore !== null && payload.governance?.answerTrustScore !== undefined
-              ? "Answer trust"
-              : ""),
-          lastOverallStatus: scorecard?.overallStatus ?? payload.governance?.overallStatus ?? "",
-          lastGoNoGo: scorecard?.goNoGo ?? payload.governance?.goNoGo ?? "",
-          lastEvidenceCompleteness: scorecard?.evidenceCompleteness ?? null,
+          lastTrustScoreSource: selectTrustScoreSource(payload.governance),
+          lastOverallStatus: selectOverallStatus(payload.governance),
+          lastGoNoGo: selectGoNoGo(payload.governance),
+          lastEvidenceCompleteness: selectEvidenceCompleteness(payload.governance),
           updatedAt: Date.now(),
         }));
       });
 
       if (payload.governance?.success) {
-        const trustValue =
-          payload.governance?.scorecard?.trustScore ??
-          payload.governance?.answerTrustScore ??
-          null;
+        const trustValue = selectAnswerTrustScore(payload.governance);
         pushToast(
           `Scorecard ready${payload.governance?.artifactRunId ? ` · ${payload.governance.artifactRunId}` : ""}${trustValue !== null && trustValue !== undefined ? ` · Trust ${formatTrustScoreValue(trustValue)}` : ""}`,
         );
@@ -665,7 +672,7 @@ function buildGovernanceMeta(governance?: GovernancePayload): ChatMessage["meta"
     };
   }
 
-  const trustValue = governance.scorecard?.trustScore ?? governance.answerTrustScore ?? null;
+  const trustValue = selectAnswerTrustScore(governance);
 
   if (governance.success) {
     return {
@@ -690,7 +697,7 @@ function statusFromGovernance(governance: GovernancePayload | undefined, modelNa
       : "Reply returned from the live model. Governance is disabled.";
   }
 
-  const trustValue = governance.scorecard?.trustScore ?? governance.answerTrustScore ?? null;
+  const trustValue = selectAnswerTrustScore(governance);
 
   if (governance.success) {
     return trustValue !== null && trustValue !== undefined
@@ -703,6 +710,55 @@ function statusFromGovernance(governance: GovernancePayload | undefined, modelNa
   return governance.mode === "databricks-job"
     ? "Reply returned, but the Databricks governance job needs attention."
     : "Reply returned, but the Kentro CLI hook needs attention.";
+}
+
+function firstNumber(...values: Array<number | null | undefined>) {
+  return values.find((value): value is number => typeof value === "number" && !Number.isNaN(value)) ?? null;
+}
+
+function selectAnswerTrustScore(governance?: GovernancePayload) {
+  const scorecard = governance?.scorecard;
+
+  return firstNumber(
+    scorecard?.answerTrustScore,
+    scorecard?.answer_trust_score,
+    governance?.answerTrustScore,
+    governance?.answer_trust_score,
+    scorecard?.trustScore,
+    scorecard?.trust_score,
+    scorecard?.governanceScore,
+    scorecard?.governance_score,
+    scorecard?.empiricalScore,
+    scorecard?.empirical_score,
+  );
+}
+
+function selectTrustScoreSource(governance?: GovernancePayload) {
+  const scorecard = governance?.scorecard;
+  if (
+    firstNumber(
+      scorecard?.answerTrustScore,
+      scorecard?.answer_trust_score,
+      governance?.answerTrustScore,
+      governance?.answer_trust_score,
+    ) !== null
+  ) {
+    return "Answer trust";
+  }
+
+  return scorecard?.scoreSource ?? scorecard?.score_source ?? "";
+}
+
+function selectOverallStatus(governance?: GovernancePayload) {
+  return governance?.scorecard?.overallStatus ?? governance?.scorecard?.overall_status ?? governance?.overallStatus ?? governance?.overall_status ?? "";
+}
+
+function selectGoNoGo(governance?: GovernancePayload) {
+  return governance?.scorecard?.goNoGo ?? governance?.scorecard?.go_no_go ?? governance?.goNoGo ?? governance?.go_no_go ?? "";
+}
+
+function selectEvidenceCompleteness(governance?: GovernancePayload) {
+  return firstNumber(governance?.scorecard?.evidenceCompleteness, governance?.scorecard?.evidence_completeness);
 }
 
 function governanceLabel(governance?: GovernancePayload) {

@@ -207,3 +207,97 @@ def test_reporting_uses_historical_metric_distribution_for_trust_score(tmp_path:
     assert scorecard.trust_score > 1.0
     assert payload["registry_path"].endswith("registry.json")
     assert "accuracy_stub" in payload["metric_distributions"]
+
+
+def test_high_answer_trust_with_review_metric_is_go_not_no_go(tmp_path: Path) -> None:
+    cfg = ToolkitConfig(project_name="demo", risk_tier="low", output_dir=str(tmp_path / "artifacts"))
+    store = ArtifactStore(output_dir=cfg.output_dir, run_id="run-review")
+
+    store.write_json(
+        "eval_results.json",
+        [
+            {
+                "suite_name": "rag_live",
+                "run_id": "run-review",
+                "started_at": "2026-01-01T00:00:00Z",
+                "completed_at": "2026-01-01T00:00:01Z",
+                "overall_passed": False,
+                "notes": [],
+                "metric_results": [
+                    {"metric_id": "claim_support_rate", "value": 0.98, "threshold": 0.45, "passed": True, "details": {"claim_count": 8}},
+                    {"metric_id": "evidence_sufficiency_score", "value": 0.98, "threshold": 0.4, "passed": True, "details": {"claim_count": 8}},
+                    {"metric_id": "contradiction_rate", "value": 0.0, "threshold": 0.2, "passed": True, "details": {"claim_count": 8}},
+                    {"metric_id": "output_support_embedding", "value": 0.98, "threshold": 0.45, "passed": True, "details": {}},
+                    {"metric_id": "reliability", "value": 0.4, "threshold": 0.72, "passed": False, "details": {}},
+                ],
+            }
+        ],
+    )
+
+    scorecard = generate_scorecard(cfg, store)
+    html = store.path_for("scorecard.html").read_text(encoding="utf-8")
+
+    assert scorecard.answer_trust_score is not None
+    assert scorecard.answer_trust_score >= 0.95
+    assert scorecard.stage_gate_status["evaluation"] == "needs_review"
+    assert scorecard.go_no_go == "go"
+    assert "All Evaluation Metrics" in html
+    assert "reliability" in html
+
+
+def test_scorecard_displays_advisory_llm_judge_details(tmp_path: Path) -> None:
+    cfg = ToolkitConfig(project_name="demo", risk_tier="low", output_dir=str(tmp_path / "artifacts"))
+    store = ArtifactStore(output_dir=cfg.output_dir, run_id="run-llm")
+
+    store.write_json(
+        "eval_results.json",
+        [
+            {
+                "suite_name": "rag_live",
+                "run_id": "run-llm",
+                "started_at": "2026-01-01T00:00:00Z",
+                "completed_at": "2026-01-01T00:00:01Z",
+                "overall_passed": True,
+                "notes": [],
+                "metric_results": [
+                    {
+                        "metric_id": "llm_contradiction_judge",
+                        "value": 0.25,
+                        "threshold": None,
+                        "passed": None,
+                        "details": {
+                            "method": "llm_judge",
+                            "data_basis": "llm_judged",
+                            "model": "gpt-4.1-mini",
+                            "claim_count": 4,
+                            "yes_count": 1,
+                            "unknown_count": 0,
+                        },
+                    },
+                    {
+                        "metric_id": "llm_claim_entailment",
+                        "value": 0.75,
+                        "threshold": None,
+                        "passed": None,
+                        "details": {
+                            "method": "llm_judge",
+                            "data_basis": "llm_judged",
+                            "model": "gpt-4.1-mini",
+                            "claim_count": 4,
+                            "yes_count": 3,
+                            "unknown_count": 0,
+                        },
+                    },
+                ],
+            }
+        ],
+    )
+
+    generate_scorecard(cfg, store)
+    html = store.path_for("scorecard.html").read_text(encoding="utf-8")
+
+    assert "llm_contradiction_judge" in html
+    assert "Contradictory claims: 1/4" in html
+    assert "llm_claim_entailment" in html
+    assert "Entailed claims: 3/4" in html
+    assert "Advisory" in html

@@ -29,12 +29,25 @@ export function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "kentro-chat";
 }
 
-export function formatTrustScoreValue(score: number | null | undefined) {
+export function normalizeTrustScoreValue(score: number | null | undefined) {
   if (typeof score !== "number" || Number.isNaN(score)) {
+    return null;
+  }
+
+  if (score <= 1) {
+    return score * 100;
+  }
+
+  return score;
+}
+
+export function formatTrustScoreValue(score: number | null | undefined) {
+  const normalized = normalizeTrustScoreValue(score);
+  if (normalized === null) {
     return "N/A";
   }
 
-  return `${Math.round(score)}%`;
+  return `${Math.round(normalized)}%`;
 }
 
 export function trustTone(score: number | null | undefined, overallStatus: string) {
@@ -46,12 +59,13 @@ export function trustTone(score: number | null | undefined, overallStatus: strin
     return "warning";
   }
 
-  if (typeof score === "number") {
-    if (score >= 80) {
+  const normalized = normalizeTrustScoreValue(score);
+  if (normalized !== null) {
+    if (normalized >= 80) {
       return "success";
     }
 
-    if (score >= 60) {
+    if (normalized >= 60) {
       return "warning";
     }
 

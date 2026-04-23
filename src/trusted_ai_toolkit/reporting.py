@@ -245,6 +245,7 @@ def _metric_strength_map(metric_results: list[MetricResult]) -> dict[str, str]:
         "lexical_grounding_precision",
         "claim_coverage_recall",
         "context_relevance_embedding",
+        "context_relevance_embedding_coverage",
         "output_support_embedding",
         "accuracy_stub",
     }
@@ -1314,6 +1315,32 @@ def _card_score_summary(
     }
 
 
+def _evaluation_gate_status(answer_verdict: str | None, failing_metrics: list[str]) -> str:
+    """Map answer-level verdict and metric failures to a release gate status."""
+
+    if answer_verdict == "not_trusted":
+        return "fail"
+    if answer_verdict == "use_caution" or failing_metrics:
+        return "needs_review"
+    return "pass"
+
+
+def _blocking_gate_names(stage_gate_status: dict[str, str]) -> list[str]:
+    """Return the gates that create a true no-go decision."""
+
+    return [
+        gate.replace("_", " ").title()
+        for gate, status in stage_gate_status.items()
+        if status == "fail"
+    ]
+
+
+def _go_no_go_from_gates(stage_gate_status: dict[str, str]) -> str:
+    """Only hard failed gates create no-go; needs_review remains releasable with review."""
+
+    return "no-go" if _blocking_gate_names(stage_gate_status) else "go"
+
+
 def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard:
     """Generate and persist scorecard markdown/html artifacts."""
 
@@ -1371,16 +1398,8 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     required_outputs = config.artifact_policy.required_outputs_by_risk_tier.get(config.risk_tier, [])
     evidence_completeness = _artifact_completeness(store, required_outputs)
 
-    required_actions: list[str] = []
-    if failing_metrics:
-        required_actions.append(f"Address failing metrics: {', '.join(sorted(set(failing_metrics)))}")
-    if high_findings:
-        required_actions.append("Mitigate high/critical red-team findings before deployment.")
-    if not required_actions:
-        required_actions.append("No blocking issues in deterministic checks; proceed to human governance review.")
-
     stage_gate_status: dict[str, str] = {
-        "evaluation": "fail" if failing_metrics else "pass",
+        "evaluation": _evaluation_gate_status(answer_verdict, failing_metrics),
         "redteam": "needs_review" if high_findings else "pass",
         "documentation": "pass" if evidence_completeness >= 90 else "needs_review",
         "monitoring": "pass",
@@ -1394,18 +1413,39 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     if risk_rules.get("require_human_signoff", False):
         stage_gate_status["human_signoff"] = "needs_review"
 
+    blocking_gates = _blocking_gate_names(stage_gate_status)
+    required_actions: list[str] = []
+    if stage_gate_status["evaluation"] == "fail":
+        required_actions.append(
+            "Fix the answer grounding issue before use: reduce contradictions, remove unsupported claims, or retrieve better evidence."
+        )
+    elif failing_metrics:
+        required_actions.append(
+            f"Review and improve these non-blocking metrics: {', '.join(sorted(set(failing_metrics)))}."
+        )
+    if stage_gate_status["redteam"] == "fail":
+        required_actions.append("Mitigate high/critical red-team findings before release, then rerun the red-team suite.")
+    elif high_findings:
+        required_actions.append("Review high/critical red-team findings and document why they are acceptable or fix them.")
+    if stage_gate_status["documentation"] == "needs_review":
+        required_actions.append("Complete the missing evidence-pack artifacts so this run is fully auditable.")
+    if stage_gate_status.get("human_signoff") == "needs_review":
+        required_actions.append("Capture required human sign-off before production release.")
+    if blocking_gates:
+        required_actions.insert(0, f"Resolve blocking gate(s): {', '.join(blocking_gates)}.")
+    if not required_actions:
+        required_actions.append("No blocking issues in deterministic checks; proceed to normal governance review.")
+
     # Governance status remains separate from the answer-level verdict on
     # purpose. A specific answer can be well-grounded while the surrounding
     # system still fails release policy gates such as fairness or red-team.
     if "fail" in stage_gate_status.values():
         overall_status = "fail"
-        go_no_go = "no-go"
     elif "needs_review" in stage_gate_status.values():
         overall_status = "needs_review"
-        go_no_go = "no-go"
     else:
         overall_status = "pass"
-        go_no_go = "go"
+    go_no_go = _go_no_go_from_gates(stage_gate_status)
 
     scorecard = Scorecard(
         project_name=config.project_name,
