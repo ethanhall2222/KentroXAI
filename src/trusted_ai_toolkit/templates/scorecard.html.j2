@@ -928,7 +928,11 @@ block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity 
           <div class="detail-group">
             <h3>Why This Verdict</h3>
             <ul>
-              <li>Answer trust score: {{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }} — grounding sub-score (geometric mean of claim support and evidence sufficiency) combined with semantic support and penalised multiplicatively by the contradiction rate.</li>
+              <li>Answer trust score: {{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }} — final score after applying the contradiction penalty to the base support score.</li>
+              {% if answer_trust_breakdown %}
+              <li>Base support score: {{ "%.1f"|format((answer_trust_breakdown.base_score or 0) * 100) if answer_trust_breakdown.base_score is not none else "N/A" }} from grounding {{ "%.1f"|format((answer_trust_breakdown.grounding_sub or 0) * 100) if answer_trust_breakdown.grounding_sub is not none else "N/A" }} and semantic support {{ "%.1f"|format((answer_trust_breakdown.semantic_sub or 0) * 100) if answer_trust_breakdown.semantic_sub is not none else "N/A" }}.</li>
+              <li>Contradiction penalty: {% if answer_trust_breakdown.contradiction_penalty is not none %}{{ "%.1f"|format(answer_trust_breakdown.contradiction_penalty * 100) }}% remaining trust because contradiction rate {{ "%.1f"|format((answer_trust_breakdown.contradiction_rate or 0) * 100) }}% is evaluated against a {{ "%.1f"|format((answer_trust_breakdown.contradiction_ceiling or 0) * 100) }}% score ceiling for this risk tier.{% else %}N/A{% endif %}</li>
+              {% endif %}
               {% if evidence_confidence and evidence_confidence.tier %}
               <li>Evidence confidence: <strong>{{ evidence_confidence.tier | title }}</strong> — measured {{ evidence_confidence.dimensional_coverage }}/4 answer-truth dimensions{% if evidence_confidence.claim_count is not none %} across {{ evidence_confidence.claim_count }} extracted claim(s){% endif %}{% if evidence_confidence.modality_diversity %} with dual-modality support{% if evidence_confidence.modality_disagreement is not none %} (|tfidf−embedding| = {{ "%.2f"|format(evidence_confidence.modality_disagreement) }}){% endif %}{% else %} with single-modality support{% endif %}.</li>
               {% endif %}
@@ -973,15 +977,15 @@ block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity 
                     </tr>
                   </thead>
                   <tbody>
-                    {% for m in metric_results %}
+                    {% for m in metric_rows %}
                     <tr>
                       <td>{{ m.metric_id }}</td>
                       <td>{{ m.value if m.value is not none else "N/A" }}</td>
-                      <td>{{ m.threshold if m.threshold is not none else "N/A" }}</td>
+                      <td>{{ m.effective_threshold if m.effective_threshold is not none else "N/A" }}</td>
                       <td>
-                        {% if m.passed is sameas true %}
+                        {% if m.effective_passed is sameas true %}
                         <span class="metric-status pass">Pass</span>
-                        {% elif m.passed is sameas false %}
+                        {% elif m.effective_passed is sameas false %}
                         <span class="metric-status fail">Review</span>
                         {% else %}
                         <span class="metric-status review">N/A</span>
@@ -1003,6 +1007,8 @@ block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity 
                           {% endif %}
                         {% elif m.metric_id == "context_relevance_embedding_coverage" %}
                           Relevant chunks: {{ m.details.relevant_chunk_count | default("N/A") }}/{{ m.details.total_chunk_count | default("N/A") }}.
+                        {% elif m.details.display_threshold_source == "answer_verdict_gate" %}
+                          Effective threshold comes from the answer-verdict gate for this risk tier.
                         {% elif m.details.data_basis %}
                           {{ m.details.data_basis | replace("_", " ") | title }}
                         {% else %}

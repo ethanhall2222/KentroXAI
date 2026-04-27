@@ -211,6 +211,47 @@ def _metric_summary(metric_results: list[MetricResult]) -> dict[str, Any]:
     }
 
 
+def _scorecard_metric_rows(metric_results: list[MetricResult], risk_tier: str) -> list[dict[str, Any]]:
+    """Build UI-facing metric rows with risk-aware effective thresholds."""
+
+    normalized_tier = _normalize_risk_tier(risk_tier)
+    verdict_thresholds = _VERDICT_THRESHOLDS[normalized_tier]
+    effective_thresholds = {
+        "contradiction_rate": verdict_thresholds["not_trusted_contradiction"],
+        "unsupported_claim_rate": verdict_thresholds["not_trusted_unsupported"],
+    }
+    lower_is_better = {"contradiction_rate", "unsupported_claim_rate"}
+
+    rows: list[dict[str, Any]] = []
+    for metric in metric_results:
+        threshold = metric.threshold
+        passed = metric.passed
+        details = dict(metric.details or {})
+
+        effective_threshold = effective_thresholds.get(metric.metric_id, threshold)
+        effective_passed = passed
+        if metric.value is not None and effective_threshold is not None and metric.metric_id in effective_thresholds:
+            numeric_threshold = float(effective_threshold)
+            numeric_value = float(metric.value)
+            effective_passed = numeric_value <= numeric_threshold if metric.metric_id in lower_is_better else numeric_value >= numeric_threshold
+            if numeric_threshold != threshold:
+                details.setdefault("display_threshold_source", "answer_verdict_gate")
+
+        rows.append(
+            {
+                "metric_id": metric.metric_id,
+                "value": metric.value,
+                "threshold": threshold,
+                "effective_threshold": effective_threshold,
+                "passed": passed,
+                "effective_passed": effective_passed,
+                "details": details,
+            }
+        )
+
+    return rows
+
+
 def _empirical_metrics(metric_results: list[MetricResult]) -> list[MetricResult]:
     prefixes = (
         "context_",
@@ -322,8 +363,11 @@ def _bias_assessment(metric_results: list[MetricResult]) -> dict[str, Any]:
     }
 
 
-def _answer_trust_score(metric_results: list[MetricResult]) -> float | None:
-    """Compute the user-facing answer trust score using a three-stage aggregation.
+def _answer_trust_breakdown(
+    metric_results: list[MetricResult],
+    risk_tier: str = "medium",
+) -> dict[str, float | None]:
+    """Compute the user-facing answer trust score and its components.
 
     Design overview
     ---------------
@@ -386,14 +430,22 @@ def _answer_trust_score(metric_results: list[MetricResult]) -> float | None:
     ``trust_score = base_score × max(_FLOOR, 1 − contradiction_rate / _CEILING)``
 
     * At contradiction_rate = 0.00 → penalty = 1.00 (no effect)
-    * At contradiction_rate = 0.05 → penalty = 0.833
-    * At contradiction_rate = 0.15 → penalty = 0.500 (base score halved)
-    * At contradiction_rate ≥ 0.30 → penalty = 0.25  (severe contradiction floor)
+    The contradiction ceiling is risk-aware rather than fixed:
 
-    The ceiling (_CONTRADICTION_CEILING = 0.30) is the point at which the system
-    is considered not trusted.  The floor prevents the display score from
-    claiming "no evidence support" when the real issue is contradictions inside
-    an otherwise source-overlapping answer.
+    ``ceiling = max(0.10, 3 × not_trusted_contradiction_threshold_for_tier)``
+
+    This keeps the display score aligned with the verdict semantics:
+    medium-risk answers should not receive a lenient contradiction penalty based
+    on a generic 30% ceiling when the medium-risk hard gate is 5%.
+
+    Examples:
+    * low risk   (hard gate 0.10) → ceiling 0.30
+    * medium risk(hard gate 0.05) → ceiling 0.15
+    * high risk  (hard gate 0.02) → ceiling 0.10
+
+    The floor prevents the display score from claiming "no evidence support"
+    when the real issue is contradictions inside an otherwise source-overlapping
+    answer.
 
     Excluded metrics (carried over from previous revision)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -401,15 +453,16 @@ def _answer_trust_score(metric_results: list[MetricResult]) -> float | None:
     * ``output_support_tfidf``: redundant with claim-level TF-IDF; kept only as a
       semantic-slot fallback when ``output_support_embedding`` is absent.
 
-    Returns
-    -------
-    float | None
-        Score on [0, 1], rounded to four decimal places, or ``None`` when no
-        contributing metrics are present at all.
+    Returns a component dictionary with:
+    * grounding_sub
+    * semantic_sub
+    * base_score
+    * contradiction_rate
+    * contradiction_penalty
+    * contradiction_ceiling
+    * final_score
     """
 
-    # ── Sentinel: maximum contradiction_rate before severe penalty floor ──
-    _CONTRADICTION_CEILING: float = 0.30
     _CONTRADICTION_PENALTY_FLOOR: float = 0.25
 
     lookup = _metric_lookup(metric_results)
@@ -456,7 +509,15 @@ def _answer_trust_score(metric_results: list[MetricResult]) -> float | None:
     ]
     present_base = [(v, w) for v, w in base_slots if v is not None]
     if not present_base:
-        return None
+        return {
+            "grounding_sub": grounding_sub,
+            "semantic_sub": semantic_sub,
+            "base_score": None,
+            "contradiction_rate": None,
+            "contradiction_penalty": None,
+            "contradiction_ceiling": None,
+            "final_score": None,
+        }
 
     total_w = sum(w for _, w in present_base)
     base_score = sum(v * w for v, w in present_base) / total_w
@@ -470,15 +531,36 @@ def _answer_trust_score(metric_results: list[MetricResult]) -> float | None:
     # numeric score because a contradiction problem is different from having no
     # source support at all; the answer verdict still carries the hard warning.
     contradiction_rate = _get("contradiction_rate")
+    normalized_tier = _normalize_risk_tier(risk_tier)
+    contradiction_gate = float(_VERDICT_THRESHOLDS[normalized_tier]["not_trusted_contradiction"])
+    contradiction_ceiling = max(0.10, contradiction_gate * 3.0)
     if contradiction_rate is not None:
-        penalty = max(_CONTRADICTION_PENALTY_FLOOR, 1.0 - contradiction_rate / _CONTRADICTION_CEILING)
+        penalty = max(_CONTRADICTION_PENALTY_FLOOR, 1.0 - contradiction_rate / contradiction_ceiling)
         trust_score = base_score * penalty
     else:
         # If the metric was not run at all, no penalty is applied; the absence
         # of measurement is not treated the same as a measured contradiction.
+        penalty = None
         trust_score = base_score
 
-    return round(trust_score, 4)
+    return {
+        "grounding_sub": round(grounding_sub, 4) if grounding_sub is not None else None,
+        "semantic_sub": round(semantic_sub, 4) if semantic_sub is not None else None,
+        "base_score": round(base_score, 4),
+        "contradiction_rate": round(contradiction_rate, 4) if contradiction_rate is not None else None,
+        "contradiction_penalty": round(penalty, 4) if penalty is not None else None,
+        "contradiction_ceiling": round(contradiction_ceiling, 4),
+        "final_score": round(trust_score, 4),
+    }
+
+
+def _answer_trust_score(
+    metric_results: list[MetricResult],
+    risk_tier: str = "medium",
+) -> float | None:
+    """Return the final answer-trust score from the component breakdown."""
+
+    return _answer_trust_breakdown(metric_results, risk_tier=risk_tier)["final_score"]
 
 
 # ── Evidence confidence tier (Problem 5) ─────────────────────────────────────
@@ -1383,7 +1465,8 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     computed_governance_score = trust_score(computed_pillar_scores)
     computed_empirical_score = _empirical_score(metric_results)
     computed_trust_score = _trust_z_score(metric_results, historical_distributions)
-    computed_answer_trust_score = _answer_trust_score(metric_results)
+    answer_trust_breakdown = _answer_trust_breakdown(metric_results, risk_tier=config.risk_tier)
+    computed_answer_trust_score = answer_trust_breakdown["final_score"]
     computed_evidence_confidence = _evidence_confidence_tier(metric_results)
     answer_verdict, answer_reasons = _answer_verdict(
         metric_results,
@@ -1511,12 +1594,14 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
         "reasoning_report": reasoning_path.exists(),
     }
     context["metric_summary"] = _metric_summary(metric_results)
+    context["metric_rows"] = _scorecard_metric_rows(metric_results, config.risk_tier)
     context["empirical_metric_summary"] = _metric_summary(_empirical_metrics(metric_results))
     context["benchmark_distributions"] = historical_distributions
     context["answer_verdict"] = scorecard.answer_verdict
     context["answer_trust_score_pct"] = (
         round(scorecard.answer_trust_score * 100.0, 0) if scorecard.answer_trust_score is not None else None
     )
+    context["answer_trust_breakdown"] = answer_trust_breakdown
     context["answer_truth_summary"] = scorecard.answer_truth_summary
     context["evidence_confidence"] = scorecard.evidence_confidence
     context["bias_assessment"] = scorecard.bias_assessment

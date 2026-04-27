@@ -20,8 +20,8 @@ thresholds:
   output_support_tfidf: 0.12
   lexical_grounding_precision: 0.18
   claim_support_rate: 0.45
-  unsupported_claim_rate: 0.4
-  contradiction_rate: 0.2
+  unsupported_claim_rate: 0.35
+  contradiction_rate: 0.05
   evidence_sufficiency_score: 0.4
   bias_signal_score: 0.8
   context_relevance_embedding_coverage: 0.4

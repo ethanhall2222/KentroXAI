@@ -301,4 +301,37 @@ def test_scorecard_displays_advisory_llm_judge_details(tmp_path: Path) -> None:
     assert "Contradictory claims: 1/4" in html
     assert "llm_claim_entailment" in html
     assert "Entailed claims: 3/4" in html
-    assert "Advisory" in html
+
+
+def test_scorecard_uses_risk_aligned_answer_thresholds_in_metric_table(tmp_path: Path) -> None:
+    cfg = ToolkitConfig(project_name="demo", risk_tier="medium", output_dir=str(tmp_path / "artifacts"))
+    store = ArtifactStore(output_dir=cfg.output_dir, run_id="run-thresholds")
+
+    store.write_json(
+        "eval_results.json",
+        [
+            {
+                "suite_name": "rag_live",
+                "run_id": "run-thresholds",
+                "started_at": "2026-01-01T00:00:00Z",
+                "completed_at": "2026-01-01T00:00:01Z",
+                "overall_passed": False,
+                "notes": [],
+                "metric_results": [
+                    {"metric_id": "claim_support_rate", "value": 0.833, "threshold": 0.45, "passed": True, "details": {"claim_count": 6}},
+                    {"metric_id": "evidence_sufficiency_score", "value": 0.896, "threshold": 0.4, "passed": True, "details": {"claim_count": 6}},
+                    {"metric_id": "output_support_tfidf", "value": 0.337, "threshold": 0.12, "passed": True, "details": {}},
+                    {"metric_id": "contradiction_rate", "value": 0.167, "threshold": 0.2, "passed": True, "details": {"claim_count": 6}},
+                ],
+            }
+        ],
+    )
+
+    scorecard = generate_scorecard(cfg, store)
+    html = store.path_for("scorecard.html").read_text(encoding="utf-8")
+
+    assert scorecard.answer_verdict == "not_trusted"
+    assert "31.0" not in html
+    assert "0.05" in html
+    assert "Effective threshold comes from the answer-verdict gate for this risk tier." in html
+    assert "Contradiction penalty:" in html

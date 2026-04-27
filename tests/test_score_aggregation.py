@@ -12,6 +12,7 @@ import math
 import pytest
 
 from trusted_ai_toolkit.reporting import (
+    _answer_trust_breakdown,
     _answer_trust_score,
     _empirical_score,
     _metric_strength_map,
@@ -494,6 +495,23 @@ class TestAnswerTrustScoreRegression:
 
         assert score is not None
         assert 0.1 < score < 0.3
+
+    def test_contradiction_penalty_is_risk_tier_aware(self) -> None:
+        result = [
+            _m("claim_support_rate", 0.833, threshold=0.45),
+            _m("contradiction_rate", 0.167, threshold=0.05),
+            _m("evidence_sufficiency_score", 0.896, threshold=0.4),
+            _m("output_support_tfidf", 0.337, threshold=0.12),
+        ]
+
+        low = _answer_trust_breakdown(result, risk_tier="low")
+        medium = _answer_trust_breakdown(result, risk_tier="medium")
+        high = _answer_trust_breakdown(result, risk_tier="high")
+
+        assert low["final_score"] is not None
+        assert medium["final_score"] is not None
+        assert high["final_score"] is not None
+        assert low["final_score"] > medium["final_score"] >= high["final_score"]
 
     def test_geometric_mean_on_correlated_pair(self) -> None:
         """High CSR + low ESS → geo-mean penalty; arithmetic mean would over-report."""
