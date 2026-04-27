@@ -164,7 +164,7 @@ def _claim_analysis(output_text: str, contexts: list[str]) -> dict[str, object]:
         # A claim is treated as supported when it has either a decent lexical
         # match or a small set of overlapping evidence terms. This keeps the
         # method simple and inspectable, while still allowing paraphrases.
-        if support_score >= 0.22 or overlap >= 3:
+        if support_score >= 0.22 or overlap >= 1:
             support_label = "supported"
             supported += 1
             if matched_context and _negation_polarity(claim) != _negation_polarity(matched_context):
