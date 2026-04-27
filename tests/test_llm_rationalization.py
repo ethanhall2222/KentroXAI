@@ -37,6 +37,7 @@ from trusted_ai_toolkit.schemas import (
 )
 from trusted_ai_toolkit.xai.explainability import (
     _LLM_NARRATIVE_CACHE,
+    compute_counterfactual_summary,
     compute_llm_narrative,
 )
 
@@ -159,6 +160,39 @@ class TestInvokeModelSafely:
         assert result is not None
         # ollama deterministic payload uses nested options
         assert captured["extra"] == {"options": {"temperature": 0, "seed": 42, "num_predict": 256}}
+
+
+class TestCounterfactualSummary:
+
+    def test_advisory_metric_with_null_value_does_not_crash(self) -> None:
+        statements = compute_counterfactual_summary(
+            eval_results=[
+                {
+                    "suite_name": "rag_live",
+                    "metric_results": [
+                        {
+                            "metric_id": "llm_contradiction_judge",
+                            "value": None,
+                            "threshold": None,
+                            "passed": None,
+                        },
+                        {
+                            "metric_id": "claim_support_rate",
+                            "value": 1.0,
+                            "threshold": 0.65,
+                            "passed": True,
+                            "details": {"claim_count": 4},
+                        },
+                    ],
+                }
+            ],
+            lineage_nodes=[],
+            redteam_summary={},
+            context_attribution=[],
+        )
+
+        assert statements
+        assert any("4 output claims" in statement for statement in statements)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

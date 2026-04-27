@@ -895,6 +895,16 @@ def compute_counterfactual_summary(
     """
     statements: list[str] = []
 
+    def _coerce_float(value: Any) -> float | None:
+        """Return a float for numeric-like inputs, otherwise None."""
+
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
     # ── 1. Source removal impact (from context attribution LOO deltas) ──────
     if context_attribution:
         # Find the context chunk with the highest LOO impact.
@@ -925,7 +935,7 @@ def compute_counterfactual_summary(
     for result in eval_results:
         for metric in result.get("metric_results", []):
             if metric.get("metric_id") == "claim_support_rate":
-                claim_support_rate = float(metric.get("value", 0.0))
+                claim_support_rate = _coerce_float(metric.get("value"))
                 total_claims = int(metric.get("details", {}).get("claim_count", 0))
                 break
         if claim_support_rate is not None:
@@ -991,10 +1001,10 @@ def compute_counterfactual_summary(
     for result in eval_results:
         for metric in result.get("metric_results", []):
             metric_id = metric.get("metric_id", "")
-            value = float(metric.get("value", 0.0))
+            value = _coerce_float(metric.get("value"))
             threshold = metric.get("threshold")
             passed_flag = metric.get("passed")
-            if threshold is None or passed_flag is None:
+            if value is None or threshold is None or passed_flag is None:
                 continue
             if isinstance(threshold, (int, float)) and threshold > 0:
                 margin = abs(value - float(threshold))
