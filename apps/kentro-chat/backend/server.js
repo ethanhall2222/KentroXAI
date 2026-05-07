@@ -22,7 +22,7 @@ const DATABRICKS_CLIENT_ID = process.env.DATABRICKS_CLIENT_ID ?? "";
 const DATABRICKS_CLIENT_SECRET = process.env.DATABRICKS_CLIENT_SECRET ?? "";
 const DATABRICKS_JOB_ID = process.env.KENTRO_DATABRICKS_JOB_ID ?? "";
 const JOB_POLL_INTERVAL_MS = Number.parseInt(process.env.KENTRO_JOB_POLL_INTERVAL_MS ?? "3000", 10);
-const JOB_TIMEOUT_MS = Number.parseInt(process.env.KENTRO_JOB_TIMEOUT_MS ?? "120000", 10);
+const JOB_TIMEOUT_MS = Number.parseInt(process.env.KENTRO_JOB_TIMEOUT_MS ?? "600000", 10);
 
 let databricksAccessTokenCache = {
   token: "",
@@ -461,6 +461,7 @@ async function runDatabricksJobBackend({ message, requestId }) {
   const completedRunPayload = await waitForRunCompletion(parentRunId);
   const taskRunId = getTaskRunId(completedRunPayload);
   const output = await getRunOutput(taskRunId);
+  const scorecard = normalizeScorecardPayload(output.scorecard);
 
   return {
     enabled: true,
@@ -471,10 +472,10 @@ async function runDatabricksJobBackend({ message, requestId }) {
     databricksRunId: String(parentRunId),
     databricksTaskRunId: String(taskRunId),
     answerText: output.answer ?? "",
-    answerVerdict: output.scorecard?.answer_verdict ?? "",
-    answerTrustScore: output.scorecard?.answer_trust_score ?? null,
-    overallStatus: output.scorecard?.overall_status ?? "",
-    goNoGo: output.scorecard?.go_no_go ?? "",
+    answerVerdict: scorecard?.answer_verdict ?? scorecard?.answerVerdict ?? "",
+    answerTrustScore: scorecard?.answerTrustScore ?? null,
+    overallStatus: scorecard?.overallStatus ?? "",
+    goNoGo: scorecard?.goNoGo ?? "",
     topDocUris: Array.isArray(output.retrieved_chunks)
       ? output.retrieved_chunks.map((chunk) => chunk.doc_uri).filter(Boolean)
       : [],
@@ -484,7 +485,7 @@ async function runDatabricksJobBackend({ message, requestId }) {
     scorecardJsonPath: output.scorecard_json_path ?? "",
     scorecardHtml: output.scorecard_html ?? "",
     model: CHAT_MODEL,
-    scorecard: output.scorecard ?? null,
+    scorecard,
   };
 
 }
@@ -601,26 +602,56 @@ function resolveScorecardHtmlPath(artifactPath) {
 
 function selectOverallTrustScore(scorecard) {
   return (
-    normalizeScore(scorecard?.answer_trust_score) ??
-    normalizeScore(scorecard?.governance_score) ??
-    normalizeScore(scorecard?.empirical_score)
+    normalizeScore(scorecard?.answer_trust_score ?? scorecard?.answerTrustScore) ??
+    normalizeScore(scorecard?.governance_score ?? scorecard?.governanceScore) ??
+    normalizeScore(scorecard?.empirical_score ?? scorecard?.empiricalScore) ??
+    normalizeScore(scorecard?.trust_score ?? scorecard?.trustScore)
   );
 }
 
 function selectTrustScoreSource(scorecard) {
-  if (typeof scorecard?.answer_trust_score === "number") {
+  if (typeof (scorecard?.answer_trust_score ?? scorecard?.answerTrustScore) === "number") {
     return "Answer trust";
   }
 
-  if (typeof scorecard?.governance_score === "number") {
+  if (typeof (scorecard?.governance_score ?? scorecard?.governanceScore) === "number") {
     return "Governance score";
   }
 
-  if (typeof scorecard?.empirical_score === "number") {
+  if (typeof (scorecard?.empirical_score ?? scorecard?.empiricalScore) === "number") {
     return "Empirical score";
   }
 
+  if (typeof (scorecard?.trust_score ?? scorecard?.trustScore) === "number") {
+    return "Trust score";
+  }
+
   return "";
+}
+
+function normalizeScorecardPayload(scorecard) {
+  if (!scorecard || typeof scorecard !== "object") {
+    return null;
+  }
+
+  const trustScore = selectOverallTrustScore(scorecard);
+  const answerTrustScore = normalizeScore(scorecard.answer_trust_score ?? scorecard.answerTrustScore);
+  const governanceScore = normalizeScore(scorecard.governance_score ?? scorecard.governanceScore);
+  const empiricalScore = normalizeScore(scorecard.empirical_score ?? scorecard.empiricalScore);
+
+  return {
+    ...scorecard,
+    overallStatus: scorecard.overall_status ?? scorecard.overallStatus ?? "",
+    goNoGo: scorecard.go_no_go ?? scorecard.goNoGo ?? "",
+    trustScore,
+    scoreSource: selectTrustScoreSource(scorecard),
+    answerTrustScore,
+    governanceScore,
+    empiricalScore,
+    evidenceCompleteness: normalizeScore(scorecard.evidence_completeness ?? scorecard.evidenceCompleteness, {
+      scale: "raw",
+    }),
+  };
 }
 
 function normalizeScore(value, options = {}) {

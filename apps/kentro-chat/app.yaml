@@ -7,6 +7,10 @@ env:
     valueFrom: OPENAI_API_KEY
   - name: DATABRICKS_HOST
     value: https://dbc-cacca974-2104.cloud.databricks.com
+  - name: DATABRICKS_CLIENT_ID
+    valueFrom: DATABRICKS_CLIENT_ID
+  - name: DATABRICKS_CLIENT_SECRET
+    valueFrom: DATABRICKS_CLIENT_SECRET
   - name: KENTRO_ENABLE_DATABRICKS_JOB_BACKEND
     value: "true"
   - name: KENTRO_ENABLE_GOVERNANCE_HOOK
@@ -16,6 +20,6 @@ env:
   - name: KENTRO_JOB_POLL_INTERVAL_MS
     value: "3000"
   - name: KENTRO_JOB_TIMEOUT_MS
-    value: "120000"
+    value: "600000"
   - name: KENTRO_CHAT_MODEL
     value: gpt-4.1-mini
