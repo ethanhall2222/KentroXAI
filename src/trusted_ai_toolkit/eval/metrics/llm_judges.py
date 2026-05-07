@@ -31,11 +31,20 @@ Design properties
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from trusted_ai_toolkit.eval.metrics import _claim_analysis, _context_texts
 from trusted_ai_toolkit.model_client import invoke_model_safely
 from trusted_ai_toolkit.schemas import MetricResult, ToolkitConfig
+
+# Word-boundary scan for the first standalone yes / no token in the
+# response.  The original parser walked characters and returned "unknown"
+# the moment it saw any alphabetic character that wasn't y or n — so
+# common prose preambles ("The claim does not...", "Based on the evidence,
+# no...") all parsed as unknown even though the response was clearly
+# answering the question.
+_YES_NO_PATTERN = re.compile(r"\b(yes|no)\b", re.IGNORECASE)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Per-process verdict cache
@@ -47,29 +56,25 @@ _LLM_JUDGE_CACHE: dict[tuple[str, str, str, str], str] = {}
 
 
 def _parse_yes_no(text: str) -> str:
-    """Return 'yes', 'no', or 'unknown' from a single-token model response."""
+    """Return 'yes', 'no', or 'unknown' from a model response.
+
+    Looks for the first standalone yes/no token (word boundary match).
+    Tolerates prose preambles like "The claim does not contradict..." or
+    "Based on the evidence, no contradiction." — both of which would have
+    been classified as "unknown" by the previous first-alphabetic-char
+    scan.  The prompt still requests a single YES/NO token, but real LLMs
+    routinely add explanation; the parser should accept either shape.
+    """
 
     if not text:
         return "unknown"
-    # The judge prompt asks for exactly YES or NO.  Parsing the first alphabetic
-    # character makes the metric tolerant of small model deviations like
-    # "Yes." or "NO\n" while still rejecting explanatory text that starts with
-    # anything else.
-    for char in text.strip().lower():
-        if char == "y":
-            return "yes"
-        if char == "n":
-            return "no"
-        if char.isalpha():
-            return "unknown"
-    return "unknown"
+    match = _YES_NO_PATTERN.search(text)
+    if match is None:
+        return "unknown"
+    return match.group(1).lower()
 
 
 def _llm_unavailable_result(metric_id: str, reason: str) -> MetricResult:
-    # Advisory LLM judges should never crash the eval pipeline.  When the model
-    # cannot be called or there is nothing meaningful to judge, return an
-    # unavailable MetricResult with passed=None so reporting can show the gap
-    # without treating it as a failure.
     return MetricResult(
         metric_id=metric_id,
         value=None,
@@ -98,9 +103,6 @@ def _grade_claim(
     if key in _LLM_JUDGE_CACHE:
         return _LLM_JUDGE_CACHE[key]
 
-    # Each LLM call grades exactly one claim against exactly one evidence chunk.
-    # This keeps the judge prompt simple and avoids letting unrelated claims or
-    # chunks influence the verdict.
     prompt = (
         f"{instruction}\n\n"
         f"CLAIM:\n{claim.strip()}\n\n"
@@ -113,9 +115,6 @@ def _grade_claim(
     else:
         verdict = _parse_yes_no(result.output_text)
 
-    # Cache verdicts by metric/model/claim/evidence so contradiction and
-    # entailment re-runs over the same artifacts do not repeatedly call the
-    # model inside one process.
     _LLM_JUDGE_CACHE[key] = verdict
     return verdict
 
@@ -155,9 +154,6 @@ def _judge_each_claim(
 
     output_text = str(context.get("model_output", ""))
     contexts = _context_texts(context)
-    # Claim extraction and best-evidence matching are shared with the
-    # deterministic claim metrics.  The LLM judge is therefore reviewing the
-    # same claim/evidence pairs, not creating a separate hidden retrieval path.
     analysis = _claim_analysis(output_text, contexts)
     claim_rows = analysis.get("claims", [])
     if not isinstance(claim_rows, list) or not claim_rows:
@@ -174,9 +170,6 @@ def _judge_each_claim(
         claim = str(row.get("claim", ""))
         evidence = str(row.get("matched_context", ""))
         if not claim or not evidence:
-            # Missing evidence means the LLM cannot make a grounded yes/no call.
-            # Count it as unknown rather than no, because this metric is a judge
-            # of claim/evidence pairs, not a retrieval-completeness metric.
             unknown_count += 1
             judgments.append({"claim": claim, "verdict": "unknown", "reason": "missing claim or evidence"})
             continue
@@ -193,9 +186,6 @@ def _judge_each_claim(
     if unknown_count == total_claims:
         return _llm_unavailable_result(metric_id, "LLM did not grade any claim")
 
-    # The metric value is the share of extracted claims receiving the target
-    # label.  For contradiction, target_label="yes" means higher is worse.  For
-    # entailment, target_label="yes" means higher is better.
     value = round(target_count / total_claims, 3)
     return MetricResult(
         metric_id=metric_id,
@@ -230,9 +220,6 @@ def metric_llm_contradiction_judge(context: dict) -> MetricResult:
     "not" but the surrounding meaning is consistent).
     """
 
-    # Returns the fraction of claims the LLM says contradict their matched
-    # evidence.  It is advisory only; deterministic contradiction_rate remains
-    # the hard gate in reporting.
     return _judge_each_claim(
         metric_id="llm_contradiction_judge",
         context=context,
@@ -256,9 +243,6 @@ def metric_llm_claim_entailment(context: dict) -> MetricResult:
     two should be reported side-by-side for governance review.
     """
 
-    # Returns the fraction of claims the LLM says are supported by their matched
-    # evidence.  This is the semantic counterpart to claim_support_rate and is
-    # meant for review/explanation rather than release gating.
     return _judge_each_claim(
         metric_id="llm_claim_entailment",
         context=context,

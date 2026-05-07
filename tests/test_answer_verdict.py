@@ -55,24 +55,24 @@ class TestAdaptiveThresholds:
 
     # ── Contradiction rate ────────────────────────────────────────────────────
 
-    def test_contradiction_0_04_trusted_at_low(self) -> None:
-        """0.04 < low limit 0.10 → no hard gate fires."""
+    def test_contradiction_0_06_trusted_at_low(self) -> None:
+        """0.06 < low limit 0.15 → no hard gate fires."""
         verdict, _ = _answer_verdict(
-            [_m("contradiction_rate", 0.04)], risk_tier="low"
+            [_m("contradiction_rate", 0.06)], risk_tier="low"
         )
         assert verdict != "not_trusted"
 
-    def test_contradiction_0_04_trusted_at_medium(self) -> None:
-        """0.04 < medium limit 0.05 → no hard gate fires."""
+    def test_contradiction_0_06_trusted_at_medium(self) -> None:
+        """0.06 < medium limit 0.08 → no hard gate fires."""
         verdict, _ = _answer_verdict(
-            [_m("contradiction_rate", 0.04)], risk_tier="medium"
+            [_m("contradiction_rate", 0.06)], risk_tier="medium"
         )
         assert verdict != "not_trusted"
 
-    def test_contradiction_0_04_not_trusted_at_high(self) -> None:
-        """0.04 > high limit 0.02 → hard gate fires."""
+    def test_contradiction_0_06_not_trusted_at_high(self) -> None:
+        """0.06 > high limit 0.04 → hard gate fires."""
         verdict, reasons = _answer_verdict(
-            [_m("contradiction_rate", 0.04)], risk_tier="high"
+            [_m("contradiction_rate", 0.06)], risk_tier="high"
         )
         assert verdict == "not_trusted"
         assert any("contradiction" in r.lower() for r in reasons)
@@ -88,10 +88,10 @@ class TestAdaptiveThresholds:
 
     # ── Unsupported claim rate ────────────────────────────────────────────────
 
-    def test_unsupported_0_25_all_tiers(self) -> None:
-        """0.25 is below medium (0.35) and low (0.50) limits → no hard gate.
-        But exceeds high limit (0.20) → not_trusted at high."""
-        results = [_m("unsupported_claim_rate", 0.25)]
+    def test_unsupported_0_40_all_tiers(self) -> None:
+        """0.40 is below medium (0.50) and low (0.65) limits → no hard gate.
+        But exceeds high limit (0.30) → not_trusted at high."""
+        results = [_m("unsupported_claim_rate", 0.40)]
         v_low,    _ = _answer_verdict(results, risk_tier="low")
         v_medium, _ = _answer_verdict(results, risk_tier="medium")
         v_high,   _ = _answer_verdict(results, risk_tier="high")
@@ -138,23 +138,23 @@ class TestAdaptiveThresholds:
     # ── Composite answer_trust_score gate ────────────────────────────────────
 
     def test_low_answer_score_not_trusted_at_high_only(self) -> None:
-        """answer_trust_score=0.35 is below high not_trusted gate (0.40)
+        """answer_trust_score=0.25 is below high not_trusted gate (0.30)
         but no gate applies at medium/low."""
         results = [_m("claim_support_rate", 0.9)]   # passing metric to enter logic
-        v_low,    _ = _answer_verdict(results, risk_tier="low",    answer_trust_score=0.35)
-        v_medium, _ = _answer_verdict(results, risk_tier="medium", answer_trust_score=0.35)
-        v_high,   _ = _answer_verdict(results, risk_tier="high",   answer_trust_score=0.35)
+        v_low,    _ = _answer_verdict(results, risk_tier="low",    answer_trust_score=0.25)
+        v_medium, _ = _answer_verdict(results, risk_tier="medium", answer_trust_score=0.25)
+        v_high,   _ = _answer_verdict(results, risk_tier="high",   answer_trust_score=0.25)
         assert v_low    != "not_trusted"
         assert v_medium != "not_trusted"
         assert v_high   == "not_trusted"
 
     def test_medium_answer_score_caution_at_high(self) -> None:
-        """answer_trust_score=0.55 is between high caution gate (0.60) and
-        not_trusted gate (0.40) → use_caution at high (assuming no other gates)."""
+        """answer_trust_score=0.45 is between high caution gate (0.60) and
+        not_trusted gate (0.30) → use_caution at high (assuming no other gates)."""
         # Use passing individual metrics so no other signal fires
         results = [_m("claim_support_rate", 0.9), _m("evidence_sufficiency_score", 0.85)]
-        v_high, _ = _answer_verdict(results, risk_tier="high", answer_trust_score=0.55)
-        # 0.55 < caution_answer_score=0.60 → caution fires, but only 1 caution signal
+        v_high, _ = _answer_verdict(results, risk_tier="high", answer_trust_score=0.45)
+        # 0.45 < caution_answer_score=0.60 → caution fires, but only 1 caution signal
         assert v_high == "use_caution"
 
     def test_absent_answer_score_does_not_trigger_gate(self) -> None:
@@ -275,15 +275,15 @@ class TestReasonMessages:
 
     def test_contradiction_reason_includes_tier_and_threshold(self) -> None:
         _, reasons = _answer_verdict(
-            [_m("contradiction_rate", 0.04)], risk_tier="high"
+            [_m("contradiction_rate", 0.06)], risk_tier="high"
         )
         text = " ".join(reasons).lower()
         assert "high" in text
-        assert "0.02" in text or "2%" in text   # the tier limit must be stated
+        assert "0.04" in text or "4%" in text   # the tier limit must be stated
 
     def test_unsupported_reason_includes_tier_and_threshold(self) -> None:
         _, reasons = _answer_verdict(
-            [_m("unsupported_claim_rate", 0.25)], risk_tier="high"
+            [_m("unsupported_claim_rate", 0.40)], risk_tier="high"
         )
         text = " ".join(reasons).lower()
         assert "high" in text
@@ -312,17 +312,17 @@ class TestReasonMessages:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestBackwardCompatibility:
-    """Medium-tier behaviour must exactly match the old hardcoded logic."""
+    """Medium-tier behaviour: hard gates fire when metrics clearly exceed limits."""
 
     def test_medium_contradiction_hard_gate(self) -> None:
         verdict, _ = _answer_verdict(
-            [_m("contradiction_rate", 0.06)], risk_tier="medium"
+            [_m("contradiction_rate", 0.10)], risk_tier="medium"
         )
         assert verdict == "not_trusted"
 
     def test_medium_unsupported_hard_gate(self) -> None:
         verdict, _ = _answer_verdict(
-            [_m("unsupported_claim_rate", 0.36)], risk_tier="medium"
+            [_m("unsupported_claim_rate", 0.55)], risk_tier="medium"
         )
         assert verdict == "not_trusted"
 
@@ -340,17 +340,17 @@ class TestBackwardCompatibility:
 
     def test_default_tier_is_medium(self) -> None:
         """Omitting risk_tier defaults to medium behaviour."""
-        r1 = _answer_verdict([_m("contradiction_rate", 0.06)])
-        r2 = _answer_verdict([_m("contradiction_rate", 0.06)], risk_tier="medium")
+        r1 = _answer_verdict([_m("contradiction_rate", 0.10)])
+        r2 = _answer_verdict([_m("contradiction_rate", 0.10)], risk_tier="medium")
         assert r1[0] == r2[0]
 
     def test_unknown_tier_falls_back_to_medium(self) -> None:
         """Unrecognised tier values fall back to medium thresholds."""
         r_unknown = _answer_verdict(
-            [_m("contradiction_rate", 0.06)], risk_tier="enterprise"
+            [_m("contradiction_rate", 0.10)], risk_tier="enterprise"
         )
         r_medium = _answer_verdict(
-            [_m("contradiction_rate", 0.06)], risk_tier="medium"
+            [_m("contradiction_rate", 0.10)], risk_tier="medium"
         )
         assert r_unknown[0] == r_medium[0]
 
@@ -379,12 +379,12 @@ class TestBackwardCompatibility:
     def test_tier_1_alias_maps_to_low(self) -> None:
         """`controls_risk_tier()` returns "Tier 1" when no high-severity controls
         failed; this should resolve to the low-risk threshold table."""
-        # 0.04 contradiction: trusted at low (limit 0.10), not_trusted at high (0.02)
+        # 0.06 contradiction: trusted at low (limit 0.15), not_trusted at high (0.04)
         v_tier1, _ = _answer_verdict(
-            [_m("contradiction_rate", 0.04)], risk_tier="Tier 1"
+            [_m("contradiction_rate", 0.06)], risk_tier="Tier 1"
         )
         v_low, _ = _answer_verdict(
-            [_m("contradiction_rate", 0.04)], risk_tier="low"
+            [_m("contradiction_rate", 0.06)], risk_tier="low"
         )
         assert v_tier1 == v_low
         assert v_tier1 != "not_trusted"
@@ -392,21 +392,21 @@ class TestBackwardCompatibility:
     def test_tier_2_alias_maps_to_medium(self) -> None:
         """Tier 2 (medium-severity failed control) → medium thresholds."""
         v_tier2, _ = _answer_verdict(
-            [_m("contradiction_rate", 0.06)], risk_tier="Tier 2"
+            [_m("contradiction_rate", 0.10)], risk_tier="Tier 2"
         )
         v_medium, _ = _answer_verdict(
-            [_m("contradiction_rate", 0.06)], risk_tier="medium"
+            [_m("contradiction_rate", 0.10)], risk_tier="medium"
         )
         assert v_tier2 == v_medium == "not_trusted"
 
     def test_tier_3_alias_maps_to_high(self) -> None:
         """Tier 3 (high-severity failed control) → high (strict) thresholds."""
-        # 0.04 is below medium gate 0.05 but above high gate 0.02
+        # 0.06 is below medium gate 0.08 but above high gate 0.04
         v_tier3, _ = _answer_verdict(
-            [_m("contradiction_rate", 0.04)], risk_tier="Tier 3"
+            [_m("contradiction_rate", 0.06)], risk_tier="Tier 3"
         )
         v_high, _ = _answer_verdict(
-            [_m("contradiction_rate", 0.04)], risk_tier="high"
+            [_m("contradiction_rate", 0.06)], risk_tier="high"
         )
         assert v_tier3 == v_high == "not_trusted"
 

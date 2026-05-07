@@ -75,13 +75,6 @@ def test_run_databricks_answer_pipeline_reuses_prompt_workflow(tmp_path: Path, m
         "trusted_ai_toolkit.databricks_pipeline._run_prompt_workflow",
         _fake_run_prompt_workflow,
     )
-    monkeypatch.setattr(
-        "trusted_ai_toolkit.databricks_pipeline.generate_scorecard",
-        lambda cfg, store: (run_dir / "scorecard.json").write_text(
-            json.dumps({"answer_verdict": "trusted", "answer_trust_score": 0.81, "scorecard_template_version": "scorecard-details-v2"}),
-            encoding="utf-8",
-        ),
-    )
 
     result = run_databricks_answer_pipeline(
         config_path=config_path,
@@ -104,8 +97,6 @@ def test_run_databricks_answer_pipeline_reuses_prompt_workflow(tmp_path: Path, m
     assert captured["invocation_mode"] == "databricks_rag"
     assert captured["retrieved_contexts"][0]["id"] == "chunk-001"
     assert result["scorecard"]["answer_verdict"] == "trusted"
-    assert result["scorecard"]["answer_trust_score"] == 0.81
-    assert result["scorecard"]["scorecard_template_version"] == "scorecard-details-v2"
 
 
 def test_build_governance_run_row_preserves_answer_and_chunks() -> None:

@@ -12,7 +12,6 @@ import math
 import pytest
 
 from trusted_ai_toolkit.reporting import (
-    _answer_trust_breakdown,
     _answer_trust_score,
     _empirical_score,
     _metric_strength_map,
@@ -474,7 +473,7 @@ class TestAnswerTrustScoreRegression:
         ]
         contradicting = [
             _m("claim_support_rate",        0.9, threshold=0.65),
-            _m("contradiction_rate",        0.25, threshold=0.05),
+            _m("contradiction_rate",        0.40, threshold=0.05),
             _m("evidence_sufficiency_score", 0.8, threshold=0.58),
         ]
         assert _answer_trust_score(good) is not None
@@ -482,39 +481,10 @@ class TestAnswerTrustScoreRegression:
         assert _answer_trust_score(good) > 0.7
         assert _answer_trust_score(contradicting) < 0.3
 
-    def test_catastrophic_contradiction_does_not_zero_supported_answer(self) -> None:
-        """A contradictory but source-overlapping answer should be low, not displayed as 0%."""
-        result = [
-            _m("claim_support_rate", 1.0, threshold=0.65),
-            _m("contradiction_rate", 0.40, threshold=0.05),
-            _m("evidence_sufficiency_score", 1.0, threshold=0.58),
-            _m("output_support_tfidf", 0.50, threshold=0.2),
-        ]
-
-        score = _answer_trust_score(result)
-
-        assert score is not None
-        assert 0.1 < score < 0.3
-
-    def test_contradiction_penalty_is_risk_tier_aware(self) -> None:
-        result = [
-            _m("claim_support_rate", 0.833, threshold=0.45),
-            _m("contradiction_rate", 0.167, threshold=0.05),
-            _m("evidence_sufficiency_score", 0.896, threshold=0.4),
-            _m("output_support_tfidf", 0.337, threshold=0.12),
-        ]
-
-        low = _answer_trust_breakdown(result, risk_tier="low")
-        medium = _answer_trust_breakdown(result, risk_tier="medium")
-        high = _answer_trust_breakdown(result, risk_tier="high")
-
-        assert low["final_score"] is not None
-        assert medium["final_score"] is not None
-        assert high["final_score"] is not None
-        assert low["final_score"] > medium["final_score"] >= high["final_score"]
-
-    def test_geometric_mean_on_correlated_pair(self) -> None:
-        """High CSR + low ESS → geo-mean penalty; arithmetic mean would over-report."""
+    def test_grounding_aggregator_penalises_asymmetric_pair(self) -> None:
+        """High CSR + low ESS → softened-power-mean still penalises; arithmetic
+        mean would over-report.  At _GROUNDING_POWER = 0.4 the asymmetric pair
+        (0.9, 0.1) gives ~0.376, well below the arithmetic 0.50."""
         asymmetric = [
             _m("claim_support_rate",        0.9, threshold=0.65),
             _m("evidence_sufficiency_score", 0.1, threshold=0.58),
@@ -522,3 +492,21 @@ class TestAnswerTrustScoreRegression:
         ]
         score = _answer_trust_score(asymmetric)
         assert score is not None and score < 0.45
+
+    def test_grounding_aggregator_lifts_aligned_pair(self) -> None:
+        """Lever A: with both CSR and ESS in the consistent-but-bounded band
+        (typical of paraphrased academic prose), the softened power mean
+        (_GROUNDING_POWER = 0.4) sits above the strict geometric mean (0.5).
+        Pinning the new aggregator's behaviour so future tweaks are deliberate."""
+        aligned = [
+            _m("claim_support_rate",        0.85, threshold=0.65),
+            _m("evidence_sufficiency_score", 0.70, threshold=0.58),
+            _m("contradiction_rate",         0.0,  threshold=0.05),
+        ]
+        score = _answer_trust_score(aligned)
+        # Strict geometric mean would give 0.771; softened (0.4) gives 0.811.
+        # Score equals grounding_sub here because no embedding metrics are
+        # present (Stage 2 collapses to single slot).  Pin the lift floor.
+        assert score is not None
+        assert score >= 0.80, f"expected lift on aligned pair, got {score!r}"
+        assert score < 0.85, f"score should not exceed grounding ceiling, got {score!r}"

@@ -217,10 +217,34 @@ def _extract_output_text(payload: dict[str, Any], route: str) -> str:
 
 
 def _extract_embeddings(payload: dict[str, Any]) -> list[list[float]]:
+    # Ollama / batch shorthand:  payload["embeddings"] = [[...], [...], ...]
     embeddings = payload.get("embeddings")
     if isinstance(embeddings, list) and embeddings and all(isinstance(item, list) for item in embeddings):
         return embeddings
 
+    # OpenAI / Azure-OpenAI shape:
+    #   payload["data"] = [{"embedding": [...], "index": 0, "object": "embedding"}, ...]
+    # The list is one element per input text and is returned in input order;
+    # we rely on that ordering rather than the optional "index" field so we
+    # don't depend on a key the API may rename.
+    data = payload.get("data")
+    if isinstance(data, list) and data:
+        extracted: list[list[float]] = []
+        for item in data:
+            if not isinstance(item, dict):
+                extracted = []
+                break
+            vector = item.get("embedding")
+            if not isinstance(vector, list) or not vector or not all(
+                isinstance(component, (int, float)) for component in vector
+            ):
+                extracted = []
+                break
+            extracted.append([float(component) for component in vector])
+        if extracted and len(extracted) == len(data):
+            return extracted
+
+    # Single-input shorthand (some providers): payload["embedding"] = [...]
     single = payload.get("embedding")
     if isinstance(single, list) and single and all(isinstance(item, (int, float)) for item in single):
         return [[float(item) for item in single]]

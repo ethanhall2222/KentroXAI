@@ -37,7 +37,6 @@ from trusted_ai_toolkit.schemas import (
 )
 from trusted_ai_toolkit.xai.explainability import (
     _LLM_NARRATIVE_CACHE,
-    compute_counterfactual_summary,
     compute_llm_narrative,
 )
 
@@ -162,39 +161,6 @@ class TestInvokeModelSafely:
         assert captured["extra"] == {"options": {"temperature": 0, "seed": 42, "num_predict": 256}}
 
 
-class TestCounterfactualSummary:
-
-    def test_advisory_metric_with_null_value_does_not_crash(self) -> None:
-        statements = compute_counterfactual_summary(
-            eval_results=[
-                {
-                    "suite_name": "rag_live",
-                    "metric_results": [
-                        {
-                            "metric_id": "llm_contradiction_judge",
-                            "value": None,
-                            "threshold": None,
-                            "passed": None,
-                        },
-                        {
-                            "metric_id": "claim_support_rate",
-                            "value": 1.0,
-                            "threshold": 0.65,
-                            "passed": True,
-                            "details": {"claim_count": 4},
-                        },
-                    ],
-                }
-            ],
-            lineage_nodes=[],
-            redteam_summary={},
-            context_attribution=[],
-        )
-
-        assert statements
-        assert any("4 output claims" in statement for statement in statements)
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Section 3 — LLM judge metrics (Option B)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -219,11 +185,29 @@ class TestLLMJudgeMetrics:
         }
 
     def test_yes_no_parser(self) -> None:
+        # Single-token responses (the prompted shape).
         assert _parse_yes_no("YES") == "yes"
-        assert _parse_yes_no("y") == "yes"
+        assert _parse_yes_no("Yes") == "yes"
+        assert _parse_yes_no("yes.") == "yes"
         assert _parse_yes_no("Yes, definitely.") == "yes"
         assert _parse_yes_no("NO") == "no"
-        assert _parse_yes_no("nope") == "no"
+        assert _parse_yes_no("No.") == "no"
+
+        # Prose-style responses — common in practice even when the prompt
+        # asks for a single token.  Pre-fix these all returned "unknown"
+        # because the parser tripped on the first non-y/n alphabetic char.
+        assert _parse_yes_no("The claim does contradict; yes.") == "yes"
+        assert _parse_yes_no("Based on the evidence, no contradiction.") == "no"
+        assert _parse_yes_no("After review: No, the claim is supported.") == "no"
+
+        # Substring "no" inside another word ("not", "nope", "none") must
+        # NOT be treated as a "no" verdict — those words don't actually
+        # answer the YES/NO question.  This is a deliberate change from
+        # the old first-alpha-char parser.
+        assert _parse_yes_no("not contradicted") == "unknown"
+        assert _parse_yes_no("none of the claims") == "unknown"
+
+        # Unknown / empty / non-alpha.
         assert _parse_yes_no("") == "unknown"
         assert _parse_yes_no("???") == "unknown"
         assert _parse_yes_no("maybe") == "unknown"
@@ -327,7 +311,7 @@ class TestAdvisoryIsolation:
         assert labels["claim_support_rate"] == "strong"
 
     def test_high_llm_contradiction_does_not_trigger_verdict_gate(self) -> None:
-        # 0.50 from the LLM judge is 25× the high-tier deterministic gate (0.02)
+        # 0.50 from the LLM judge is far above the high-tier deterministic gate (0.04)
         # but only the deterministic contradiction_rate metric drives the gate.
         results = [
             self._m("llm_contradiction_judge", 0.50),

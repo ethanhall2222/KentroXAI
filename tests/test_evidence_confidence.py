@@ -280,7 +280,7 @@ class TestVerdictDowngrade:
     def test_low_confidence_does_not_override_not_trusted(self) -> None:
         # Hard gate fires first; confidence check never runs.
         results = [
-            _contradiction(0.50, 1),   # way above medium gate 0.05
+            _contradiction(0.50, 1),   # way above medium gate 0.08
         ]
         low_conf = _evidence_confidence_tier(results)
         verdict, _ = _answer_verdict(

@@ -265,63 +265,6 @@
       border-top: 1px solid rgba(15, 23, 40, 0.06);
     }
 
-    details.detail-group {
-      border-radius: 18px;
-      transition: background 160ms ease, border-color 160ms ease;
-    }
-
-    details.detail-group[open] {
-      background: rgba(248, 250, 252, 0.72);
-      border-color: rgba(15, 23, 40, 0.08);
-    }
-
-    .detail-summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      margin: -6px -8px;
-      padding: 8px;
-      border-radius: 16px;
-      cursor: pointer;
-      list-style: none;
-    }
-
-    .detail-summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .detail-summary:hover {
-      background: rgba(15, 23, 40, 0.04);
-    }
-
-    .detail-summary h3 {
-      margin: 0;
-    }
-
-    .detail-summary::after {
-      content: "+";
-      display: inline-grid;
-      width: 24px;
-      height: 24px;
-      place-items: center;
-      flex: 0 0 auto;
-      border-radius: 999px;
-      background: rgba(15, 23, 40, 0.06);
-      color: var(--muted);
-      font-size: 16px;
-      font-weight: 800;
-      line-height: 1;
-    }
-
-    details.detail-group[open] > .detail-summary::after {
-      content: "−";
-    }
-
-    .detail-content {
-      padding-top: 14px;
-    }
-
     .detail-group h3 {
       margin: 0 0 8px;
       font-size: 19px;
@@ -434,67 +377,6 @@
       font-size: 12px;
       line-height: 1.45;
       color: var(--ink);
-    }
-
-    .metric-table-wrap {
-      overflow-x: auto;
-      border: 1px solid rgba(15, 23, 40, 0.06);
-      border-radius: 16px;
-      background: rgba(255,255,255,0.96);
-    }
-
-    .metric-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 820px;
-    }
-
-    .metric-table th,
-    .metric-table td {
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(15, 23, 40, 0.06);
-      text-align: left;
-      font-size: 12px;
-      vertical-align: top;
-    }
-
-    .metric-table th {
-      color: var(--muted);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      background: rgba(247, 250, 252, 0.95);
-    }
-
-    .metric-table tr:last-child td {
-      border-bottom: 0;
-    }
-
-    .metric-status {
-      display: inline-flex;
-      border-radius: 999px;
-      padding: 3px 8px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      background: rgba(100, 116, 139, 0.12);
-      color: var(--muted);
-    }
-
-    .metric-status.pass {
-      background: rgba(22, 163, 74, 0.12);
-      color: #15803d;
-    }
-
-    .metric-status.fail {
-      background: rgba(220, 38, 38, 0.12);
-      color: #b91c1c;
-    }
-
-    .metric-status.review {
-      background: rgba(217, 119, 6, 0.12);
-      color: #b45309;
     }
 
     .ring {
@@ -834,7 +716,6 @@
         <span class="chip purple hint" title="Configured risk is the declared risk level for this use case. It is set in configuration and does not change based on the score.">Configured Risk {{ pedigree }}</span>
         <span class="chip amber hint" title="Traceability shows whether this run includes system context and telemetry fields that let you trace the result back to a specific governed system.">{{ artifact_signal.trace_label }}</span>
         <span class="chip sky hint" title="Blocker findings are the red-team findings severe enough to stop release at the current threshold, which means high and critical in this demo.">{{ artifact_signal.security_label }}</span>
-        <span class="chip purple hint" title="Template version marker. If this chip is missing, the Databricks job is running an older workspace checkout or cached package.">Template {{ scorecard_template_version }}</span>
         {% if evidence_confidence and evidence_confidence.tier %}
         <span class="chip {% if evidence_confidence.tier == 'high' %}pass{% elif evidence_confidence.tier == 'medium' %}amber{% else %}sky{% endif %} hint" title="Evidence confidence reflects how much signal backs the answer trust score: dimensional coverage, claim sample size, modality diversity, and modality agreement. Low confidence downgrades a trusted verdict to use_caution.">Evidence Confidence: {{ evidence_confidence.tier | title }}</span>
         {% endif %}
@@ -843,7 +724,7 @@
       <div class="layout">
         <div class="score-wrap">
           <div class="ring">
-            <p class="num">{{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }}</p>
+            <p class="num">{{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }}</p>
             <p class="label">Answer Trust</p>
           </div>
           <p class="ring-note hint" title="The displayed score combines a grounding sub-score (geometric mean of claim support and evidence sufficiency), a semantic sub-score (embedding output support), and a multiplicative contradiction penalty so that contradictions cannot be averaged away by strong grounding.">This score reflects confidence in this answer.</p>
@@ -860,9 +741,6 @@
               <p class="minor-label hint" title="Answer verdict tells the user whether this specific answer should be trusted, used cautiously, or not trusted.">Answer Verdict</p>
               <p class="minor-value">{{ answer_verdict | replace("_", " ") | title if answer_verdict else "Unknown" }}</p>
 
-              <p class="minor-label hint" title="Release readiness starts from the governance control score and applies penalties for failing metrics, blocker findings, and incomplete artifacts. It is distinct from the answer trust score shown in the main ring.">Release Readiness</p>
-              <p class="minor-value">{{ card_score.display_score_pct if card_score.display_score_pct is not none else "N/A" }}</p>
-
               <p class="review-note{% if overall_status == "pass" %} pass{% elif overall_status == "needs_review" %} review{% endif %}">{{ card_score.status_note }}</p>
               {% if gate_ns.blocking_gates %}
               <div class="gate-alert">
@@ -878,12 +756,11 @@
                     <summary class="gate-summary">{{ gate | replace("_", " ") | title }}</summary>
                     <div class="gate-body">
                       {% if gate == "evaluation" %}
-                      <p>The evaluation gate blocks only when the answer verdict is not trusted. Other metric failures are review items and are listed in the metric table.</p>
-                      <pre class="gate-code">answer_verdict = "{{ answer_verdict }}"
-failing_metric_count = {{ metric_summary.failed }}
-evaluation = "fail" if answer_verdict == "not_trusted" else "needs_review" if failing_metric_count &gt; 0 else "pass"
+                      <p>The evaluation gate fails when one or more configured metrics do not meet their thresholds.</p>
+                      <pre class="gate-code">failing_metric_count = {{ metric_summary.failed }}
+evaluation = "fail" if failing_metric_count &gt; 0 else "pass"
 
-{{ status | upper }}</pre>
+{{ metric_summary.failed }} &gt; 0 -> {{ status | upper }}</pre>
                       {% elif gate == "redteam" %}
                       <p>The red-team gate fails when blocker-level findings are present for this risk tier, or when red-team evidence is required but missing.</p>
                       <pre class="gate-code">high_findings = redteam_summary["high"] + redteam_summary["critical"]
@@ -928,11 +805,7 @@ block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity 
           <div class="detail-group">
             <h3>Why This Verdict</h3>
             <ul>
-              <li>Answer trust score: {{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }} — final score after applying the contradiction penalty to the base support score.</li>
-              {% if answer_trust_breakdown %}
-              <li>Base support score: {{ "%.1f"|format((answer_trust_breakdown.base_score or 0) * 100) if answer_trust_breakdown.base_score is not none else "N/A" }} from grounding {{ "%.1f"|format((answer_trust_breakdown.grounding_sub or 0) * 100) if answer_trust_breakdown.grounding_sub is not none else "N/A" }} and semantic support {{ "%.1f"|format((answer_trust_breakdown.semantic_sub or 0) * 100) if answer_trust_breakdown.semantic_sub is not none else "N/A" }}.</li>
-              <li>Contradiction penalty: {% if answer_trust_breakdown.contradiction_penalty is not none %}{{ "%.1f"|format(answer_trust_breakdown.contradiction_penalty * 100) }}% remaining trust because contradiction rate {{ "%.1f"|format((answer_trust_breakdown.contradiction_rate or 0) * 100) }}% is evaluated against a {{ "%.1f"|format((answer_trust_breakdown.contradiction_ceiling or 0) * 100) }}% score ceiling for this risk tier.{% else %}N/A{% endif %}</li>
-              {% endif %}
+              <li>Answer trust score: {{ answer_trust_score_pct if answer_trust_score_pct is not none else "N/A" }} — grounding sub-score (geometric mean of claim support and evidence sufficiency) combined with semantic support and penalised multiplicatively by the contradiction rate.</li>
               {% if evidence_confidence and evidence_confidence.tier %}
               <li>Evidence confidence: <strong>{{ evidence_confidence.tier | title }}</strong> — measured {{ evidence_confidence.dimensional_coverage }}/4 answer-truth dimensions{% if evidence_confidence.claim_count is not none %} across {{ evidence_confidence.claim_count }} extracted claim(s){% endif %}{% if evidence_confidence.modality_diversity %} with dual-modality support{% if evidence_confidence.modality_disagreement is not none %} (|tfidf−embedding| = {{ "%.2f"|format(evidence_confidence.modality_disagreement) }}){% endif %}{% else %} with single-modality support{% endif %}.</li>
               {% endif %}
@@ -949,111 +822,42 @@ block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity 
             </ul>
           </div>
 
-          <details class="detail-group">
-            <summary class="detail-summary"><h3>Answer Checks</h3></summary>
-            <div class="detail-content">
-              <ul>
-                {% for reason in answer_reasons %}
-                <li>{{ reason }}</li>
-                {% endfor %}
-              </ul>
-            </div>
-          </details>
+          <div class="detail-group">
+            <h3>Answer Checks</h3>
+            <ul>
+              {% for reason in answer_reasons %}
+              <li>{{ reason }}</li>
+              {% endfor %}
+            </ul>
+          </div>
 
-          <details class="detail-group">
-            <summary class="detail-summary"><h3>All Evaluation Metrics - Pass/Fail</h3></summary>
-            <div class="detail-content">
-              <p class="breakdown-note">Every configured metric is available here. Passing metrics support the score, failed metrics require review, and unavailable metrics are informational.</p>
-              <div class="metric-table-wrap">
-                <table class="metric-table">
-                  <thead>
-                    <tr>
-                      <th>Metric</th>
-                      <th>Value</th>
-                      <th>Threshold</th>
-                      <th>Status</th>
-                      <th>Strength</th>
-                      <th>Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for m in metric_rows %}
-                    <tr>
-                      <td>{{ m.metric_id }}</td>
-                      <td>{{ m.value if m.value is not none else "N/A" }}</td>
-                      <td>{{ m.effective_threshold if m.effective_threshold is not none else "N/A" }}</td>
-                      <td>
-                        {% if m.effective_passed is sameas true %}
-                        <span class="metric-status pass">Pass</span>
-                        {% elif m.effective_passed is sameas false %}
-                        <span class="metric-status fail">Review</span>
-                        {% else %}
-                        <span class="metric-status review">N/A</span>
-                        {% endif %}
-                      </td>
-                      <td>{{ metric_strength.get(m.metric_id, "proxy") | title }}</td>
-                      <td>
-                        {% if m.metric_id == "llm_contradiction_judge" %}
-                          {% if m.details.data_basis == "llm_judged" %}
-                          LLM judge. Model: {{ m.details.model | default("unknown") }}. Contradictory claims: {{ m.details.yes_count | default(0) }}/{{ m.details.claim_count | default("N/A") }}. Unknown: {{ m.details.unknown_count | default(0) }}.
-                          {% else %}
-                          Advisory judge unavailable: {{ m.details.reason | default("no reason provided") }}.
-                          {% endif %}
-                        {% elif m.metric_id == "llm_claim_entailment" %}
-                          {% if m.details.data_basis == "llm_judged" %}
-                          LLM judge. Model: {{ m.details.model | default("unknown") }}. Entailed claims: {{ m.details.yes_count | default(0) }}/{{ m.details.claim_count | default("N/A") }}. Unknown: {{ m.details.unknown_count | default(0) }}.
-                          {% else %}
-                          Advisory judge unavailable: {{ m.details.reason | default("no reason provided") }}.
-                          {% endif %}
-                        {% elif m.metric_id == "context_relevance_embedding_coverage" %}
-                          Relevant chunks: {{ m.details.relevant_chunk_count | default("N/A") }}/{{ m.details.total_chunk_count | default("N/A") }}.
-                        {% elif m.details.display_threshold_source == "answer_verdict_gate" %}
-                          Effective threshold comes from the answer-verdict gate for this risk tier.
-                        {% elif m.details.data_basis %}
-                          {{ m.details.data_basis | replace("_", " ") | title }}
-                        {% else %}
-                          -
-                        {% endif %}
-                      </td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </details>
+          <div class="detail-group">
+            <h3>Traceability</h3>
+            <ul>
+              <li>Run ID: {{ run_id }}</li>
+              <li>System: {{ system_context.system_id if system_context else "n/a" }} | Environment: {{ system_context.environment if system_context else "n/a" }}</li>
+              <li>System hash: {{ system_context.system_hash[:12] ~ "..." if system_context and system_context.system_hash else "n/a" }}</li>
+              <li>{{ artifact_signal.trace_label }} | {{ artifact_signal.evidence_label }}</li>
+            </ul>
+          </div>
 
-          <details class="detail-group">
-            <summary class="detail-summary"><h3>Traceability</h3></summary>
-            <div class="detail-content">
-              <ul>
-                <li>Run ID: {{ run_id }}</li>
-                <li>System: {{ system_context.system_id if system_context else "n/a" }} | Environment: {{ system_context.environment if system_context else "n/a" }}</li>
-                <li>System hash: {{ system_context.system_hash[:12] ~ "..." if system_context and system_context.system_hash else "n/a" }}</li>
-                <li>{{ artifact_signal.trace_label }} | {{ artifact_signal.evidence_label }}</li>
-              </ul>
-            </div>
-          </details>
+          <div class="detail-group">
+            <h3>Security Context</h3>
+            <ul>
+              <li>Blocking threshold: {{ severity_threshold | upper }}.</li>
+              <li>Blocker findings: {{ redteam_summary.high + redteam_summary.critical }} (High: {{ redteam_summary.high }}, Critical: {{ redteam_summary.critical }}).</li>
+              <li>Passed or non-blocking findings: {{ redteam_summary.medium + redteam_summary.low }} (Medium: {{ redteam_summary.medium }}, Low: {{ redteam_summary.low }}).</li>
+              <li>Evaluation checks passed: {{ metric_summary.passed }} of {{ metric_summary.total }}.</li>
+            </ul>
+          </div>
 
-          <details class="detail-group">
-            <summary class="detail-summary"><h3>Security Context</h3></summary>
-            <div class="detail-content">
-              <ul>
-                <li>Blocking threshold: {{ severity_threshold | upper }}.</li>
-                <li>Blocker findings: {{ redteam_summary.high + redteam_summary.critical }} (High: {{ redteam_summary.high }}, Critical: {{ redteam_summary.critical }}).</li>
-                <li>Passed or non-blocking findings: {{ redteam_summary.medium + redteam_summary.low }} (Medium: {{ redteam_summary.medium }}, Low: {{ redteam_summary.low }}).</li>
-                <li>Evaluation checks passed: {{ metric_summary.passed }} of {{ metric_summary.total }}.</li>
-              </ul>
-            </div>
-          </details>
-
-          <details class="detail-group">
-            <summary class="detail-summary"><h3>Baseline Trust Inputs</h3></summary>
-            <div class="detail-content">
-              <p class="breakdown-note">Expand a pillar to see the formula, weighting, and contribution to the trust score.</p>
-              <ul class="pillar-meta">
-                <li>Weighting policy: Security {{ "%.0f"|format(weighting_rationale.security * 100) }}%, Reliability {{ "%.0f"|format(weighting_rationale.reliability * 100) }}%, Transparency {{ "%.0f"|format(weighting_rationale.transparency * 100) }}%, Governance {{ "%.0f"|format(weighting_rationale.governance * 100) }}%.</li>
-              </ul>
+          <div class="detail-group">
+            <h3>Baseline Trust Inputs</h3>
+            <p class="breakdown-note">Expand a pillar to see the formula, weighting, and contribution to the trust score.</p>
+            <ul class="pillar-meta">
+              <li>Weighting policy: Security {{ "%.0f"|format(weighting_rationale.security * 100) }}%, Reliability {{ "%.0f"|format(weighting_rationale.reliability * 100) }}%, Transparency {{ "%.0f"|format(weighting_rationale.transparency * 100) }}%, Governance {{ "%.0f"|format(weighting_rationale.governance * 100) }}%.</li>
+            </ul>
+            <div>
               {% if pillar_breakdowns %}
               {% for pillar_name, breakdown in pillar_breakdowns.items() %}
               <details class="pillar-detail">
@@ -1085,19 +889,17 @@ block_on_high_severity = {{ "true" if redteam_gate_rules.block_on_high_severity 
               </ul>
               {% endif %}
             </div>
-          </details>
+          </div>
 
-          <details class="detail-group">
-            <summary class="detail-summary"><h3>Governance Flags</h3></summary>
-            <div class="detail-content">
-              <ul>
-                <li>Decision status: {{ overall_status | replace("_", " ") | title }}</li>
-                <li>Release decision: {{ go_no_go | upper }}</li>
-                <li>Stage gates: {% for gate, status in stage_gate_status.items() %}{{ gate | replace("_", " ") | title }}={{ status | upper }}{% if not loop.last %}; {% endif %}{% endfor %}</li>
-                <li>{{ card_score.status_note }}</li>
-              </ul>
-            </div>
-          </details>
+          <div class="detail-group">
+            <h3>Governance Flags</h3>
+            <ul>
+              <li>Decision status: {{ overall_status | replace("_", " ") | title }}</li>
+              <li>Release decision: {{ go_no_go | upper }}</li>
+              <li>Stage gates: {% for gate, status in stage_gate_status.items() %}{{ gate | replace("_", " ") | title }}={{ status | upper }}{% if not loop.last %}; {% endif %}{% endfor %}</li>
+              <li>{{ card_score.status_note }}</li>
+            </ul>
+          </div>
         </div>
       </div>
 

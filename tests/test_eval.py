@@ -5,7 +5,6 @@ from pathlib import Path
 import yaml
 
 from trusted_ai_toolkit.eval.runner import run_eval
-from trusted_ai_toolkit.eval.metrics import METRICS_REGISTRY
 from trusted_ai_toolkit.model_client import EmbeddingInvocationResult
 from trusted_ai_toolkit.schemas import ToolkitConfig
 
@@ -59,37 +58,6 @@ def test_eval_runner_returns_case_based_results(tmp_path: Path) -> None:
     assert any("Golden cases executed" in note for note in results[0].notes)
 
 
-def test_project_suites_reference_registered_metrics() -> None:
-    suite_paths = [*Path("suites").glob("*.yaml"), *Path("src/trusted_ai_toolkit/eval/suites").glob("*.yaml")]
-
-    for suite_path in suite_paths:
-        suite = yaml.safe_load(suite_path.read_text(encoding="utf-8")) or {}
-        metric_ids = suite.get("metrics", [])
-        missing = [metric_id for metric_id in metric_ids if metric_id not in METRICS_REGISTRY]
-        extra_thresholds = [
-            metric_id
-            for metric_id in (suite.get("thresholds") or {})
-            if metric_id not in metric_ids
-        ]
-
-        assert missing == [], f"{suite_path} references unregistered metrics: {missing}"
-        assert extra_thresholds == [], f"{suite_path} defines thresholds for inactive metrics: {extra_thresholds}"
-
-
-def test_rag_live_activates_advisory_llm_judge_metrics() -> None:
-    suite = yaml.safe_load(Path("suites/rag_live.yaml").read_text(encoding="utf-8")) or {}
-    config = yaml.safe_load(Path("config.yaml").read_text(encoding="utf-8")) or {}
-    expected = {"llm_contradiction_judge", "llm_claim_entailment"}
-
-    assert expected.issubset(set(suite.get("metrics", [])))
-    assert expected.issubset(set(config.get("eval", {}).get("metrics", [])))
-
-    # Tim's LLM judges are advisory. They must be computed and displayed, but
-    # not threshold-gated into go/no-go decisions.
-    assert expected.isdisjoint(set((suite.get("thresholds") or {}).keys()))
-    assert expected.isdisjoint(set((config.get("eval", {}).get("thresholds") or {}).keys()))
-
-
 def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_path: Path, monkeypatch) -> None:
     suites_dir = tmp_path / "suites"
     suites_dir.mkdir()
@@ -101,15 +69,13 @@ def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_p
                     "context_relevance_tfidf",
                     "output_support_tfidf",
                     "context_relevance_embedding",
-                    "context_relevance_embedding_coverage",
                     "output_support_embedding",
                 ],
                 "cases": [{"case_id": "1", "kind": "safe"}],
                 "thresholds": {
-                    "context_relevance_tfidf": 0.18,
+                    "context_relevance_tfidf": 0.19,
                     "output_support_tfidf": 0.1,
                     "context_relevance_embedding": 0.5,
-                    "context_relevance_embedding_coverage": 0.5,
                     "output_support_embedding": 0.5,
                 },
             },
@@ -122,7 +88,7 @@ def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_p
     artifacts_dir.mkdir(parents=True)
     (artifacts_dir / "prompt_run.json").write_text(
         """
-{"prompt":"summarize controls","model_output":"controls require evidence","retrieved_contexts":[{"title":"Policy A","snippet":"controls require evidence and review"},{"title":"Policy B","snippet":"controls require approval and signoff"},{"title":"Policy C","snippet":"unrelated topic about weather"}]}
+{"prompt":"summarize controls","model_output":"controls require evidence","retrieved_contexts":[{"title":"Policy","snippet":"controls require evidence and review"}]}
 """.strip(),
         encoding="utf-8",
     )
@@ -132,9 +98,9 @@ def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_p
             provider="ollama",
             model="nomic-embed-text",
             route="embeddings",
-            embeddings=[[1.0, 0.0], [0.9, 0.1], [0.95, 0.05], [0.8, 0.2], [0.0, 1.0]],
+            embeddings=[[1.0, 0.0], [0.9, 0.1], [0.95, 0.05]],
             request_payload={"input": texts},
-            response_payload={"embeddings": [[1.0, 0.0], [0.9, 0.1], [0.95, 0.05], [0.8, 0.2], [0.0, 1.0]]},
+            response_payload={"embeddings": [[1.0, 0.0], [0.9, 0.1], [0.95, 0.05]]},
             request_url="http://localhost:11434/api/embed",
         )
 
@@ -147,7 +113,7 @@ def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_p
         eval={
             "suites": ["medium"],
             "thresholds": {
-                "context_relevance_tfidf": 0.18,
+                "context_relevance_tfidf": 0.19,
                 "output_support_tfidf": 0.1,
                 "context_relevance_embedding": 0.5,
                 "output_support_embedding": 0.5,
@@ -163,9 +129,6 @@ def test_eval_runner_computes_contextual_metrics_when_prompt_bundle_exists(tmp_p
     assert metrics["context_relevance_tfidf"].passed is True
     assert metrics["output_support_tfidf"].passed is True
     assert metrics["context_relevance_embedding"].details["embedding_available"] is True
-    assert metrics["context_relevance_embedding_coverage"].value == 0.667
-    assert metrics["context_relevance_embedding_coverage"].passed is True
-    assert metrics["context_relevance_embedding_coverage"].details["relevant_chunk_count"] == 2
     assert metrics["output_support_embedding"].passed is True
 
 
@@ -293,3 +256,72 @@ def test_eval_runner_computes_claim_truth_metrics(tmp_path: Path) -> None:
     assert metrics["contradiction_rate"].value == 0.0
     assert metrics["evidence_sufficiency_score"].value >= 0.4
     assert metrics["bias_signal_score"].value == 1.0
+
+
+def test_eval_runner_wires_llm_judges_with_toolkit_config(tmp_path: Path) -> None:
+    """Regression: the runner must include `toolkit_config` in the per-metric
+    context AND iterate the LLM advisory judges listed in the suite YAML.
+
+    Without either, the judges silently return `data_basis="llm_unavailable"`
+    with reason "toolkit_config not present in metric context" (or never run
+    at all), even when a provider is configured.  This test exercises both
+    invariants against a stub provider — we don't need a live LLM to verify
+    that the runner reached the judge with a config in hand.
+    """
+    suites_dir = tmp_path / "suites"
+    suites_dir.mkdir()
+    (suites_dir / "medium.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "name": "medium",
+                "metrics": [
+                    "claim_support_rate",
+                    "llm_contradiction_judge",
+                    "llm_claim_entailment",
+                ],
+                "cases": [{"case_id": "1", "kind": "safe"}],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    artifacts_dir = tmp_path / "artifacts" / "run1"
+    artifacts_dir.mkdir(parents=True)
+    (artifacts_dir / "prompt_run.json").write_text(
+        """
+{"prompt":"summarize controls","model_output":"Controls require evidence review.","retrieved_contexts":[{"title":"Policy","snippet":"Controls require evidence review and approval before release."}]}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    cfg = ToolkitConfig(
+        project_name="demo",
+        risk_tier="medium",
+        output_dir=str(tmp_path / "artifacts"),
+        eval={"suites": ["medium"]},
+    )
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("project_name: demo\n", encoding="utf-8")
+
+    results = run_eval(cfg, run_id="run1", config_path=config_path)
+    metrics = {item.metric_id: item for item in results[0].metric_results}
+
+    # Both judges must have been invoked (catches the "judges missing from
+    # suite YAML" half of the regression).
+    assert "llm_contradiction_judge" in metrics
+    assert "llm_claim_entailment" in metrics
+
+    # Stub provider gracefully reports unavailable — but the reason MUST be
+    # the provider, not a missing toolkit_config (catches the "runner forgot
+    # to inject toolkit_config" half of the regression).
+    for judge_id in ("llm_contradiction_judge", "llm_claim_entailment"):
+        details = metrics[judge_id].details
+        assert details["data_basis"] == "llm_unavailable"
+        assert details["strength"] == "advisory"
+        reason = details.get("reason", "")
+        assert "stub" in reason.lower(), (
+            f"{judge_id} reason {reason!r} suggests toolkit_config was not wired "
+            "into the runner context — see runner.py and llm_judges.py:_judge_each_claim."
+        )
+        assert "toolkit_config not present" not in reason

@@ -122,6 +122,56 @@ adapters:
     assert captured["body"] == {"model": "nomic-embed-text", "input": ["hello", "world"]}
 
 
+def test_embed_texts_parses_openai_data_response(tmp_path: Path, monkeypatch) -> None:
+    """Regression: the OpenAI embeddings API returns vectors under
+    payload["data"][*]["embedding"], not the Ollama-style payload["embeddings"]
+    list-of-lists.  _extract_embeddings used to know only about the Ollama
+    shape and a single-vector shorthand, so every embed_texts call against
+    OpenAI raised "embedding response did not contain usable vectors".
+
+    This test pins the OpenAI shape end-to-end through embed_texts.
+    """
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+project_name: demo
+adapters:
+  provider: openai_compatible
+  endpoint: https://api.openai.com/v1
+  model: gpt-4.1-mini
+  api_key_env: OPENAI_API_KEY
+""",
+        encoding="utf-8",
+    )
+    cfg = load_config(config_path)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+    captured: dict[str, object] = {}
+
+    def _fake_urlopen(req, timeout: int):
+        captured["url"] = req.full_url
+        captured["body"] = json.loads(req.data.decode("utf-8"))
+        return _FakeHttpResponse(
+            {
+                "object": "list",
+                "data": [
+                    {"object": "embedding", "index": 0, "embedding": [0.1, 0.2, 0.3]},
+                    {"object": "embedding", "index": 1, "embedding": [0.4, 0.5, 0.6]},
+                ],
+                "model": "text-embedding-3-small",
+                "usage": {"prompt_tokens": 4, "total_tokens": 4},
+            }
+        )
+
+    monkeypatch.setattr("trusted_ai_toolkit.model_client.request.urlopen", _fake_urlopen)
+
+    result = embed_texts(["hello", "world"], cfg)
+
+    assert result.request_url == "https://api.openai.com/v1/embeddings"
+    assert result.embeddings == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+    assert captured["body"] == {"model": "text-embedding-3-small", "input": ["hello", "world"]}
+
+
 def test_resolve_embedding_model_name_defaults_for_openai_compatible(tmp_path: Path) -> None:
     config_path = tmp_path / "config.yaml"
     config_path.write_text(

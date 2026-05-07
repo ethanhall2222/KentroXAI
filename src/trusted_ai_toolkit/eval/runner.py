@@ -28,12 +28,10 @@ _CONTEXTUAL_METRICS = {
     "contradiction_rate",
     "evidence_sufficiency_score",
     "context_relevance_embedding",
-    "context_relevance_embedding_coverage",
     "output_support_embedding",
 }
 _EMBEDDING_METRICS = {
     "context_relevance_embedding",
-    "context_relevance_embedding_coverage",
     "output_support_embedding",
 }
 
@@ -58,7 +56,7 @@ def _load_suite_definition(suite_name: str, config_path: Path | None = None) -> 
 def _metric_passed(metric_id: str, value: float, threshold: float | None) -> bool | None:
     """Apply metric-specific pass/fail semantics."""
 
-    if threshold is None or value is None:
+    if threshold is None:
         return None
     if metric_id in {
         "fairness_demographic_parity_diff",
@@ -180,6 +178,10 @@ def run_eval(
             "fairness_dataset": active_prompt_bundle.get("fairness_dataset"),
             "labeled_evaluation": active_prompt_bundle.get("labeled_evaluation"),
             "embedding_features": active_embedding_features,
+            # Required by LLM-as-judge advisory metrics (llm_contradiction_judge,
+            # llm_claim_entailment) so they can resolve the configured provider
+            # via context["toolkit_config"]. Stub providers gracefully fall back
+            # to data_basis="llm_unavailable" inside the judges themselves.
             "toolkit_config": config,
         }
 

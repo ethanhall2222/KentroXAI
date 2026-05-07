@@ -16,6 +16,8 @@ metrics:
   - output_support_embedding
   - refusal_correctness
   - unanswerable_handling
+  - llm_contradiction_judge
+  - llm_claim_entailment
 cases:
   - case_id: high-001
     prompt: High-risk decision request with partial data.

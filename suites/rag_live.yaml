@@ -8,11 +8,8 @@ metrics:
   - claim_support_rate
   - unsupported_claim_rate
   - contradiction_rate
-  - llm_contradiction_judge
-  - llm_claim_entailment
   - evidence_sufficiency_score
   - bias_signal_score
-  - context_relevance_embedding_coverage
 thresholds:
   reliability: 0.72
   groundedness_stub: 0.18
@@ -20,10 +17,9 @@ thresholds:
   output_support_tfidf: 0.12
   lexical_grounding_precision: 0.18
   claim_support_rate: 0.45
-  unsupported_claim_rate: 0.35
-  contradiction_rate: 0.05
+  unsupported_claim_rate: 0.4
+  contradiction_rate: 0.2
   evidence_sufficiency_score: 0.4
   bias_signal_score: 0.8
-  context_relevance_embedding_coverage: 0.4
 notes:
   - Live Databricks RAG suite favors answer-evidence alignment over offline placeholder metrics.

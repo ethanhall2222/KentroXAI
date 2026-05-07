@@ -17,10 +17,8 @@ from pathlib import Path
 import tempfile
 from typing import Any
 
-from trusted_ai_toolkit.artifacts import ArtifactStore
 from trusted_ai_toolkit.cli import _apply_adapter_overrides, _run_prompt_workflow
 from trusted_ai_toolkit.config import load_config
-from trusted_ai_toolkit.reporting import generate_scorecard
 from trusted_ai_toolkit.schemas import ToolkitConfig
 
 _LABEL_KEYS = ("label", "expected_label", "ground_truth", "actual_label", "target")
@@ -277,20 +275,6 @@ def _load_json(path: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
-def _refresh_scorecard_outputs(cfg: ToolkitConfig, run_dir: Path) -> dict[str, Any]:
-    """Regenerate scorecard artifacts from the current source tree.
-
-    Databricks jobs can end up with a stale first-pass scorecard when the job
-    environment has cached an older package version. Re-rendering here from the
-    active repo code ensures the returned JSON/HTML use the latest scoring and
-    template contract before the job hands results back to the UI.
-    """
-
-    store = ArtifactStore(run_dir.parent, run_dir.name)
-    generate_scorecard(cfg, store)
-    return _load_json(run_dir / "scorecard.json")
-
-
 def _apply_runtime_overrides(
     cfg: ToolkitConfig,
     *,
@@ -381,7 +365,7 @@ def run_databricks_answer_pipeline(
     prompt_run_path = run_dir / "prompt_run.json"
     eval_results_path = run_dir / "eval_results.json"
 
-    scorecard_payload = _refresh_scorecard_outputs(cfg, run_dir)
+    scorecard_payload = _load_json(scorecard_path)
 
     return {
         "run_dir": str(run_dir),

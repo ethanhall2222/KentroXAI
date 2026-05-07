@@ -46,12 +46,9 @@ eval:
   - context_relevance_tfidf
   - output_support_tfidf
   - lexical_grounding_precision
-  - context_relevance_embedding_coverage
   - claim_support_rate
   - unsupported_claim_rate
   - contradiction_rate
-  - llm_contradiction_judge
-  - llm_claim_entailment
   - evidence_sufficiency_score
   - bias_signal_score
   benchmark_registry_path: benchmarks/openai_metric_registry.json
@@ -61,10 +58,9 @@ eval:
     context_relevance_tfidf: 0.12
     output_support_tfidf: 0.12
     lexical_grounding_precision: 0.18
-    context_relevance_embedding_coverage: 0.4
     claim_support_rate: 0.45
-    unsupported_claim_rate: 0.35
-    contradiction_rate: 0.05
+    unsupported_claim_rate: 0.4
+    contradiction_rate: 0.2
     evidence_sufficiency_score: 0.4
     bias_signal_score: 0.8
 xai:

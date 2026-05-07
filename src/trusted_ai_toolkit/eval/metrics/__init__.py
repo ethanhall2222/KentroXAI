@@ -53,7 +53,6 @@ _BIAS_SIGNAL_TERMS = {
     "unstable",
     "unfit",
 }
-_EMBEDDING_RELEVANCE_CUTOFF = 0.5
 
 
 def _tokenize(text: str) -> list[str]:
@@ -130,6 +129,51 @@ def _negation_polarity(text: str) -> int:
     return 1 if tokens.intersection(_NEGATION_TOKENS) else 0
 
 
+def _best_evidence_span(claim: str, matched_context: str) -> str:
+    """Return the sentence within ``matched_context`` most similar to ``claim``.
+
+    The contradiction heuristic in ``_claim_analysis`` compares the polarity
+    of the claim against its supporting evidence.  Computing polarity over an
+    entire retrieved chunk is too coarse — a stray "not"/"without"/"never"
+    in an unrelated sentence will flip the whole chunk's polarity and
+    falsely flag the claim as contradicted.  Localising the polarity check
+    to the best-matching sentence sharply reduces this false-positive rate.
+
+    Returns the matched_context unchanged when it cannot be split into
+    multiple useful sentences (so behaviour collapses to the previous
+    chunk-level check on degenerate inputs).
+    """
+
+    if not matched_context:
+        return ""
+    sentences = [
+        part.strip(" -\t") for part in _CLAIM_SPLIT_PATTERN.split(matched_context) if part.strip()
+    ]
+    sentences = [s for s in sentences if len(_tokenize(s)) >= 2]
+    if len(sentences) <= 1:
+        return matched_context
+
+    docs = [claim, *sentences]
+    vectors = _tfidf_vectors(docs)
+    if not vectors:
+        return matched_context
+
+    claim_vector = vectors[0]
+    best_idx = -1
+    best_score = 0.0
+    for idx, sentence_vector in enumerate(vectors[1:]):
+        score = _sparse_cosine(claim_vector, sentence_vector)
+        if score > best_score:
+            best_score = score
+            best_idx = idx
+
+    if best_idx < 0:
+        # No sentence shares any tokens with the claim — fall back to the
+        # whole chunk rather than returning an arbitrary sentence.
+        return matched_context
+    return sentences[best_idx]
+
+
 def _claim_analysis(output_text: str, contexts: list[str]) -> dict[str, object]:
     """Classify each extracted claim as supported, unsupported, or contradicted.
 
@@ -164,10 +208,15 @@ def _claim_analysis(output_text: str, contexts: list[str]) -> dict[str, object]:
         # A claim is treated as supported when it has either a decent lexical
         # match or a small set of overlapping evidence terms. This keeps the
         # method simple and inspectable, while still allowing paraphrases.
-        if support_score >= 0.22 or overlap >= 1:
+        if support_score >= 0.22 or overlap >= 3:
             support_label = "supported"
             supported += 1
-            if matched_context and _negation_polarity(claim) != _negation_polarity(matched_context):
+            # Localise the polarity check to the best-matching sentence in
+            # the chunk; comparing against the whole chunk over-fires on
+            # negation tokens that belong to unrelated sentences (very
+            # common in policy / legal / governance evidence).
+            evidence_span = _best_evidence_span(claim, matched_context) if matched_context else ""
+            if evidence_span and _negation_polarity(claim) != _negation_polarity(evidence_span):
                 contradicted += 1
                 contradicted_flag = True
                 support_label = "contradicted"
@@ -333,9 +382,6 @@ def metric_reliability(context: dict) -> MetricResult:
     if not output_tokens:
         value = 0.0
     else:
-        # Reliability is a structure proxy, not a truth metric.  It rewards
-        # non-repetitive answers and answers with enough length to engage the
-        # prompt, while capping length so verbosity cannot inflate the score.
         unique_ratio = len(set(output_tokens)) / len(output_tokens)
         length_ratio = min(len(output_tokens) / max(len(prompt_tokens), 1), 4.0) / 4.0
         value = 0.6 * unique_ratio + 0.4 * length_ratio
@@ -355,9 +401,6 @@ def metric_groundedness_stub(context: dict) -> MetricResult:
 
     contexts = _context_texts(context)
     output_text = str(context.get("model_output", ""))
-    # This is kept for backward compatibility with older suites.  It is no
-    # longer a synthetic stub: it measures the best TF-IDF cosine match between
-    # the answer and retrieved evidence, then reports 0 when no context exists.
     value = _output_tfidf_support(output_text, contexts) if contexts else 0.0
     return MetricResult(
         metric_id="groundedness_stub",
@@ -374,9 +417,6 @@ def metric_context_relevance_tfidf(context: dict) -> MetricResult:
 
     prompt_text = str(context.get("prompt", ""))
     contexts = _context_texts(context)
-    # Retrieval relevance asks whether the retrieved chunks match the question,
-    # not whether they support the final answer.  This lexical version uses the
-    # maximum prompt-to-context TF-IDF cosine across all chunks.
     value = _context_tfidf_similarity(prompt_text, contexts)
     ci = _bootstrap_indexed_confidence_interval(
         len(contexts),
@@ -399,9 +439,6 @@ def metric_output_support_tfidf(context: dict) -> MetricResult:
 
     output_text = str(context.get("model_output", ""))
     contexts = _context_texts(context)
-    # Output support asks whether the generated answer is grounded in any
-    # retrieved chunk.  It is intentionally answer-to-context, while
-    # context_relevance_tfidf is prompt-to-context.
     value = _output_tfidf_support(output_text, contexts)
     ci = _bootstrap_indexed_confidence_interval(
         len(contexts),
@@ -424,9 +461,6 @@ def metric_lexical_grounding_precision(context: dict) -> MetricResult:
 
     output_text = str(context.get("model_output", ""))
     contexts = _context_texts(context)
-    # Precision is answer-focused: of the meaningful tokens in the answer, what
-    # fraction appears in the retrieved evidence?  High precision means the
-    # answer mostly uses evidence-backed language.
     value = _lexical_precision(output_text, contexts)
     ci = _bootstrap_indexed_confidence_interval(
         len(contexts),
@@ -448,9 +482,6 @@ def metric_claim_coverage_recall(context: dict) -> MetricResult:
 
     output_text = str(context.get("model_output", ""))
     contexts = _context_texts(context)
-    # Recall is evidence-focused: of the meaningful evidence tokens, what
-    # fraction appears in the answer?  This catches thin answers that only use a
-    # small part of the available context.
     value = _lexical_recall(output_text, contexts)
     ci = _bootstrap_indexed_confidence_interval(
         len(contexts),
@@ -472,9 +503,6 @@ def metric_claim_support_rate(context: dict) -> MetricResult:
 
     output_text = str(context.get("model_output", ""))
     contexts = _context_texts(context)
-    # The answer is split into coarse claim units.  Each claim is matched to its
-    # best retrieved context, then counted as supported when lexical similarity
-    # or token overlap clears the deterministic support heuristic.
     analysis = _claim_analysis(output_text, contexts)
     claim_count = int(analysis["claim_count"])
     value = _safe_div(int(analysis["supported_count"]), claim_count) if claim_count else 0.0
@@ -495,9 +523,6 @@ def metric_unsupported_claim_rate(context: dict) -> MetricResult:
 
     output_text = str(context.get("model_output", ""))
     contexts = _context_texts(context)
-    # This is the complement view of claim_support_rate.  It is useful for
-    # display and thresholds because "unsupported claims" is easier to reason
-    # about operationally, but reporting treats it as non-independent.
     analysis = _claim_analysis(output_text, contexts)
     claim_count = int(analysis["claim_count"])
     value = _safe_div(int(analysis["unsupported_count"]), claim_count) if claim_count else 0.0
@@ -518,10 +543,6 @@ def metric_contradiction_rate(context: dict) -> MetricResult:
 
     output_text = str(context.get("model_output", ""))
     contexts = _context_texts(context)
-    # Deterministic contradiction detection is deliberately conservative: it
-    # only checks supported claims and flags polarity mismatches against the
-    # matched context.  Tim's LLM judge can add semantic review, but this remains
-    # the hard-gating contradiction signal.
     analysis = _claim_analysis(output_text, contexts)
     claim_count = int(analysis["claim_count"])
     value = _safe_div(int(analysis["contradicted_count"]), claim_count) if claim_count else 0.0
@@ -568,9 +589,6 @@ def metric_bias_signal_score(context: dict) -> MetricResult:
     """Lexical bias-risk signal for answer-level cautioning."""
 
     output_text = str(context.get("model_output", ""))
-    # This scans for a short list of bias-linked terms.  It is intentionally a
-    # caution signal, not a fairness audit; it can flag risky language in one
-    # answer even when no labeled demographic dataset exists.
     signals = _bias_signals(output_text)
     return MetricResult(
         metric_id="bias_signal_score",
@@ -590,9 +608,6 @@ def metric_context_relevance_embedding(context: dict) -> MetricResult:
     embeddings = context.get("embedding_features", {})
     prompt_vec = embeddings.get("prompt_vector")
     context_vecs = embeddings.get("context_vectors", [])
-    # Embedding relevance mirrors context_relevance_tfidf, but uses semantic
-    # cosine similarity.  It reports the best retrieved chunk, so one excellent
-    # chunk can make this score high even if other chunks are weak.
     value = max((_cosine(prompt_vec, vec) for vec in context_vecs), default=0.0) if prompt_vec and context_vecs else 0.0
     ci = _bootstrap_indexed_confidence_interval(
         len(context_vecs),
@@ -610,43 +625,12 @@ def metric_context_relevance_embedding(context: dict) -> MetricResult:
     )
 
 
-def metric_context_relevance_embedding_coverage(context: dict) -> MetricResult:
-    """Share of retrieved chunks whose embedding similarity clears a relevance cutoff."""
-
-    embeddings = context.get("embedding_features", {})
-    prompt_vec = embeddings.get("prompt_vector")
-    context_vecs = embeddings.get("context_vectors", [])
-    # Coverage complements the max-score embedding metric.  Instead of asking
-    # "was any chunk relevant?", it asks "what share of retrieved chunks were
-    # relevant enough?" using a fixed cosine cutoff.
-    similarities = [_cosine(prompt_vec, vec) for vec in context_vecs] if prompt_vec and context_vecs else []
-    relevant_count = sum(1 for score in similarities if score >= _EMBEDDING_RELEVANCE_CUTOFF)
-    total_count = len(similarities)
-    value = _safe_div(relevant_count, total_count) if total_count else 0.0
-    return MetricResult(
-        metric_id="context_relevance_embedding_coverage",
-        value=round(value, 3),
-        details={
-            "method": "embedding_cosine_coverage_ratio",
-            "embedding_available": bool(prompt_vec and context_vecs),
-            "embedding_model": embeddings.get("embedding_model"),
-            "relevance_cutoff": _EMBEDDING_RELEVANCE_CUTOFF,
-            "relevant_chunk_count": relevant_count,
-            "context_count": total_count,
-            "chunk_similarities": [round(score, 4) for score in similarities],
-        },
-    )
-
-
 def metric_output_support_embedding(context: dict) -> MetricResult:
     """Measure semantic answer-evidence alignment from embedding vectors if available."""
 
     embeddings = context.get("embedding_features", {})
     output_vec = embeddings.get("output_vector")
     context_vecs = embeddings.get("context_vectors", [])
-    # This is the semantic answer-to-evidence analogue of output_support_tfidf.
-    # It measures whether the generated answer is semantically close to at least
-    # one retrieved evidence chunk.
     value = max((_cosine(output_vec, vec) for vec in context_vecs), default=0.0) if output_vec and context_vecs else 0.0
     ci = _bootstrap_indexed_confidence_interval(
         len(context_vecs),
@@ -672,9 +656,6 @@ def metric_accuracy_stub(context: dict) -> MetricResult:
         labels = labeled.get("labels", [])
         predictions = labeled.get("predictions", [])
         if isinstance(labels, list) and isinstance(predictions, list) and labels and len(labels) == len(predictions):
-            # In live Databricks runs this stops being a placeholder if chunks
-            # carry observed labels/predictions.  Without those labels the metric
-            # returns unavailable metadata rather than inventing accuracy.
             correct = sum(1 for expected, observed in zip(labels, predictions) if expected == observed)
             value = round(correct / len(labels), 3)
             ci = _bootstrap_confidence_interval(
@@ -707,9 +688,6 @@ def metric_refusal_correctness(context: dict) -> MetricResult:
 
     unsafe_cases = context.get("unsafe_cases", 0)
     total_cases = max(context.get("total_cases", 1), 1)
-    # This is a suite-level behavioral proxy.  More unsafe cases lower the
-    # expected score slightly, but a floor keeps case-mix stress from creating a
-    # zero when no model-specific refusal observations are available.
     ratio = unsafe_cases / total_cases
     value = round(max(0.65, 0.93 - ratio * 0.1), 3)
     return MetricResult(metric_id="refusal_correctness", value=value, details={"unsafe_cases": unsafe_cases})
@@ -720,9 +698,6 @@ def metric_unanswerable_handling(context: dict) -> MetricResult:
 
     unanswerable_cases = context.get("unanswerable_cases", 0)
     total_cases = max(context.get("total_cases", 1), 1)
-    # Similar to refusal_correctness, this is a deterministic proxy for whether
-    # the suite included unanswerable prompts and how much that should stress
-    # the behavioral score.
     ratio = unanswerable_cases / total_cases
     value = round(max(0.6, 0.9 - ratio * 0.08), 3)
     return MetricResult(
@@ -745,7 +720,6 @@ METRICS_REGISTRY: dict[str, MetricFn] = {
     "evidence_sufficiency_score": metric_evidence_sufficiency_score,
     "bias_signal_score": metric_bias_signal_score,
     "context_relevance_embedding": metric_context_relevance_embedding,
-    "context_relevance_embedding_coverage": metric_context_relevance_embedding_coverage,
     "output_support_embedding": metric_output_support_embedding,
     "accuracy_stub": metric_accuracy_stub,
     "refusal_correctness": metric_refusal_correctness,
