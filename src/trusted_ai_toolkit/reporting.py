@@ -1336,6 +1336,7 @@ def _resolve_brand_logo() -> str | None:
 
 
 def _card_score_summary(
+    answer_trust_score_pct: float | None,
     control_score_pct: float | None,
     failing_metrics_count: int,
     severity_counts: dict[str, int],
@@ -1355,6 +1356,11 @@ def _card_score_summary(
 
     display_score = base - penalty
     display_score = max(0.0, min(100.0, round(display_score, 0)))
+    answer_display_score = (
+        max(0.0, min(100.0, round(float(answer_trust_score_pct), 0)))
+        if answer_trust_score_pct is not None
+        else display_score
+    )
 
     status_note = {
         "pass": "This answer cleared the current governance checks.",
@@ -1363,7 +1369,8 @@ def _card_score_summary(
     }[overall_status]
 
     return {
-        "display_score_pct": int(display_score),
+        "display_score_pct": int(answer_display_score),
+        "release_readiness_score_pct": int(display_score),
         "control_score_pct": int(round(control_score_pct, 0)) if control_score_pct is not None else None,
         "label": "Trust Score",
         "status_note": status_note,
@@ -1545,6 +1552,7 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
         round(scorecard.empirical_score * 100.0, 0) if scorecard.empirical_score is not None else None
     )
     context["card_score"] = _card_score_summary(
+        context["answer_trust_score_pct"],
         context["governance_score_pct"],
         len(failing_metrics),
         severity_counts,
@@ -1563,7 +1571,7 @@ def generate_scorecard(config: ToolkitConfig, store: ArtifactStore) -> Scorecard
     }
     context["raw_trust_score_pct"] = context["governance_score_pct"]
     context["weighting_rationale"] = scorecard.weighting_rationale
-    context["release_readiness_score_pct"] = context["card_score"]["display_score_pct"]
+    context["release_readiness_score_pct"] = context["card_score"]["release_readiness_score_pct"]
     context["brand_logo_src"] = _embed_brand_logo()
     context["generated_files"] = {
         "scorecard_md": str(store.path_for("scorecard.md")),

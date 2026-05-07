@@ -156,6 +156,48 @@ def test_reporting_writes_computed_scores_and_system_context(tmp_path: Path) -> 
     assert "This answer has governance blockers. Review the failed gates and findings." in scorecard_html
 
 
+def test_html_answer_trust_ring_matches_answer_score(tmp_path: Path) -> None:
+    cfg = ToolkitConfig(project_name="demo", risk_tier="medium", output_dir=str(tmp_path / "artifacts"))
+    store = ArtifactStore(output_dir=cfg.output_dir, run_id="run-answer-score")
+
+    store.write_json(
+        "eval_results.json",
+        [
+            {
+                "suite_name": "medium",
+                "run_id": "run-answer-score",
+                "started_at": "2026-01-01T00:00:00Z",
+                "completed_at": "2026-01-01T00:00:01Z",
+                "overall_passed": True,
+                "notes": [],
+                "metric_results": [
+                    {
+                        "metric_id": "claim_support_rate",
+                        "value": 0.74,
+                        "threshold": 0.5,
+                        "passed": True,
+                        "details": {},
+                    },
+                    {
+                        "metric_id": "evidence_sufficiency_score",
+                        "value": 0.74,
+                        "threshold": 0.5,
+                        "passed": True,
+                        "details": {},
+                    },
+                ],
+            }
+        ],
+    )
+
+    scorecard = generate_scorecard(cfg, store)
+    scorecard_html = store.path_for("scorecard.html").read_text(encoding="utf-8")
+    expected_score_pct = int(round(scorecard.answer_trust_score * 100.0, 0))
+
+    assert f'<p class="num">{expected_score_pct}</p>' in scorecard_html
+    assert f"Answer trust score: {float(expected_score_pct):.1f}" in scorecard_html
+
+
 def test_reporting_uses_historical_metric_distribution_for_trust_score(tmp_path: Path) -> None:
     registry_path = tmp_path / "benchmarks" / "registry.json"
     cfg = ToolkitConfig(
